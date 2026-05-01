@@ -9,6 +9,7 @@ import '../../features/auth/ui/verify_2fa_screen.dart';
 import '../../features/ai/ui/ai_management_screen.dart';
 import '../../features/dashboard/ui/dashboard_screen.dart';
 import '../../features/finance/ui/finance_screen.dart';
+import '../../features/fortune/ui/fortune_screen.dart';
 import '../../features/modules/ui/modules_hub_screen.dart';
 import '../../main.dart' show rootNavKey;
 import '../theme/app_colors.dart';
@@ -54,6 +55,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: '/modules', builder: (_, __) => const ModulesHubScreen()),
           GoRoute(path: '/finance', builder: (_, __) => const FinanceScreen()),
           GoRoute(path: '/ai', builder: (_, __) => const AiManagementScreen()),
+          GoRoute(path: '/fortune', builder: (_, __) => const FortuneScreen()),
           GoRoute(
               path: '/analytics',
               builder: (_, __) => const _ComingSoonPage(label: 'Analytics')),
