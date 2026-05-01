@@ -23,7 +23,9 @@ class ApiEnvelope<T> {
     final raw = json['data'];
     return ApiEnvelope<T>(
       success: json['success'] == true,
-      data: raw == null ? null : (dataParser != null ? dataParser(raw) : raw as T),
+      data: raw == null
+          ? null
+          : (dataParser != null ? dataParser(raw) : raw as T),
       message: json['message'] as String?,
       errors: (json['errors'] as Map?)?.cast<String, dynamic>(),
       errorCode: json['error_code'] as String?,

@@ -41,7 +41,8 @@ class _ThaipromptAdminAppState extends ConsumerState<ThaipromptAdminApp> {
 
   Future<void> _silentCheckForUpdate() async {
     try {
-      final result = await ref.read(updateCheckerProvider).checkIfShouldPrompt();
+      final result =
+          await ref.read(updateCheckerProvider).checkIfShouldPrompt();
       if (result == null) return;
       // หน่วงเวลาเล็กน้อยให้หน้า initial render เสร็จก่อน
       await Future.delayed(const Duration(seconds: 2));

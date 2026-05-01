@@ -42,7 +42,8 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
     await _scannerController.stop();
 
     try {
-      final result = await ref.read(authControllerProvider.notifier).claimPair(code);
+      final result =
+          await ref.read(authControllerProvider.notifier).claimPair(code);
       if (!mounted) return;
       if (result.requiresTwoFactor) {
         // ขอ 2FA — ขออีกครั้งพร้อม code
@@ -52,7 +53,9 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
           await _scannerController.start();
           return;
         }
-        await ref.read(authControllerProvider.notifier).claimPair(code, twoFactorCode: code2fa);
+        await ref
+            .read(authControllerProvider.notifier)
+            .claimPair(code, twoFactorCode: code2fa);
         if (!mounted) return;
         // router จะ redirect ไป dashboard
       }
@@ -73,20 +76,25 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.bgPanel,
-        title: const Text('ยืนยันรหัส 2FA', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('ยืนยันรหัส 2FA', style: TextStyle(color: Colors.white)),
         content: TextField(
           controller: ctrl,
           keyboardType: TextInputType.number,
           autofocus: true,
           maxLength: 8,
-          style: const TextStyle(color: Colors.white, letterSpacing: 6, fontSize: 20),
+          style: const TextStyle(
+              color: Colors.white, letterSpacing: 6, fontSize: 20),
           decoration: const InputDecoration(
             hintText: '123456',
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
-          TextButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('ยืนยัน')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: const Text('ยืนยัน')),
         ],
       ),
     );
@@ -121,17 +129,20 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.bgPanel,
-        title: const Text('กรอกรหัสจับคู่', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('กรอกรหัสจับคู่', style: TextStyle(color: Colors.white)),
         content: TextField(
           controller: ctrl,
           textCapitalization: TextCapitalization.characters,
           autofocus: true,
           maxLength: 8,
-          style: const TextStyle(color: Colors.white, letterSpacing: 8, fontSize: 22),
+          style: const TextStyle(
+              color: Colors.white, letterSpacing: 8, fontSize: 22),
           decoration: const InputDecoration(hintText: 'ABCD2345'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text.trim().toUpperCase()),
             child: const Text('ยืนยัน'),
@@ -150,7 +161,10 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
 
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating, backgroundColor: AppColors.error),
+      SnackBar(
+          content: Text(msg),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.error),
     );
   }
 
@@ -185,7 +199,8 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
               width: 280,
               height: 280,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.white.withValues(alpha: 0.7), width: 3),
+                border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.7), width: 3),
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
@@ -206,7 +221,8 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                   children: [
                     CircularProgressIndicator(color: Colors.white),
                     SizedBox(height: 14),
-                    Text('กำลังจับคู่...', style: TextStyle(color: Colors.white, fontSize: 16)),
+                    Text('กำลังจับคู่...',
+                        style: TextStyle(color: Colors.white, fontSize: 16)),
                   ],
                 ),
               ),
@@ -235,9 +251,12 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                       label: Text(l10n.qrScannerEnterManually,
                           style: const TextStyle(color: Colors.white)),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        side: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.5)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
                       ),
                     ),
                   ],

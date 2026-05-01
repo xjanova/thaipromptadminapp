@@ -26,8 +26,12 @@ class ClayBall extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final base = HSLColor.fromAHSL(1, hue, saturation, lightness).toColor();
-    final light = HSLColor.fromAHSL(1, hue, saturation, (lightness + 0.18).clamp(0.0, 1.0)).toColor();
-    final dark = HSLColor.fromAHSL(1, hue, saturation, (lightness - 0.18).clamp(0.0, 1.0)).toColor();
+    final light = HSLColor.fromAHSL(
+            1, hue, saturation, (lightness + 0.18).clamp(0.0, 1.0))
+        .toColor();
+    final dark = HSLColor.fromAHSL(
+            1, hue, saturation, (lightness - 0.18).clamp(0.0, 1.0))
+        .toColor();
 
     return Container(
       width: size,
@@ -60,7 +64,10 @@ class ClayBall extends StatelessWidget {
                 gradient: RadialGradient(
                   center: const Alignment(-0.45, -0.5),
                   radius: 0.7,
-                  colors: [Colors.white.withValues(alpha: 0.55), Colors.transparent],
+                  colors: [
+                    Colors.white.withValues(alpha: 0.55),
+                    Colors.transparent
+                  ],
                   stops: const [0.0, 0.6],
                 ),
               ),

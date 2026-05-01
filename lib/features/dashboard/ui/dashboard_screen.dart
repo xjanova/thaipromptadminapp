@@ -20,7 +20,8 @@ class DashboardScreen extends ConsumerWidget {
     final l10n = AppL10n.of(context);
     final admin = ref.watch(authControllerProvider).admin;
     final dataAsync = ref.watch(dashboardDataProvider);
-    final money = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
+    final money =
+        NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
 
     return Scaffold(
       body: Stack(
@@ -34,7 +35,8 @@ class DashboardScreen extends ConsumerWidget {
             child: Container(
               decoration: const BoxDecoration(
                 gradient: AppColors.heroGradient,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(36)),
+                borderRadius:
+                    BorderRadius.vertical(bottom: Radius.circular(36)),
               ),
             ),
           ),
@@ -68,7 +70,10 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                         alignment: Alignment.center,
                         child: Text(
-                          (admin?.name.isNotEmpty == true ? admin!.name[0] : 'A').toUpperCase(),
+                          (admin?.name.isNotEmpty == true
+                                  ? admin!.name[0]
+                                  : 'A')
+                              .toUpperCase(),
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
@@ -82,7 +87,8 @@ class DashboardScreen extends ConsumerWidget {
                         children: [
                           Text(
                             l10n.dashboardWelcome,
-                            style: const TextStyle(color: Color(0xD9FFFFFF), fontSize: 11),
+                            style: const TextStyle(
+                                color: Color(0xD9FFFFFF), fontSize: 11),
                           ),
                           Text(
                             '${admin?.name ?? '-'} · ${admin?.isSuperAdmin == true ? "Super Admin" : (admin?.role ?? 'Admin')}',
@@ -117,7 +123,10 @@ class DashboardScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 l10n.dashboardMonthlyRevenue,
-                                style: const TextStyle(color: Color(0xD9FFFFFF), fontSize: 12, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                    color: Color(0xD9FFFFFF),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600),
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -133,9 +142,12 @@ class DashboardScreen extends ConsumerWidget {
                               Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: (d.heroGrowthPct >= 0 ? AppColors.success : AppColors.error)
+                                      color: (d.heroGrowthPct >= 0
+                                              ? AppColors.success
+                                              : AppColors.error)
                                           .withValues(alpha: 0.3),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
@@ -143,7 +155,9 @@ class DashboardScreen extends ConsumerWidget {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(
-                                          d.heroGrowthPct >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                                          d.heroGrowthPct >= 0
+                                              ? Icons.arrow_upward
+                                              : Icons.arrow_downward,
                                           size: 11,
                                           color: Colors.white,
                                         ),
@@ -162,7 +176,8 @@ class DashboardScreen extends ConsumerWidget {
                                   const SizedBox(width: 10),
                                   Text(
                                     l10n.dashboardComparedLastMonth,
-                                    style: const TextStyle(color: Color(0xD9FFFFFF), fontSize: 11),
+                                    style: const TextStyle(
+                                        color: Color(0xD9FFFFFF), fontSize: 11),
                                   ),
                                 ],
                               ),
@@ -177,12 +192,18 @@ class DashboardScreen extends ConsumerWidget {
                                     lineBarsData: [
                                       LineChartBarData(
                                         spots: [
-                                          for (int i = 0; i < d.sparkline.length; i++)
-                                            FlSpot(i.toDouble(), d.sparkline[i].total)
+                                          for (int i = 0;
+                                              i < d.sparkline.length;
+                                              i++)
+                                            FlSpot(i.toDouble(),
+                                                d.sparkline[i].total)
                                         ],
                                         isCurved: true,
                                         gradient: const LinearGradient(
-                                          colors: [Color(0xFFFBBF24), Color(0xFFF97316)],
+                                          colors: [
+                                            Color(0xFFFBBF24),
+                                            Color(0xFFF97316)
+                                          ],
                                         ),
                                         barWidth: 2.5,
                                         dotData: const FlDotData(show: false),
@@ -190,8 +211,10 @@ class DashboardScreen extends ConsumerWidget {
                                           show: true,
                                           gradient: LinearGradient(
                                             colors: [
-                                              const Color(0xFFFBBF24).withValues(alpha: 0.5),
-                                              const Color(0xFFFBBF24).withValues(alpha: 0),
+                                              const Color(0xFFFBBF24)
+                                                  .withValues(alpha: 0.5),
+                                              const Color(0xFFFBBF24)
+                                                  .withValues(alpha: 0),
                                             ],
                                             begin: Alignment.topCenter,
                                             end: Alignment.bottomCenter,
@@ -216,7 +239,8 @@ class DashboardScreen extends ConsumerWidget {
                       fillOpacity: 0.12,
                       child: Column(
                         children: [
-                          const Icon(Icons.error_outline, color: AppColors.error, size: 40),
+                          const Icon(Icons.error_outline,
+                              color: AppColors.error, size: 40),
                           const SizedBox(height: 8),
                           Text('โหลดข้อมูลไม่สำเร็จ\n$e',
                               textAlign: TextAlign.center,
@@ -238,10 +262,26 @@ class DashboardScreen extends ConsumerWidget {
                       mainAxisSpacing: 12,
                       childAspectRatio: 1.5,
                       children: [
-                        _statTile(l10n.dashboardStatNewUsers, NumberFormat.compact().format(d.totalUsers), '+${d.newUsersToday} วันนี้', 200, Icons.people_outline),
-                        _statTile(l10n.dashboardStatOrders, NumberFormat.compact().format(d.ordersTotal), 'รอจัดส่ง ${d.ordersPending}', 25, Icons.shopping_bag_outlined),
-                        _statTile('ถอนเงินรอ', d.pendingWithdrawals.toString(), 'รออนุมัติ', 35, Icons.account_balance_wallet_outlined),
-                        _statTile('KYC', d.quickActionKyc.toString(), 'รอตรวจ', 280, Icons.verified_user_outlined),
+                        _statTile(
+                            l10n.dashboardStatNewUsers,
+                            NumberFormat.compact().format(d.totalUsers),
+                            '+${d.newUsersToday} วันนี้',
+                            200,
+                            Icons.people_outline),
+                        _statTile(
+                            l10n.dashboardStatOrders,
+                            NumberFormat.compact().format(d.ordersTotal),
+                            'รอจัดส่ง ${d.ordersPending}',
+                            25,
+                            Icons.shopping_bag_outlined),
+                        _statTile(
+                            'ถอนเงินรอ',
+                            d.pendingWithdrawals.toString(),
+                            'รออนุมัติ',
+                            35,
+                            Icons.account_balance_wallet_outlined),
+                        _statTile('KYC', d.quickActionKyc.toString(), 'รอตรวจ',
+                            280, Icons.verified_user_outlined),
                       ],
                     ),
                     orElse: () => const SizedBox(),
@@ -279,9 +319,12 @@ class DashboardScreen extends ConsumerWidget {
                     data: (d) => Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _quickAction(d.quickActionApprovals.toString(), 'อนุมัติ', 130, () => context.go('/finance')),
-                        _quickAction(d.quickActionWithdrawals.toString(), 'ถอนเงิน', 35, () => context.go('/finance')),
-                        _quickAction(d.quickActionKyc.toString(), 'KYC', 200, () {}),
+                        _quickAction(d.quickActionApprovals.toString(),
+                            'อนุมัติ', 130, () => context.go('/finance')),
+                        _quickAction(d.quickActionWithdrawals.toString(),
+                            'ถอนเงิน', 35, () => context.go('/finance')),
+                        _quickAction(
+                            d.quickActionKyc.toString(), 'KYC', 200, () {}),
                         _quickAction('5', 'รายงาน', 280, () {}),
                       ],
                     ),
@@ -328,7 +371,8 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _statTile(String label, String value, String sub, double hue, IconData icon) {
+  Widget _statTile(
+      String label, String value, String sub, double hue, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -364,7 +408,10 @@ class DashboardScreen extends ConsumerWidget {
           ),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+            style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
           Text(
@@ -380,7 +427,8 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _quickAction(String value, String label, double hue, VoidCallback onTap) {
+  Widget _quickAction(
+      String value, String label, double hue, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -425,7 +473,8 @@ class _HeroSkeleton extends StatelessWidget {
       child: SizedBox(
         height: 130,
         child: Center(
-          child: CircularProgressIndicator(color: Colors.white.withValues(alpha: 0.7)),
+          child: CircularProgressIndicator(
+              color: Colors.white.withValues(alpha: 0.7)),
         ),
       ),
     );

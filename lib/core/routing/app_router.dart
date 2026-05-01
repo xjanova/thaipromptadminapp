@@ -38,17 +38,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/auth/qr', builder: (_, __) => const QrScannerScreen()),
       GoRoute(
         path: '/auth/2fa',
-        builder: (_, state) => Verify2FAScreen(challengeToken: state.extra as String),
+        builder: (_, state) =>
+            Verify2FAScreen(challengeToken: state.extra as String),
       ),
 
       // Authenticated shell
       ShellRoute(
-        builder: (context, state, child) => AppShell(location: state.matchedLocation, child: child),
+        builder: (context, state, child) =>
+            AppShell(location: state.matchedLocation, child: child),
         routes: [
-          GoRoute(path: '/dashboard', builder: (_, __) => const DashboardScreen()),
-          GoRoute(path: '/modules', builder: (_, __) => const ModulesHubScreen()),
+          GoRoute(
+              path: '/dashboard', builder: (_, __) => const DashboardScreen()),
+          GoRoute(
+              path: '/modules', builder: (_, __) => const ModulesHubScreen()),
           GoRoute(path: '/finance', builder: (_, __) => const FinanceScreen()),
-          GoRoute(path: '/analytics', builder: (_, __) => const _ComingSoonPage(label: 'Analytics')),
+          GoRoute(
+              path: '/analytics',
+              builder: (_, __) => const _ComingSoonPage(label: 'Analytics')),
           GoRoute(path: '/settings', builder: (_, __) => const _SettingsPage()),
         ],
       ),
@@ -81,7 +87,9 @@ class _ComingSoonPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: Text(label)),
-        body: Center(child: Text('$label — กำลังพัฒนา', style: const TextStyle(color: Colors.white))),
+        body: Center(
+            child: Text('$label — กำลังพัฒนา',
+                style: const TextStyle(color: Colors.white))),
       );
 }
 
@@ -104,14 +112,19 @@ class _SettingsPage extends ConsumerWidget {
                 backgroundColor: AppColors.purpleStart,
                 child: Text(
                   admin.name.isNotEmpty ? admin.name[0].toUpperCase() : '?',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w700),
                 ),
               ),
-              title: Text(admin.name, style: const TextStyle(color: Colors.white)),
-              subtitle: Text(admin.email, style: const TextStyle(color: Color(0xCCFFFFFF))),
+              title:
+                  Text(admin.name, style: const TextStyle(color: Colors.white)),
+              subtitle: Text(admin.email,
+                  style: const TextStyle(color: Color(0xCCFFFFFF))),
               trailing: admin.isSuperAdmin
                   ? const Chip(
-                      label: Text('SUPER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800)))
+                      label: Text('SUPER',
+                          style: TextStyle(
+                              fontSize: 10, fontWeight: FontWeight.w800)))
                   : null,
             ),
             const Divider(color: Color(0x33FFFFFF)),
@@ -120,15 +133,18 @@ class _SettingsPage extends ConsumerWidget {
           // ── เวอร์ชันแอป + เช็คอัปเดท ──
           ListTile(
             leading: const Icon(Icons.info_outline, color: Colors.white),
-            title: const Text('เวอร์ชันแอป', style: TextStyle(color: Colors.white)),
+            title: const Text('เวอร์ชันแอป',
+                style: TextStyle(color: Colors.white)),
             subtitle: Text(
-              versionAsync.maybeWhen(data: (v) => v, orElse: () => 'กำลังโหลด...'),
+              versionAsync.maybeWhen(
+                  data: (v) => v, orElse: () => 'กำลังโหลด...'),
               style: const TextStyle(color: Color(0xCCFFFFFF)),
             ),
           ),
           ListTile(
             leading: const Icon(Icons.system_update, color: Colors.white),
-            title: const Text('ตรวจสอบอัปเดท', style: TextStyle(color: Colors.white)),
+            title: const Text('ตรวจสอบอัปเดท',
+                style: TextStyle(color: Colors.white)),
             subtitle: const Text(
               'เช็ค GitHub Releases ตอนนี้',
               style: TextStyle(color: Color(0xCCFFFFFF)),
@@ -141,7 +157,8 @@ class _SettingsPage extends ConsumerWidget {
           // ── ออกจากระบบ ──
           ListTile(
             leading: const Icon(Icons.logout, color: AppColors.error),
-            title: const Text('ออกจากระบบ', style: TextStyle(color: AppColors.error)),
+            title: const Text('ออกจากระบบ',
+                style: TextStyle(color: AppColors.error)),
             onTap: () async {
               await ref.read(authControllerProvider.notifier).logout();
             },

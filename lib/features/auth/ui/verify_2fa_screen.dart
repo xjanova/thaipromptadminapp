@@ -30,7 +30,9 @@ class _Verify2FAScreenState extends ConsumerState<Verify2FAScreen> {
     final code = _ctrl.text.trim();
     if (code.length < 6) return;
     try {
-      await ref.read(authControllerProvider.notifier).verifyTwoFactor(widget.challengeToken, code);
+      await ref
+          .read(authControllerProvider.notifier)
+          .verifyTwoFactor(widget.challengeToken, code);
       // router จะ redirect ไป dashboard เมื่อ admin != null
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -69,9 +71,11 @@ class _Verify2FAScreenState extends ConsumerState<Verify2FAScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white.withValues(alpha: 0.16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3)),
                     ),
-                    child: const Icon(Icons.verified_user, color: Colors.white, size: 40),
+                    child: const Icon(Icons.verified_user,
+                        color: Colors.white, size: 40),
                   ),
                   const SizedBox(height: 18),
                   Text(
@@ -87,7 +91,8 @@ class _Verify2FAScreenState extends ConsumerState<Verify2FAScreen> {
                   Text(
                     l10n.twoFactorSubtitle,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 14),
+                    style:
+                        const TextStyle(color: Color(0xCCFFFFFF), fontSize: 14),
                   ),
                   const SizedBox(height: 32),
                   GlassCard(
@@ -112,7 +117,9 @@ class _Verify2FAScreenState extends ConsumerState<Verify2FAScreen> {
                           ),
                           decoration: InputDecoration(
                             hintText: '••••••',
-                            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), letterSpacing: 12),
+                            hintStyle: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.4),
+                                letterSpacing: 12),
                             fillColor: Colors.white.withValues(alpha: 0.10),
                           ),
                           onSubmitted: (_) => _verify(),

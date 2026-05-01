@@ -18,7 +18,8 @@ class ModulesHubScreen extends StatelessWidget {
         title: l10n.moduleCategoryFinance,
         hue: 25,
         items: [
-          _ModuleItem('วอลเล็ต', '438', Icons.account_balance_wallet_outlined, '/finance'),
+          _ModuleItem('วอลเล็ต', '438', Icons.account_balance_wallet_outlined,
+              '/finance'),
           _ModuleItem('ถอนเงิน', '12 รอ', Icons.upload_outlined, '/finance'),
           _ModuleItem('บิล', '8', Icons.receipt_long_outlined, '/finance'),
           _ModuleItem('แคชแบ็ค', '—', Icons.replay_outlined, '/finance'),
@@ -29,7 +30,8 @@ class ModulesHubScreen extends StatelessWidget {
         hue: 145,
         items: [
           _ModuleItem('สมาชิก', '2.8k', Icons.people_outline, '/users'),
-          _ModuleItem('Ranks', '12', Icons.workspace_premium_outlined, '/users'),
+          _ModuleItem(
+              'Ranks', '12', Icons.workspace_premium_outlined, '/users'),
           _ModuleItem('MLM Tree', '—', Icons.account_tree_outlined, '/users'),
           _ModuleItem('Commissions', '—', Icons.payments_outlined, '/users'),
         ],
@@ -38,9 +40,12 @@ class ModulesHubScreen extends StatelessWidget {
         title: l10n.moduleCategoryMarketplace,
         hue: 320,
         items: [
-          _ModuleItem('สินค้า', '—', Icons.inventory_2_outlined, '/marketplace'),
-          _ModuleItem('ออเดอร์', '—', Icons.shopping_bag_outlined, '/marketplace'),
-          _ModuleItem('ร้านค้า', '—', Icons.storefront_outlined, '/marketplace'),
+          _ModuleItem(
+              'สินค้า', '—', Icons.inventory_2_outlined, '/marketplace'),
+          _ModuleItem(
+              'ออเดอร์', '—', Icons.shopping_bag_outlined, '/marketplace'),
+          _ModuleItem(
+              'ร้านค้า', '—', Icons.storefront_outlined, '/marketplace'),
           _ModuleItem('Featured', '—', Icons.star_outline, '/marketplace'),
         ],
       ),
@@ -60,7 +65,8 @@ class ModulesHubScreen extends StatelessWidget {
         items: [
           _ModuleItem('บริการ', '6', Icons.auto_awesome_outlined, '/fortune'),
           _ModuleItem('Readings', '—', Icons.menu_book_outlined, '/fortune'),
-          _ModuleItem('Commissions', '—', Icons.account_balance_outlined, '/fortune'),
+          _ModuleItem(
+              'Commissions', '—', Icons.account_balance_outlined, '/fortune'),
           _ModuleItem('LINE OA', '—', Icons.chat_outlined, '/fortune'),
         ],
       ),
@@ -69,7 +75,8 @@ class ModulesHubScreen extends StatelessWidget {
         hue: 220,
         items: [
           _ModuleItem('Settings', '—', Icons.settings_outlined, '/settings'),
-          _ModuleItem('Roles', '—', Icons.admin_panel_settings_outlined, '/settings'),
+          _ModuleItem(
+              'Roles', '—', Icons.admin_panel_settings_outlined, '/settings'),
           _ModuleItem('KYC', '—', Icons.verified_user_outlined, '/settings'),
           _ModuleItem('Cache', '—', Icons.bolt_outlined, '/settings'),
         ],
@@ -98,7 +105,8 @@ class ModulesHubScreen extends StatelessWidget {
                       width: 4,
                       height: 18,
                       decoration: BoxDecoration(
-                        color: HSLColor.fromAHSL(1, cat.hue, 0.85, 0.6).toColor(),
+                        color:
+                            HSLColor.fromAHSL(1, cat.hue, 0.85, 0.6).toColor(),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),

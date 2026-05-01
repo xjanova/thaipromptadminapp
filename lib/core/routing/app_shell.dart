@@ -44,7 +44,9 @@ class AppShell extends StatelessWidget {
     if (loc.startsWith('/dashboard')) return 'home';
     if (loc.startsWith('/modules')) return 'modules';
     if (loc.startsWith('/analytics')) return 'analytics';
-    if (loc.startsWith('/settings') || loc.startsWith('/profile')) return 'profile';
+    if (loc.startsWith('/settings') || loc.startsWith('/profile')) {
+      return 'profile';
+    }
     return 'home';
   }
 }

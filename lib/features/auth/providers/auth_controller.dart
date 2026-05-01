@@ -18,7 +18,11 @@ class AuthState {
 
   bool get isAuthenticated => admin != null;
 
-  AuthState copyWith({AdminUser? admin, bool? loading, String? error, bool clearError = false}) =>
+  AuthState copyWith(
+          {AdminUser? admin,
+          bool? loading,
+          String? error,
+          bool clearError = false}) =>
       AuthState(
         admin: admin ?? this.admin,
         loading: loading ?? this.loading,
@@ -60,7 +64,9 @@ class AuthController extends StateNotifier<AuthState> {
       );
 
       // ถ้าไม่ต้อง 2FA → save token แล้วเซ็ต admin
-      if (!result.requiresTwoFactor && result.token != null && result.admin != null) {
+      if (!result.requiresTwoFactor &&
+          result.token != null &&
+          result.admin != null) {
         await SecureStorage.writeToken(result.token!);
         state = state.copyWith(admin: result.admin, loading: false);
       } else {
@@ -90,7 +96,8 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
-  Future<PairClaimResult> claimPair(String pairCode, {String? twoFactorCode}) async {
+  Future<PairClaimResult> claimPair(String pairCode,
+      {String? twoFactorCode}) async {
     state = state.copyWith(loading: true, clearError: true);
     try {
       final deviceInfo = await _readDeviceInfo();
@@ -138,7 +145,8 @@ class AuthController extends StateNotifier<AuthState> {
         deviceName = '${a.brand} ${a.model}';
       } else if (Platform.isIOS) {
         final i = await info.iosInfo;
-        deviceId ??= 'ios_${i.identifierForVendor ?? DateTime.now().millisecondsSinceEpoch}';
+        deviceId ??=
+            'ios_${i.identifierForVendor ?? DateTime.now().millisecondsSinceEpoch}';
         deviceName = '${i.name} (${i.model})';
       } else {
         deviceId ??= 'other_${DateTime.now().millisecondsSinceEpoch}';
@@ -153,7 +161,8 @@ class AuthController extends StateNotifier<AuthState> {
   }
 }
 
-final authControllerProvider = StateNotifierProvider<AuthController, AuthState>((ref) {
+final authControllerProvider =
+    StateNotifierProvider<AuthController, AuthState>((ref) {
   final repo = ref.watch(authRepositoryProvider);
   return AuthController(repo);
 });

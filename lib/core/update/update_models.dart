@@ -50,7 +50,9 @@ class GitHubRelease {
       return a;
     }
     // fallback: APK ตัวแรก
-    return assets.where((a) => a.name.toLowerCase().endsWith('.apk')).firstOrNull;
+    return assets
+        .where((a) => a.name.toLowerCase().endsWith('.apk'))
+        .firstOrNull;
   }
 }
 
@@ -71,7 +73,8 @@ class GitHubAsset {
         name: (json['name'] as String?) ?? '',
         browserDownloadUrl: (json['browser_download_url'] as String?) ?? '',
         size: ((json['size'] as num?) ?? 0).toInt(),
-        contentType: (json['content_type'] as String?) ?? 'application/octet-stream',
+        contentType:
+            (json['content_type'] as String?) ?? 'application/octet-stream',
       );
 
   String get sizeMb => (size / (1024 * 1024)).toStringAsFixed(1);
@@ -123,7 +126,8 @@ class AppVersion implements Comparable<AppVersion> {
   bool operator >=(AppVersion o) => compareTo(o) >= 0;
   bool operator <=(AppVersion o) => compareTo(o) <= 0;
   @override
-  bool operator ==(Object other) => other is AppVersion && compareTo(other) == 0;
+  bool operator ==(Object other) =>
+      other is AppVersion && compareTo(other) == 0;
   @override
   int get hashCode => Object.hash(major, minor, patch, build);
 

@@ -16,7 +16,8 @@ class FinanceScreen extends ConsumerStatefulWidget {
   ConsumerState<FinanceScreen> createState() => _FinanceScreenState();
 }
 
-class _FinanceScreenState extends ConsumerState<FinanceScreen> with SingleTickerProviderStateMixin {
+class _FinanceScreenState extends ConsumerState<FinanceScreen>
+    with SingleTickerProviderStateMixin {
   late final TabController _tab;
 
   @override
@@ -70,7 +71,8 @@ class _WalletsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppL10n.of(context);
     final async = ref.watch(walletsProvider);
-    final money = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 2);
+    final money =
+        NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 2);
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -95,14 +97,19 @@ class _WalletsTab extends ConsumerWidget {
                   children: [
                     CircleAvatar(
                       radius: 22,
-                      backgroundColor: AppColors.purpleStart.withValues(alpha: 0.3),
+                      backgroundColor:
+                          AppColors.purpleStart.withValues(alpha: 0.3),
                       backgroundImage: (w.userAvatarUrl?.isNotEmpty == true)
                           ? NetworkImage(w.userAvatarUrl!)
                           : null,
                       child: (w.userAvatarUrl?.isEmpty != false)
                           ? Text(
-                              w.userName.isNotEmpty ? w.userName[0].toUpperCase() : '?',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                              w.userName.isNotEmpty
+                                  ? w.userName[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700),
                             )
                           : null,
                     ),
@@ -123,7 +130,8 @@ class _WalletsTab extends ConsumerWidget {
                           ),
                           Text(
                             w.address,
-                            style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 11),
+                            style: const TextStyle(
+                                color: Color(0x99FFFFFF), fontSize: 11),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -172,7 +180,8 @@ class _WithdrawalsTabState extends ConsumerState<_WithdrawalsTab> {
   Widget build(BuildContext context) {
     final l10n = AppL10n.of(context);
     final async = ref.watch(withdrawalsProvider(_status));
-    final money = NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 2);
+    final money =
+        NumberFormat.currency(locale: 'th_TH', symbol: '฿', decimalDigits: 2);
 
     return Column(
       children: [
@@ -181,7 +190,13 @@ class _WithdrawalsTabState extends ConsumerState<_WithdrawalsTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              for (final s in const [null, 'pending', 'approved', 'completed', 'rejected'])
+              for (final s in const [
+                null,
+                'pending',
+                'approved',
+                'completed',
+                'rejected'
+              ])
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
@@ -202,7 +217,9 @@ class _WithdrawalsTabState extends ConsumerState<_WithdrawalsTab> {
             },
             child: async.when(
               data: (page) {
-                if (page.items.isEmpty) return _emptyState(l10n.withdrawalsListEmpty);
+                if (page.items.isEmpty) {
+                  return _emptyState(l10n.withdrawalsListEmpty);
+                }
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                   itemCount: page.items.length,
@@ -230,7 +247,9 @@ class _WithdrawalsTabState extends ConsumerState<_WithdrawalsTab> {
                                     ),
                                     Text(
                                       w.requestId,
-                                      style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 11),
+                                      style: const TextStyle(
+                                          color: Color(0x99FFFFFF),
+                                          fontSize: 11),
                                     ),
                                   ],
                                 ),
@@ -248,7 +267,8 @@ class _WithdrawalsTabState extends ConsumerState<_WithdrawalsTab> {
                                   ),
                                   Text(
                                     'สุทธิ ${money.format(w.netAmount)}',
-                                    style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 11),
+                                    style: const TextStyle(
+                                        color: Color(0xCCFFFFFF), fontSize: 11),
                                   ),
                                 ],
                               ),
@@ -306,7 +326,10 @@ class _WithdrawalsTabState extends ConsumerState<_WithdrawalsTab> {
     }
   }
 
-  Widget _smallButton({required String label, required Color color, required VoidCallback onTap}) {
+  Widget _smallButton(
+      {required String label,
+      required Color color,
+      required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -316,7 +339,11 @@ class _WithdrawalsTabState extends ConsumerState<_WithdrawalsTab> {
           color: color,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+        child: Text(label,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700)),
       ),
     );
   }
@@ -326,14 +353,19 @@ class _WithdrawalsTabState extends ConsumerState<_WithdrawalsTab> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.bgPanel,
-        title: const Text('ยืนยันการอนุมัติ?', style: TextStyle(color: Colors.white)),
+        title: const Text('ยืนยันการอนุมัติ?',
+            style: TextStyle(color: Colors.white)),
         content: Text(
           'อนุมัติคำขอ ${w.requestId} ของ ${w.userName}?',
           style: const TextStyle(color: Color(0xD9FFFFFF)),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('ยกเลิก')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('อนุมัติ')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('ยกเลิก')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('อนุมัติ')),
         ],
       ),
     );
@@ -362,7 +394,9 @@ class _WithdrawalsTabState extends ConsumerState<_WithdrawalsTab> {
           decoration: const InputDecoration(hintText: 'เหตุผล...'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('ยกเลิก')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('ยกเลิก')),
           TextButton(
             onPressed: () => Navigator.pop(context, ctrl.text.trim()),
             child: const Text('ยืนยัน'),
@@ -398,7 +432,8 @@ class _ComingSoon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text(label, style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 16)),
+      child: Text(label,
+          style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 16)),
     );
   }
 }

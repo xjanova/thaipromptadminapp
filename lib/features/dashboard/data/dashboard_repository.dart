@@ -36,11 +36,13 @@ class DashboardData {
     final hero = (json['hero'] as Map?)?.cast<String, dynamic>() ?? const {};
     final stats = (json['stats'] as Map?)?.cast<String, dynamic>() ?? const {};
     final spark = (json['sparkline'] as List?) ?? const [];
-    final quick = (json['quick_actions'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final quick =
+        (json['quick_actions'] as Map?)?.cast<String, dynamic>() ?? const {};
 
     return DashboardData(
       heroRevenue: ((hero['monthly_revenue'] as num?) ?? 0).toDouble(),
-      heroLastMonthRevenue: ((hero['last_month_revenue'] as num?) ?? 0).toDouble(),
+      heroLastMonthRevenue:
+          ((hero['last_month_revenue'] as num?) ?? 0).toDouble(),
       heroGrowthPct: ((hero['revenue_growth_pct'] as num?) ?? 0).toDouble(),
       totalUsers: ((stats['total_users'] as num?) ?? 0).toInt(),
       newUsersToday: ((stats['new_users_today'] as num?) ?? 0).toInt(),
@@ -59,7 +61,8 @@ class DashboardData {
 }
 
 class SparklinePoint {
-  SparklinePoint({required this.date, required this.count, required this.total});
+  SparklinePoint(
+      {required this.date, required this.count, required this.total});
   final String date;
   final int count;
   final double total;

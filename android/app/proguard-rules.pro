@@ -7,6 +7,13 @@
 -keep class io.flutter.plugins.**  { *; }
 -keep class io.flutter.embedding.engine.deferredcomponents.** { *; }
 
+# Google Play Core — ใช้โดย Flutter deferred components
+# เราไม่ใช้ deferred components แต่ Flutter อ้างถึงคลาสเหล่านี้
+# ต้อง dontwarn เพื่อให้ R8 minify build ผ่าน
+-dontwarn com.google.android.play.core.**
+-keep class com.google.android.play.core.** { *; }
+-keep interface com.google.android.play.core.** { *; }
+
 # Firebase / Google Play Services (ถ้าใช้ในอนาคต)
 -keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }

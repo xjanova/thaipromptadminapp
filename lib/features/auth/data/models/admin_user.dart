@@ -27,7 +27,8 @@ class AdminUser {
   final String? rankName;
 
   factory AdminUser.fromJson(Map<String, dynamic> json) {
-    final twoFactor = (json['two_factor'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final twoFactor =
+        (json['two_factor'] as Map?)?.cast<String, dynamic>() ?? const {};
     final rank = (json['rank'] as Map?)?.cast<String, dynamic>() ?? const {};
     final perms = (json['permissions'] as List?) ?? const [];
     return AdminUser(
@@ -46,7 +47,9 @@ class AdminUser {
 
   /// สิทธิ์ "*" หมายถึง super admin (ทำได้ทุกอย่าง)
   bool can(String permission) =>
-      isSuperAdmin || permissions.contains('*') || permissions.contains(permission);
+      isSuperAdmin ||
+      permissions.contains('*') ||
+      permissions.contains(permission);
 }
 
 /// ผลลัพธ์ของ login (อาจจะต้อง 2FA หรือได้ token เลย)

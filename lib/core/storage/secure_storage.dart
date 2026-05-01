@@ -32,4 +32,5 @@ class SecureStorage {
       _storage.write(key: _kDeviceId, value: id);
 }
 
-final secureStorageProvider = Provider<SecureStorage>((ref) => SecureStorage._());
+final secureStorageProvider =
+    Provider<SecureStorage>((ref) => SecureStorage._());

@@ -68,17 +68,20 @@ class AppBottomTabBar extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.add, color: Colors.white, size: 24),
+                        child: const Icon(Icons.add,
+                            color: Colors.white, size: 24),
                       ),
                     ),
                   );
                 }
                 final isActive = active == t.key;
-                final color = isActive ? AppColors.purpleStart : const Color(0xFF94A3B8);
+                final color =
+                    isActive ? AppColors.purpleStart : const Color(0xFF94A3B8);
                 return InkWell(
                   onTap: () => onTap(t.key),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,

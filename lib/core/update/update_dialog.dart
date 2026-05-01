@@ -45,7 +45,8 @@ Future<void> showUpdateAvailableDialog(
                     gradient: AppColors.purplePinkGradient,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.system_update, color: Colors.white, size: 26),
+                  child: const Icon(Icons.system_update,
+                      color: Colors.white, size: 26),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -63,7 +64,8 @@ Future<void> showUpdateAvailableDialog(
                       const SizedBox(height: 2),
                       Text(
                         '${result.current} → ${result.latest}',
-                        style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 12),
+                        style: const TextStyle(
+                            color: Color(0xCCFFFFFF), fontSize: 12),
                       ),
                     ],
                   ),
@@ -75,7 +77,10 @@ Future<void> showUpdateAvailableDialog(
             if (release.body.isNotEmpty) ...[
               const Text(
                 'มีอะไรใหม่',
-                style: TextStyle(color: Color(0xE6FFFFFF), fontSize: 12, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    color: Color(0xE6FFFFFF),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
               Container(
@@ -88,7 +93,8 @@ Future<void> showUpdateAvailableDialog(
                 child: SingleChildScrollView(
                   child: Text(
                     release.body,
-                    style: const TextStyle(color: Color(0xE6FFFFFF), fontSize: 13, height: 1.5),
+                    style: const TextStyle(
+                        color: Color(0xE6FFFFFF), fontSize: 13, height: 1.5),
                   ),
                 ),
               ),
@@ -99,11 +105,13 @@ Future<void> showUpdateAvailableDialog(
             if (Platform.isAndroid && release.findAndroidApk() != null) ...[
               Row(
                 children: [
-                  const Icon(Icons.download, size: 14, color: Color(0xCCFFFFFF)),
+                  const Icon(Icons.download,
+                      size: 14, color: Color(0xCCFFFFFF)),
                   const SizedBox(width: 6),
                   Text(
                     'ขนาด ${release.findAndroidApk()!.sizeMb} MB',
-                    style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 11),
+                    style:
+                        const TextStyle(color: Color(0xCCFFFFFF), fontSize: 11),
                   ),
                 ],
               ),
@@ -139,7 +147,8 @@ Future<void> showUpdateAvailableDialog(
                     onPressed: () => Navigator.of(ctx).pop(),
                     child: const Text(
                       'ภายหลัง',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),

@@ -31,8 +31,8 @@ ThemeData buildAppTheme() {
 
   // Apply Thai fallback to every style
   final thaiFallback = GoogleFonts.notoSansThai().fontFamily;
-  TextStyle withFallback(TextStyle? style) =>
-      (style ?? const TextStyle()).copyWith(fontFamilyFallback: [thaiFallback ?? '']);
+  TextStyle withFallback(TextStyle? style) => (style ?? const TextStyle())
+      .copyWith(fontFamilyFallback: [thaiFallback ?? '']);
 
   return base.copyWith(
     textTheme: textTheme.copyWith(

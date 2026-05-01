@@ -93,7 +93,11 @@ class AdminWithdrawal {
 
 /// Page envelope for Laravel pagination
 class PagedResult<T> {
-  PagedResult({required this.items, required this.currentPage, required this.lastPage, required this.total});
+  PagedResult(
+      {required this.items,
+      required this.currentPage,
+      required this.lastPage,
+      required this.total});
   final List<T> items;
   final int currentPage;
   final int lastPage;
@@ -105,7 +109,10 @@ class PagedResult<T> {
   ) {
     final list = (json['data'] as List?) ?? const [];
     return PagedResult<T>(
-      items: list.whereType<Map>().map((e) => itemParser(e.cast<String, dynamic>())).toList(),
+      items: list
+          .whereType<Map>()
+          .map((e) => itemParser(e.cast<String, dynamic>()))
+          .toList(),
       currentPage: ((json['current_page'] as num?) ?? 1).toInt(),
       lastPage: ((json['last_page'] as num?) ?? 1).toInt(),
       total: ((json['total'] as num?) ?? list.length).toInt(),
@@ -117,7 +124,8 @@ class FinanceRepository {
   FinanceRepository(this._api);
   final ApiClient _api;
 
-  Future<PagedResult<AdminWallet>> wallets({int page = 1, String? search}) async {
+  Future<PagedResult<AdminWallet>> wallets(
+      {int page = 1, String? search}) async {
     final json = await _api.get<Map<String, dynamic>>(
       '/finance/wallets',
       query: {
@@ -129,7 +137,8 @@ class FinanceRepository {
     return PagedResult.fromJson<AdminWallet>(json, AdminWallet.fromJson);
   }
 
-  Future<PagedResult<AdminWithdrawal>> withdrawals({int page = 1, String? status}) async {
+  Future<PagedResult<AdminWithdrawal>> withdrawals(
+      {int page = 1, String? status}) async {
     final json = await _api.get<Map<String, dynamic>>(
       '/finance/withdrawals',
       query: {
@@ -138,7 +147,8 @@ class FinanceRepository {
       },
       parser: (d) => (d as Map).cast<String, dynamic>(),
     );
-    return PagedResult.fromJson<AdminWithdrawal>(json, AdminWithdrawal.fromJson);
+    return PagedResult.fromJson<AdminWithdrawal>(
+        json, AdminWithdrawal.fromJson);
   }
 
   Future<void> approveWithdrawal(int id) async {
@@ -146,7 +156,8 @@ class FinanceRepository {
   }
 
   Future<void> rejectWithdrawal(int id, String reason) async {
-    await _api.post<dynamic>('/finance/withdrawals/$id/reject', data: {'reason': reason});
+    await _api.post<dynamic>('/finance/withdrawals/$id/reject',
+        data: {'reason': reason});
   }
 }
 
@@ -159,6 +170,8 @@ final walletsProvider = FutureProvider<PagedResult<AdminWallet>>((ref) {
   return ref.watch(financeRepositoryProvider).wallets(page: 1);
 });
 
-final withdrawalsProvider = FutureProvider.family<PagedResult<AdminWithdrawal>, String?>(
-  (ref, status) => ref.watch(financeRepositoryProvider).withdrawals(page: 1, status: status),
+final withdrawalsProvider =
+    FutureProvider.family<PagedResult<AdminWithdrawal>, String?>(
+  (ref, status) =>
+      ref.watch(financeRepositoryProvider).withdrawals(page: 1, status: status),
 );

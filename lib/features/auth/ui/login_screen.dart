@@ -82,12 +82,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           Positioned(
             top: -40,
             right: -50,
-            child: _orb(220, [const Color(0xFFFBBF24), const Color(0xFFEF4444).withValues(alpha: 0)], 0.55),
+            child: _orb(
+                220,
+                [
+                  const Color(0xFFFBBF24),
+                  const Color(0xFFEF4444).withValues(alpha: 0)
+                ],
+                0.55),
           ),
           Positioned(
             bottom: 180,
             left: -80,
-            child: _orb(260, [const Color(0xFF22D3EE), const Color(0xFF6366F1).withValues(alpha: 0)], 0.5),
+            child: _orb(
+                260,
+                [
+                  const Color(0xFF22D3EE),
+                  const Color(0xFF6366F1).withValues(alpha: 0)
+                ],
+                0.5),
           ),
 
           SafeArea(
@@ -110,7 +122,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white.withValues(alpha: 0.10),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.25)),
                           ),
                         ),
                         ClayBall(
@@ -164,7 +177,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Text(
                     l10n.loginSubtitle,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 14, color: Color(0xD9FFFFFF)),
+                    style:
+                        const TextStyle(fontSize: 14, color: Color(0xD9FFFFFF)),
                   ),
 
                   const SizedBox(height: 28),
@@ -192,15 +206,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           keyboardType: TextInputType.emailAddress,
                           autofillHints: const [AutofillHints.email],
                           decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.mail_outline, color: Colors.white),
+                            prefixIcon: const Icon(Icons.mail_outline,
+                                color: Colors.white),
                             hintText: 'admin@thaiprompt.com',
-                            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                            hintStyle: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.5)),
                             fillColor: Colors.white.withValues(alpha: 0.14),
                           ),
                           style: const TextStyle(color: Colors.white),
                         ),
                         const SizedBox(height: 14),
-
                         Text(
                           l10n.passwordLabel,
                           style: const TextStyle(
@@ -216,25 +231,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           autofillHints: const [AutofillHints.password],
                           onSubmitted: (_) => _doLogin(),
                           decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.lock_outline, color: Colors.white),
+                            prefixIcon: const Icon(Icons.lock_outline,
+                                color: Colors.white),
                             suffixIcon: IconButton(
-                              onPressed: () => setState(() => _obscure = !_obscure),
+                              onPressed: () =>
+                                  setState(() => _obscure = !_obscure),
                               icon: Icon(
-                                _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                _obscure
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
                                 color: Colors.white,
                               ),
                             ),
                             fillColor: Colors.white.withValues(alpha: 0.14),
                           ),
-                          style: const TextStyle(color: Colors.white, letterSpacing: 4),
+                          style: const TextStyle(
+                              color: Colors.white, letterSpacing: 4),
                         ),
-
                         const SizedBox(height: 14),
-
                         Row(
                           children: [
                             GestureDetector(
-                              onTap: () => setState(() => _remember = !_remember),
+                              onTap: () =>
+                                  setState(() => _remember = !_remember),
                               child: Row(
                                 children: [
                                   AnimatedContainer(
@@ -242,18 +261,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     width: 20,
                                     height: 20,
                                     decoration: BoxDecoration(
-                                      color: _remember ? AppColors.goldStart : Colors.transparent,
+                                      color: _remember
+                                          ? AppColors.goldStart
+                                          : Colors.transparent,
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+                                      border: Border.all(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.5)),
                                     ),
                                     child: _remember
-                                        ? const Icon(Icons.check, size: 14, color: Color(0xFF7C2D12))
+                                        ? const Icon(Icons.check,
+                                            size: 14, color: Color(0xFF7C2D12))
                                         : null,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
                                     l10n.rememberMe,
-                                    style: const TextStyle(color: Color(0xE6FFFFFF), fontSize: 12),
+                                    style: const TextStyle(
+                                        color: Color(0xE6FFFFFF), fontSize: 12),
                                   ),
                                 ],
                               ),
@@ -269,34 +294,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 18),
-
                         GradientButton(
                           onPressed: state.loading ? null : _doLogin,
                           loading: state.loading,
                           icon: Icons.shield_outlined,
                           label: l10n.loginButton,
                         ),
-
                         const SizedBox(height: 16),
-
                         Row(
                           children: [
-                            Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.25))),
+                            Expanded(
+                                child: Divider(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.25))),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
                               child: Text(
                                 l10n.loginOrDivider,
-                                style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 11),
+                                style: const TextStyle(
+                                    color: Color(0xCCFFFFFF), fontSize: 11),
                               ),
                             ),
-                            Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.25))),
+                            Expanded(
+                                child: Divider(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.25))),
                           ],
                         ),
-
                         const SizedBox(height: 14),
-
                         Row(
                           children: [
                             Expanded(
@@ -323,7 +350,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         orElse: () => '...',
                       )),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 11),
+                      style: const TextStyle(
+                          color: Color(0xB3FFFFFF), fontSize: 11),
                     );
                   }),
                 ],
@@ -353,7 +381,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Widget _altButton({required IconData icon, required String label, required VoidCallback onTap}) {
+  Widget _altButton(
+      {required IconData icon,
+      required String label,
+      required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -371,7 +402,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600),
             ),
           ],
         ),

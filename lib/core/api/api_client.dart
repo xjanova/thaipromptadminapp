@@ -10,15 +10,16 @@ import 'api_envelope.dart';
 ///
 /// Production: https://main.thaiprompt.online/api/admin
 /// Override ผ่าน --dart-define=API_BASE_URL=...
-const String _defaultBaseUrl =
-    String.fromEnvironment('API_BASE_URL', defaultValue: 'https://main.thaiprompt.online/api/admin');
+const String _defaultBaseUrl = String.fromEnvironment('API_BASE_URL',
+    defaultValue: 'https://main.thaiprompt.online/api/admin');
 
 /// Dio instance พร้อม interceptors:
 /// - แนบ Bearer token อัตโนมัติ
 /// - Log request ใน debug mode
 /// - แปลง response error เป็น ApiException
 class ApiClient {
-  ApiClient({String? baseUrl}) : _dio = Dio(BaseOptions(
+  ApiClient({String? baseUrl})
+      : _dio = Dio(BaseOptions(
           baseUrl: baseUrl ?? _defaultBaseUrl,
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 30),
@@ -36,7 +37,8 @@ class ApiClient {
           options.headers['Authorization'] = 'Bearer $token';
         }
         // ส่ง Accept-Language ตาม locale ของอุปกรณ์
-        options.headers['Accept-Language'] = options.headers['Accept-Language'] ?? 'th';
+        options.headers['Accept-Language'] =
+            options.headers['Accept-Language'] ?? 'th';
         handler.next(options);
       },
       onError: (err, handler) {
@@ -65,7 +67,8 @@ class ApiClient {
     Map<String, dynamic>? query,
     T Function(dynamic data)? parser,
   }) async {
-    final res = await _dio.get<Map<String, dynamic>>(path, queryParameters: query);
+    final res =
+        await _dio.get<Map<String, dynamic>>(path, queryParameters: query);
     return _unwrap<T>(res, parser);
   }
 
@@ -84,11 +87,13 @@ class ApiClient {
     return _unwrap<T>(res, parser);
   }
 
-  T _unwrap<T>(Response<Map<String, dynamic>> res, T Function(dynamic)? parser) {
+  T _unwrap<T>(
+      Response<Map<String, dynamic>> res, T Function(dynamic)? parser) {
     final json = res.data ?? const {};
     final envelope = ApiEnvelope.fromJson<dynamic>(json, parser);
 
-    if (!envelope.success || (res.statusCode != null && res.statusCode! >= 400)) {
+    if (!envelope.success ||
+        (res.statusCode != null && res.statusCode! >= 400)) {
       throw ApiException(
         statusCode: res.statusCode ?? 0,
         message: envelope.message ?? 'Unknown error',
