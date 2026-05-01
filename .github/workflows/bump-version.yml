@@ -1,0 +1,84 @@
+name: Bump version + Tag
+
+# Manual trigger เพื่อ bump version + tag → ซึ่งจะไป trigger release.yml ต่อ
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'ระดับการ bump'
+        required: true
+        type: choice
+        default: patch
+        options:
+          - patch    # 0.1.0+1 → 0.1.1+2
+          - minor    # 0.1.0+1 → 0.2.0+2
+          - major    # 0.1.0+1 → 1.0.0+2
+          - build    # 0.1.0+1 → 0.1.0+2 (build number only)
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version in pubspec.yaml
+        id: bump
+        shell: bash
+        run: |
+          set -e
+          CURRENT=$(grep -E '^version:' pubspec.yaml | sed -E 's/version:\s*//' | tr -d '"' | xargs)
+          echo "Current: $CURRENT"
+
+          # แยก semver และ build
+          CORE="${CURRENT%+*}"
+          BUILD="${CURRENT#*+}"
+          if [ "$BUILD" = "$CURRENT" ]; then BUILD=0; fi
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CORE"
+          MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
+
+          case "${{ github.event.inputs.bump }}" in
+            major) MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR+1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH+1)) ;;
+            build) ;;   # core เดิม
+          esac
+          BUILD=$((BUILD+1))
+
+          NEW="${MAJOR}.${MINOR}.${PATCH}+${BUILD}"
+          NEW_TAG="v${NEW}"
+          echo "New: $NEW"
+
+          # อัพเดท pubspec.yaml
+          sed -i -E "s/^version:.*/version: ${NEW}/" pubspec.yaml
+
+          echo "version=$NEW" >> $GITHUB_OUTPUT
+          echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+      - name: Commit + tag
+        run: |
+          git add pubspec.yaml
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.version }}"
+          git tag -a "${{ steps.bump.outputs.tag }}" -m "Release ${{ steps.bump.outputs.version }}"
+          git push origin HEAD
+          git push origin "${{ steps.bump.outputs.tag }}"
+
+      - name: Summary
+        run: |
+          echo "### ✅ Version bumped to \`${{ steps.bump.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Tag \`${{ steps.bump.outputs.tag }}\` pushed → release.yml workflow will build and publish artifacts." >> $GITHUB_STEP_SUMMARY

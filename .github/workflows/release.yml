@@ -1,0 +1,204 @@
+name: Release
+
+# Trigger:
+# 1. Push tag รูป v*.*.*+* (เช่น v0.1.0+1) → build + create release
+# 2. Manual workflow_dispatch (สำหรับทดสอบ pipeline)
+on:
+  push:
+    tags:
+      - 'v*.*.*+*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name to build (e.g. v0.1.0+1) — leave blank to use HEAD pubspec version'
+        required: false
+        type: string
+
+permissions:
+  contents: write   # ต้องการเพื่อสร้าง GitHub Release + upload assets
+
+jobs:
+  build-android:
+    name: Build Android (APK + AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # ดึงประวัติเต็มเพื่อ generate release notes
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve version + tag
+        id: version
+        shell: bash
+        run: |
+          # ดึง version จาก pubspec.yaml — ใช้เป็น source of truth
+          PUBSPEC_VERSION=$(grep -E '^version:' pubspec.yaml | sed -E 's/version:\s*//' | tr -d '"' | xargs)
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+          else
+            TAG="v${PUBSPEC_VERSION}"
+          fi
+          echo "version=$PUBSPEC_VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "🏷  Tag: $TAG"
+          echo "📦 pubspec version: $PUBSPEC_VERSION"
+
+      - name: Verify tag matches pubspec
+        shell: bash
+        run: |
+          # ตรวจสอบว่า tag ตรงกับ pubspec version (กัน drift)
+          PUBSPEC_VERSION="${{ steps.version.outputs.version }}"
+          TAG="${{ steps.version.outputs.tag }}"
+          EXPECTED_TAG="v${PUBSPEC_VERSION}"
+          if [ "$TAG" != "$EXPECTED_TAG" ]; then
+            echo "::warning::Tag '$TAG' does not match pubspec version 'v${PUBSPEC_VERSION}'."
+            echo "::warning::Expected '$EXPECTED_TAG'. Continuing anyway..."
+          fi
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate l10n
+        run: flutter gen-l10n
+
+      - name: Static analysis (gate)
+        run: flutter analyze --no-pub
+
+      - name: Run tests (gate)
+        run: flutter test --no-pub
+
+      # ── Android signing ──
+      # ถ้ามี secrets (release build จริง) → decode + ใช้ release keystore
+      # ถ้าไม่มี → fall back ไปใช้ debug signing (ลง user เครื่องได้แต่อัปเดทไม่ได้จาก Play)
+      - name: Decode keystore (if provided)
+        id: keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+            echo "has_keystore=true" >> $GITHUB_OUTPUT
+            cat <<EOF > android/key.properties
+          storeFile=upload-keystore.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+            echo "🔑 Release keystore configured"
+          else
+            echo "has_keystore=false" >> $GITHUB_OUTPUT
+            echo "::warning::No keystore secrets set — building with debug signing"
+          fi
+
+      - name: Build APK (split per ABI)
+        run: flutter build apk --release --split-per-abi
+
+      - name: Build APK (universal)
+        run: flutter build apk --release
+
+      - name: Build App Bundle (Play Store)
+        if: steps.keystore.outputs.has_keystore == 'true'
+        run: flutter build appbundle --release
+
+      - name: Rename artifacts with version
+        shell: bash
+        run: |
+          V="${{ steps.version.outputs.version }}"
+          mkdir -p release-artifacts
+          cp build/app/outputs/flutter-apk/app-release.apk         "release-artifacts/thaipromptadmin-${V}-universal.apk"
+          [ -f build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ]   && cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk   "release-artifacts/thaipromptadmin-${V}-arm64-v8a.apk"
+          [ -f build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk ] && cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "release-artifacts/thaipromptadmin-${V}-armeabi-v7a.apk"
+          [ -f build/app/outputs/flutter-apk/app-x86_64-release.apk ]      && cp build/app/outputs/flutter-apk/app-x86_64-release.apk      "release-artifacts/thaipromptadmin-${V}-x86_64.apk"
+          [ -f build/app/outputs/bundle/release/app-release.aab ]          && cp build/app/outputs/bundle/release/app-release.aab          "release-artifacts/thaipromptadmin-${V}.aab"
+          ls -lh release-artifacts/
+
+      - name: Upload artifacts (for debugging)
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-builds-${{ steps.version.outputs.version }}
+          path: release-artifacts/
+          retention-days: 14
+
+  release:
+    name: Create GitHub Release
+    needs: build-android
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Android artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-builds-${{ needs.build-android.outputs.version }}
+          path: release-artifacts/
+
+      - name: List artifacts
+        run: ls -lh release-artifacts/
+
+      - name: Create / Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.build-android.outputs.tag }}
+          name: Thaiprompt Admin ${{ needs.build-android.outputs.version }}
+          body: |
+            ## 📱 Thaiprompt Admin Mobile App
+
+            **เวอร์ชัน:** `${{ needs.build-android.outputs.version }}`
+            **วันที่ build:** ${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+
+            ### ดาวน์โหลด
+
+            **Android (APK):**
+            - `thaipromptadmin-*-arm64-v8a.apk` — เครื่อง Android 64-bit สมัยใหม่ ⭐ แนะนำ
+            - `thaipromptadmin-*-armeabi-v7a.apk` — เครื่อง Android 32-bit เก่า
+            - `thaipromptadmin-*-x86_64.apk` — emulator / x86 device
+            - `thaipromptadmin-*-universal.apk` — ใช้ได้ทุก architecture (ขนาดใหญ่กว่า)
+
+            **Android (Play Store):**
+            - `thaipromptadmin-*.aab` — สำหรับอัพโหลดเข้า Google Play Console
+
+            ### วิธีติดตั้ง APK
+            1. ดาวน์โหลด APK ลงเครื่อง Android
+            2. เปิดไฟล์ → อนุญาต "ติดตั้งจากแหล่งที่ไม่ทราบ"
+            3. ติดตั้งเสร็จ → เปิดแอป → login ด้วย QR หรืออีเมล
+
+            ### Auto-update
+            แอปจะตรวจสอบ GitHub Releases อัตโนมัติเมื่อเปิด — ถ้ามีเวอร์ชันใหม่จะแจ้งเตือนให้
+
+            ---
+            🤖 Built automatically with GitHub Actions
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          draft: false
+          prerelease: false
+          files: |
+            release-artifacts/*.apk
+            release-artifacts/*.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

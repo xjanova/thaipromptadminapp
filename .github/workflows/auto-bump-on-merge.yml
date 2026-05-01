@@ -1,0 +1,138 @@
+name: Auto-bump version on merge
+
+# Trigger: PR closed AND merged to main → bump pubspec → tag → push
+# → tag push triggers release.yml → builds APK → publishes GitHub Release
+# → app's auto-update checker detects within 6h → users notified
+#
+# Bump level controlled by PR labels (default = patch):
+#   release:major  → 0.1.0+1 → 1.0.0+2  (breaking change)
+#   release:minor  → 0.1.0+1 → 0.2.0+2  (new feature)
+#   release:patch  → 0.1.0+1 → 0.1.1+2  (bug fix) [DEFAULT]
+#   release:build  → 0.1.0+1 → 0.1.0+2  (build number only)
+#   release:skip   → don't bump or release (docs/CI/refactor only)
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write          # ต้องการ push commit + tag
+
+jobs:
+  bump-and-tag:
+    name: Bump version + create tag
+    # เงื่อนไข: PR ถูก merge (ไม่ใช่แค่ปิด) AND ไม่มี label release:skip
+    if: |
+      github.event.pull_request.merged == true &&
+      !contains(github.event.pull_request.labels.*.name, 'release:skip')
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: main
+
+      - name: Configure git as bot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine bump level from PR labels
+        id: level
+        shell: bash
+        env:
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          # Default = patch
+          LEVEL="patch"
+          if echo "$LABELS" | grep -q '"release:major"'; then
+            LEVEL="major"
+          elif echo "$LABELS" | grep -q '"release:minor"'; then
+            LEVEL="minor"
+          elif echo "$LABELS" | grep -q '"release:patch"'; then
+            LEVEL="patch"
+          elif echo "$LABELS" | grep -q '"release:build"'; then
+            LEVEL="build"
+          fi
+          echo "level=$LEVEL" >> $GITHUB_OUTPUT
+          echo "🏷  Bump level: $LEVEL"
+
+      - name: Bump pubspec.yaml
+        id: bump
+        shell: bash
+        run: |
+          set -e
+          CURRENT=$(grep -E '^version:' pubspec.yaml | sed -E 's/version:\s*//' | tr -d '"' | xargs)
+          echo "📦 Current: $CURRENT"
+
+          # แยก semver และ build
+          CORE="${CURRENT%+*}"
+          BUILD="${CURRENT#*+}"
+          if [ "$BUILD" = "$CURRENT" ]; then BUILD=0; fi
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CORE"
+          MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
+
+          case "${{ steps.level.outputs.level }}" in
+            major) MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR+1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH+1)) ;;
+            build) ;;
+          esac
+          BUILD=$((BUILD+1))
+
+          NEW="${MAJOR}.${MINOR}.${PATCH}+${BUILD}"
+          NEW_TAG="v${NEW}"
+          echo "✨ New: $NEW"
+
+          sed -i -E "s/^version:.*/version: ${NEW}/" pubspec.yaml
+
+          echo "version=$NEW" >> $GITHUB_OUTPUT
+          echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+      - name: Verify pubspec change
+        run: |
+          echo "=== Updated pubspec.yaml ==="
+          grep -E "^version:" pubspec.yaml
+
+      - name: Commit + tag + push
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Commit ใน main + [skip ci] เพื่อกัน workflow loop
+          git add pubspec.yaml
+          git commit -m "chore(release): bump to ${{ steps.bump.outputs.version }} [skip ci]
+
+          PR #${PR_NUMBER}: ${PR_TITLE}
+          Bump level: ${{ steps.level.outputs.level }}"
+
+          # Tag — tag push จะไป trigger release.yml ต่อ (ไม่ skip ci)
+          git tag -a "${{ steps.bump.outputs.tag }}" -m "Release ${{ steps.bump.outputs.version }}
+
+          From PR #${PR_NUMBER}: ${PR_TITLE}"
+
+          git push origin HEAD
+          git push origin "${{ steps.bump.outputs.tag }}"
+
+      - name: Summary
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo "## ✅ Version bumped"
+            echo ""
+            echo "- **PR #${PR_NUMBER}:** ${PR_TITLE}"
+            echo "- **Level:** \`${{ steps.level.outputs.level }}\`"
+            echo "- **New version:** \`${{ steps.bump.outputs.version }}\`"
+            echo "- **Tag:** \`${{ steps.bump.outputs.tag }}\`"
+            echo ""
+            echo "Tag push triggers \`release.yml\` → APK build → GitHub Release → users get auto-update notification within 6h."
+          } >> $GITHUB_STEP_SUMMARY
