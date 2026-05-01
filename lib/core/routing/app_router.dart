@@ -11,6 +11,7 @@ import '../../features/dashboard/ui/dashboard_screen.dart';
 import '../../features/finance/ui/finance_screen.dart';
 import '../../features/fortune/ui/fortune_screen.dart';
 import '../../features/modules/ui/modules_hub_screen.dart';
+import '../../features/users/ui/users_screen.dart';
 import '../../main.dart' show rootNavKey;
 import '../theme/app_colors.dart';
 import '../update/app_version_provider.dart';
@@ -56,6 +57,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/finance', builder: (_, __) => const FinanceScreen()),
           GoRoute(path: '/ai', builder: (_, __) => const AiManagementScreen()),
           GoRoute(path: '/fortune', builder: (_, __) => const FortuneScreen()),
+          GoRoute(path: '/users', builder: (_, __) => const UsersScreen()),
           GoRoute(
               path: '/analytics',
               builder: (_, __) => const _ComingSoonPage(label: 'Analytics')),
