@@ -113,13 +113,24 @@ jobs:
           PR #${PR_NUMBER}: ${PR_TITLE}
           Bump level: ${{ steps.level.outputs.level }}"
 
-          # Tag — tag push จะไป trigger release.yml ต่อ (ไม่ skip ci)
+          # Tag — tag push ที่ทำผ่าน GITHUB_TOKEN จะไม่ trigger workflow อื่น
+          # ต้องเรียก workflow_dispatch ใน step ถัดไป
           git tag -a "${{ steps.bump.outputs.tag }}" -m "Release ${{ steps.bump.outputs.version }}
 
           From PR #${PR_NUMBER}: ${PR_TITLE}"
 
           git push origin HEAD
           git push origin "${{ steps.bump.outputs.tag }}"
+
+      # Trigger release.yml ผ่าน workflow_dispatch (เพราะ tag push ผ่าน GITHUB_TOKEN ไม่ trigger เอง)
+      - name: Trigger release.yml workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run release.yml \
+            --repo ${{ github.repository }} \
+            --ref ${{ steps.bump.outputs.tag }} \
+            -f tag=${{ steps.bump.outputs.tag }}
 
       - name: Summary
         env:

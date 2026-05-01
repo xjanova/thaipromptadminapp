@@ -72,13 +72,26 @@ jobs:
       - name: Commit + tag
         run: |
           git add pubspec.yaml
-          git commit -m "chore: bump version to ${{ steps.bump.outputs.version }}"
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.version }} [skip ci]"
           git tag -a "${{ steps.bump.outputs.tag }}" -m "Release ${{ steps.bump.outputs.version }}"
           git push origin HEAD
           git push origin "${{ steps.bump.outputs.tag }}"
+
+      # GITHUB_TOKEN-pushed tags ไม่ trigger workflow ปกติ
+      # แต่ workflow_dispatch trigger ผ่าน gh CLI ใช้ได้
+      - name: Trigger release.yml workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run release.yml \
+            --repo ${{ github.repository }} \
+            --ref ${{ steps.bump.outputs.tag }} \
+            -f tag=${{ steps.bump.outputs.tag }}
 
       - name: Summary
         run: |
           echo "### ✅ Version bumped to \`${{ steps.bump.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Tag \`${{ steps.bump.outputs.tag }}\` pushed → release.yml workflow will build and publish artifacts." >> $GITHUB_STEP_SUMMARY
+          echo "Tag \`${{ steps.bump.outputs.tag }}\` pushed → release.yml workflow triggered via workflow_dispatch." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Watch release build: [Actions tab](https://github.com/${{ github.repository }}/actions/workflows/release.yml)" >> $GITHUB_STEP_SUMMARY
