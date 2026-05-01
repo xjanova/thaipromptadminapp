@@ -7,9 +7,11 @@ import '../../features/auth/ui/login_screen.dart';
 import '../../features/auth/ui/qr_scanner_screen.dart';
 import '../../features/auth/ui/verify_2fa_screen.dart';
 import '../../features/ai/ui/ai_management_screen.dart';
+import '../../features/analytics/ui/analytics_screen.dart';
 import '../../features/dashboard/ui/dashboard_screen.dart';
 import '../../features/finance/ui/finance_screen.dart';
 import '../../features/fortune/ui/fortune_screen.dart';
+import '../../features/marketplace/ui/marketplace_screen.dart';
 import '../../features/modules/ui/modules_hub_screen.dart';
 import '../../features/users/ui/users_screen.dart';
 import '../../main.dart' show rootNavKey;
@@ -59,8 +61,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/fortune', builder: (_, __) => const FortuneScreen()),
           GoRoute(path: '/users', builder: (_, __) => const UsersScreen()),
           GoRoute(
-              path: '/analytics',
-              builder: (_, __) => const _ComingSoonPage(label: 'Analytics')),
+              path: '/marketplace', builder: (_, __) => const MarketplaceScreen()),
+          GoRoute(path: '/analytics', builder: (_, __) => const AnalyticsScreen()),
           GoRoute(path: '/settings', builder: (_, __) => const _SettingsPage()),
         ],
       ),
@@ -85,18 +87,6 @@ class GoRouterRefreshStream extends ChangeNotifier {
     _sub.close();
     super.dispose();
   }
-}
-
-class _ComingSoonPage extends StatelessWidget {
-  const _ComingSoonPage({required this.label});
-  final String label;
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text(label)),
-        body: Center(
-            child: Text('$label — กำลังพัฒนา',
-                style: const TextStyle(color: Colors.white))),
-      );
 }
 
 class _SettingsPage extends ConsumerWidget {
