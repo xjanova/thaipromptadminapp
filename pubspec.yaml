@@ -1,0 +1,73 @@
+name: thaipromptadmin
+description: "Thaiprompt Admin Mobile App — จัดการระบบหลังบ้าน main.thaiprompt.online จากมือถือ"
+publish_to: 'none'
+
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # ── Core ──
+  cupertino_icons: ^1.0.8
+  intl: any                            # follow flutter_localizations pin
+
+  # ── State management & DI ──
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # ── Routing ──
+  go_router: ^14.6.2
+
+  # ── Networking ──
+  dio: ^5.7.0
+  pretty_dio_logger: ^1.4.0
+
+  # ── Storage ──
+  flutter_secure_storage: ^9.2.2       # token (Keychain / Keystore)
+  shared_preferences: ^2.3.3           # non-sensitive prefs
+
+  # ── Models / serialization ──
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # ── UI ──
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.16
+  flutter_animate: ^4.5.0
+  fl_chart: ^0.69.2
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^5.2.3               # QR scanner (camera)
+
+  # ── Device / app info ──
+  package_info_plus: ^8.1.1
+  device_info_plus: ^11.2.0
+  url_launcher: ^6.3.1
+
+  # ── Misc ──
+  collection: ^1.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Code generation
+  build_runner: ^2.4.13
+  riverpod_generator: ^2.6.3
+  freezed: ^2.5.7
+  json_serializable: ^6.9.0
+  custom_lint: ^0.7.0
+  riverpod_lint: ^2.6.3
+
+flutter:
+  uses-material-design: true
+  generate: true                       # enable l10n generator
+  assets:
+    - assets/images/
+    - assets/icons/
