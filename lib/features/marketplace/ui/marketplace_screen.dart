@@ -215,7 +215,9 @@ class _OrdersTab extends ConsumerWidget {
       },
       child: async.when(
         data: (page) {
-          if (page.items.isEmpty) return const _Empty(label: 'ยังไม่มีคำสั่งซื้อ');
+          if (page.items.isEmpty) {
+            return const _Empty(label: 'ยังไม่มีคำสั่งซื้อ');
+          }
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             itemCount: page.items.length,

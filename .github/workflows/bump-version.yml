@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # ต้องการเพื่อ trigger release.yml ผ่าน workflow_dispatch
 
 jobs:
   bump:

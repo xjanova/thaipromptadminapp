@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: write          # ต้องการ push commit + tag
+  actions: write           # ต้องการ trigger release.yml ผ่าน workflow_dispatch
 
 jobs:
   bump-and-tag:
