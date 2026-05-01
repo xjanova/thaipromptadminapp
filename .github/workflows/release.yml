@@ -1,12 +1,14 @@
 name: Release
 
 # Trigger:
-# 1. Push tag รูป v*.*.*+* (เช่น v0.1.0+1) → build + create release
+# 1. Push tag ขึ้นต้นด้วย v (เช่น v0.1.0+1) → build + create release
+#    NOTE: GitHub tag filter รองรับเฉพาะ glob (*, ?, [], !, **)
+#    ไม่รองรับ `+` ใน pattern → ใช้ 'v*' กว้างๆ แล้ว validate ใน job เอง
 # 2. Manual workflow_dispatch (สำหรับทดสอบ pipeline)
 on:
   push:
     tags:
-      - 'v*.*.*+*'
+      - 'v*'
   workflow_dispatch:
     inputs:
       tag:
