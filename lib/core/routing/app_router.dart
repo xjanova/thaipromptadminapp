@@ -6,6 +6,7 @@ import '../../features/auth/providers/auth_controller.dart';
 import '../../features/auth/ui/login_screen.dart';
 import '../../features/auth/ui/qr_scanner_screen.dart';
 import '../../features/auth/ui/verify_2fa_screen.dart';
+import '../../features/ai/ui/ai_management_screen.dart';
 import '../../features/dashboard/ui/dashboard_screen.dart';
 import '../../features/finance/ui/finance_screen.dart';
 import '../../features/modules/ui/modules_hub_screen.dart';
@@ -52,6 +53,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/modules', builder: (_, __) => const ModulesHubScreen()),
           GoRoute(path: '/finance', builder: (_, __) => const FinanceScreen()),
+          GoRoute(path: '/ai', builder: (_, __) => const AiManagementScreen()),
           GoRoute(
               path: '/analytics',
               builder: (_, __) => const _ComingSoonPage(label: 'Analytics')),
