@@ -10,21 +10,50 @@
 
 ## 🚀 วิธีออกเวอร์ชันใหม่
 
-### วิธีที่ 1: ใช้ GitHub Actions UI (ง่ายสุด — แนะนำ)
+### วิธีที่ 1: ⭐ Auto-bump on PR merge (workflow ทำให้อัตโนมัติ)
+
+**Flow ปกติ — สิ่งที่จะเกิดทุกครั้งที่ merge PR:**
+
+```
+PR merge → auto-bump-on-merge.yml (workflow):
+  1. อ่าน label "release:*" จาก PR (default = patch)
+  2. bump pubspec.yaml ตาม level
+  3. commit "chore(release): bump to X.Y.Z [skip ci]"
+  4. push tag vX.Y.Z
+       ↓
+release.yml (triggered by tag):
+  5. CI: analyze + test
+  6. build APK 4 variants (arm64, armv7, x86_64, universal) + AAB
+  7. ใช้ secrets ANDROID_KEYSTORE_* sign APKs
+  8. publish GitHub Release พร้อม artifacts + auto-generated notes
+       ↓
+แอปบนมือถือผู้ใช้ (ภายใน 6 ชม.):
+  9. UpdateChecker เช็ค /releases/latest
+  10. เห็นเวอร์ชันใหม่ → แจ้งเตือน + ปุ่ม "อัปเดทตอนนี้"
+  11. user → download APK → ติดตั้งทับ → upgrade สำเร็จ (signature เดียวกัน)
+```
+
+**ติด PR label เพื่อกำหนด bump level:**
+
+| Label | ผลลัพธ์ | เมื่อใด |
+|-------|---------|---------|
+| `release:major` | 0.1.0 → 1.0.0 | Breaking change |
+| `release:minor` | 0.1.0 → 0.2.0 | Feature ใหม่ |
+| `release:patch` ⭐ | 0.1.0 → 0.1.1 | Bug fix (default ถ้าไม่ติด) |
+| `release:build` | 0.1.0+1 → 0.1.0+2 | Build number only |
+| `release:skip` | ไม่ release | docs/CI/refactor only |
+
+> **TIP:** PR template (`.github/PULL_REQUEST_TEMPLATE.md`) จะแสดง checkbox ตัวเลือกเหล่านี้
+> ให้ developer เห็นทุกครั้งที่เปิด PR
+
+### วิธีที่ 2: ใช้ GitHub Actions UI (manual override)
 
 1. ไปที่ **Actions** → **Bump version + Tag**
-2. กด **Run workflow** → เลือก bump level:
-   - `patch`: bug fix (0.1.0 → 0.1.1)
-   - `minor`: feature ใหม่ (0.1.0 → 0.2.0)
-   - `major`: breaking change (0.1.0 → 1.0.0)
-   - `build`: เพิ่มเฉพาะ build number (0.1.0+1 → 0.1.0+2)
-3. กด **Run workflow** → bot จะ:
-   - bump pubspec.yaml
-   - commit + create tag `v<new-version>`
-   - push → trigger **Release** workflow อัตโนมัติ
-4. รอ ~10 นาที → release พร้อม APK + AAB จะปรากฏที่ Releases tab
+2. กด **Run workflow** → เลือก bump level (patch/minor/major/build)
+3. Bot จะ bump pubspec + tag + push → trigger Release workflow
+4. ใช้เมื่อต้องการ release โดยไม่มี PR (hotfix etc.)
 
-### วิธีที่ 2: bump + push tag เอง
+### วิธีที่ 3: bump + push tag เอง (manual)
 
 ```bash
 # แก้ pubspec.yaml manually

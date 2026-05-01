@@ -1,0 +1,22 @@
+# GitHub labels — apply via `gh label create -F .github/labels.yml`
+# หรือใช้ action: crazy-max/ghaction-github-labeler
+
+- name: "release:major"
+  color: "B60205"
+  description: "Breaking change — bump major version (1.0.0 → 2.0.0)"
+
+- name: "release:minor"
+  color: "0E8A16"
+  description: "New feature — bump minor version (0.1.0 → 0.2.0)"
+
+- name: "release:patch"
+  color: "FBCA04"
+  description: "Bug fix — bump patch version (0.1.0 → 0.1.1) [DEFAULT]"
+
+- name: "release:build"
+  color: "C5DEF5"
+  description: "Rebuild only — bump build number (0.1.0+1 → 0.1.0+2)"
+
+- name: "release:skip"
+  color: "C2E0C6"
+  description: "Don't bump version or trigger release (docs/CI only)"
