@@ -5,8 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/update/update_checker.dart';
+import 'core/update/update_dialog.dart';
 import 'features/auth/providers/auth_controller.dart';
 import 'gen/l10n/app_localizations.dart';
+
+/// Global navigator key — ใช้สำหรับ show update dialog จาก background flow
+final rootNavKey = GlobalKey<NavigatorState>();
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,10 +31,27 @@ class _ThaipromptAdminAppState extends ConsumerState<ThaipromptAdminApp> {
   @override
   void initState() {
     super.initState();
-    // ลอง resume session ถ้ามี token เก็บไว้
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(authControllerProvider.notifier).bootstrap();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // 1. ลอง resume session ถ้ามี token
+      await ref.read(authControllerProvider.notifier).bootstrap();
+      // 2. เช็ค update เงียบๆ (ใช้ throttle ภายใน — เช็คซ้ำไม่บ่อยกว่า 6 ชม.)
+      _silentCheckForUpdate();
     });
+  }
+
+  Future<void> _silentCheckForUpdate() async {
+    try {
+      final result = await ref.read(updateCheckerProvider).checkIfShouldPrompt();
+      if (result == null) return;
+      // หน่วงเวลาเล็กน้อยให้หน้า initial render เสร็จก่อน
+      await Future.delayed(const Duration(seconds: 2));
+      final ctx = rootNavKey.currentContext;
+      if (ctx != null && ctx.mounted) {
+        await showUpdateAvailableDialog(ctx, result);
+      }
+    } catch (_) {
+      // เงียบ — ห้าม fail boot เพราะ update check
+    }
   }
 
   @override
@@ -41,6 +63,7 @@ class _ThaipromptAdminAppState extends ConsumerState<ThaipromptAdminApp> {
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       routerConfig: router,
+      // ใช้ rootNavKey ผ่าน GoRouter delegate (set ใน app_router.dart)
       localizationsDelegates: const [
         AppL10n.delegate,
         GlobalMaterialLocalizations.delegate,

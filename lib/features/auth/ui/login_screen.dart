@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/api/api_envelope.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/update/app_version_provider.dart';
 import '../../../gen/l10n/app_localizations.dart';
 import '../../../shared/widgets/clay_ball.dart';
 import '../../../shared/widgets/coin_3d.dart';
@@ -313,11 +314,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   const SizedBox(height: 22),
 
-                  Text(
-                    l10n.appVersion('0.1.0'),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 11),
-                  ),
+                  // เวอร์ชันจริงจาก pubspec.yaml (ผ่าน package_info_plus)
+                  Consumer(builder: (_, ref, __) {
+                    final versionAsync = ref.watch(appVersionStringProvider);
+                    return Text(
+                      l10n.appVersion(versionAsync.maybeWhen(
+                        data: (v) => v,
+                        orElse: () => '...',
+                      )),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 11),
+                    );
+                  }),
                 ],
               ),
             ),
