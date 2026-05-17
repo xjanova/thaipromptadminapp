@@ -117,6 +117,28 @@ class FortuneRepository {
     await _api.post<dynamic>('/fortune/bills/$id/resend-image');
   }
 
+  // ── Services (โทเก้น on/off + edit) ──
+  Future<void> toggleService(int id) async {
+    if (kMockMode) {
+      Mock.toggleFortuneService(id);
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>('/fortune/services/$id/toggle');
+  }
+
+  Future<void> updateService(int id, FortuneServicePatch patch) async {
+    if (kMockMode) {
+      Mock.patchFortuneService(id, patch);
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>(
+      '/fortune/services/$id/update',
+      data: patch.toJson(),
+    );
+  }
+
   // ── Active Readings (Live monitor) ──
   Future<List<FortuneActiveReading>> activeReadings() async {
     if (kMockMode) return mockDelay(Mock.fortuneActiveReadings());

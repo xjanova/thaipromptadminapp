@@ -40,6 +40,12 @@ class FortuneService {
     required this.sessions,
     required this.revenueThb,
     required this.isActive,
+    this.priceThb,
+    this.payFirst = false,
+    this.personaName,
+    this.aiPurpose,
+    this.systemPrompt,
+    this.tier,
   });
 
   final int id;
@@ -51,6 +57,26 @@ class FortuneService {
   final double revenueThb;
   final bool isActive;
 
+  /// ราคาบริการ (บาท) — null = ฟรี
+  final double? priceThb;
+
+  /// บังคับจ่ายก่อนถึงจะอ่านได้
+  final bool payFirst;
+
+  /// ชื่อ persona ที่โชว์ให้ลูกค้า (เช่น "แม่หมอลัคกี้")
+  final String? personaName;
+
+  /// AI Pool purpose — บอกว่าใช้ Pool segment ไหน
+  /// อ้างอิง brain: prediction_celtic / prediction_deep / chat / vision
+  /// ([[Session 2026-05-13 — Fortune AI Pool-first + Health Gate + Auto-Recovery]])
+  final String? aiPurpose;
+
+  /// System prompt สำหรับ AI (เปิดให้แก้ได้)
+  final String? systemPrompt;
+
+  /// tier: 'celtic' | 'deep' | 'tarot_chat' (สำหรับ link กับ bill tier)
+  final String? tier;
+
   factory FortuneService.fromJson(Map<String, dynamic> json) => FortuneService(
         id: ((json['id'] as num?) ?? 0).toInt(),
         name: (json['name'] as String?) ?? '',
@@ -60,6 +86,12 @@ class FortuneService {
         sessions: ((json['sessions'] as num?) ?? 0).toInt(),
         revenueThb: ((json['revenue_thb'] as num?) ?? 0).toDouble(),
         isActive: (json['is_active'] as bool?) ?? false,
+        priceThb: (json['price_thb'] as num?)?.toDouble(),
+        payFirst: (json['pay_first'] as bool?) ?? false,
+        personaName: json['persona_name'] as String?,
+        aiPurpose: json['ai_purpose'] as String?,
+        systemPrompt: json['system_prompt'] as String?,
+        tier: json['tier'] as String?,
       );
 
   /// hex color → int (สำหรับ Color)
@@ -69,6 +101,34 @@ class FortuneService {
     if (c.length == 8) return int.parse(c, radix: 16);
     return 0xFFA855F7;
   }
+}
+
+/// Patch object สำหรับ updateService — null = ไม่เปลี่ยน
+class FortuneServicePatch {
+  FortuneServicePatch({
+    this.isActive,
+    this.priceThb,
+    this.payFirst,
+    this.personaName,
+    this.colorHex,
+    this.systemPrompt,
+  });
+
+  final bool? isActive;
+  final double? priceThb;
+  final bool? payFirst;
+  final String? personaName;
+  final String? colorHex; // #rrggbb
+  final String? systemPrompt;
+
+  Map<String, dynamic> toJson() => {
+        if (isActive != null) 'is_active': isActive,
+        if (priceThb != null) 'price_thb': priceThb,
+        if (payFirst != null) 'pay_first': payFirst,
+        if (personaName != null) 'persona_name': personaName,
+        if (colorHex != null) 'color': colorHex,
+        if (systemPrompt != null) 'system_prompt': systemPrompt,
+      };
 }
 
 /// Fortune Reading record

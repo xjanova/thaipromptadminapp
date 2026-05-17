@@ -38,6 +38,9 @@ class Mock {
   /// activeReadingId → true means cancelled (removed from list)
   static final Set<int> _cancelledReadings = {};
 
+  /// serviceId → patched fields (active/price/payFirst/persona/color/prompt)
+  static final Map<int, Map<String, dynamic>> _servicePatches = {};
+
   // ────────────────────────────────────────────────────────────
   // Toggle helpers (called from mocked repository methods)
   // ────────────────────────────────────────────────────────────
@@ -83,6 +86,21 @@ class Mock {
 
   static void cancelActiveReading(int readingId) {
     _cancelledReadings.add(readingId);
+  }
+
+  static void toggleFortuneService(int id) {
+    final cur = _servicePatches[id] ?? {};
+    final base = _fortuneServicesBase().firstWhere(
+      (m) => m['id'] == id,
+      orElse: () => {'is_active': true},
+    );
+    final currentActive = cur['is_active'] ?? base['is_active'] ?? true;
+    _servicePatches[id] = {...cur, 'is_active': !(currentActive as bool)};
+  }
+
+  static void patchFortuneService(int id, FortuneServicePatch patch) {
+    final cur = _servicePatches[id] ?? {};
+    _servicePatches[id] = {...cur, ...patch.toJson()};
   }
 
   // ────────────────────────────────────────────────────────────
@@ -335,6 +353,121 @@ class Mock {
   // Fortune
   // ────────────────────────────────────────────────────────────
 
+  /// Base service list (เปลี่ยน static เมื่อต้องเพิ่ม service)
+  static List<Map<String, dynamic>> _fortuneServicesBase() => [
+        {
+          'id': 1,
+          'name': 'ไพ่ทาโรต์ AI',
+          'slug': 'tarot',
+          'color': '#a855f7',
+          'icon': null,
+          'sessions': 2840,
+          'revenue_thb': 384000,
+          'is_active': true,
+          'price_thb': 39.0,
+          'pay_first': true,
+          'persona_name': 'แม่หมอลัคกี้',
+          'ai_purpose': 'prediction_deep',
+          'tier': 'deep',
+          'system_prompt':
+              'คุณคือแม่หมอลัคกี้ ผู้มีประสบการณ์ดูไพ่ทาโรต์มากกว่า 20 ปี ใช้ภาษาไทยอบอุ่น เน้นให้กำลังใจ',
+        },
+        {
+          'id': 2,
+          'name': 'โหราศาสตร์ไทย',
+          'slug': 'astrology',
+          'color': '#0ea5e9',
+          'icon': null,
+          'sessions': 1820,
+          'revenue_thb': 218000,
+          'is_active': true,
+          'price_thb': 59.0,
+          'pay_first': true,
+          'persona_name': 'อาจารย์ดวงดี',
+          'ai_purpose': 'prediction_deep',
+          'tier': 'deep',
+          'system_prompt':
+              'คุณคืออาจารย์ดวงดี โหรเก่าแก่ ใช้หลักโหราศาสตร์ไทยดั้งเดิม ตอบเป็นภาษาทางการ',
+        },
+        {
+          'id': 3,
+          'name': 'Celtic Cross VIP',
+          'slug': 'celtic-cross',
+          'color': '#ec4899',
+          'icon': null,
+          'sessions': 412,
+          'revenue_thb': 184000,
+          'is_active': true,
+          'price_thb': 99.0,
+          'pay_first': true,
+          'persona_name': 'Madam Celeste',
+          'ai_purpose': 'prediction_celtic',
+          'tier': 'celtic',
+          'system_prompt':
+              'You are Madam Celeste, expert in Celtic Cross 10-card spread. Provide deep, structured analysis covering past/present/future/influences.',
+        },
+        {
+          'id': 4,
+          'name': 'ลายมือ AI',
+          'slug': 'palm-reading',
+          'color': '#f97316',
+          'icon': null,
+          'sessions': 920,
+          'revenue_thb': 62000,
+          'is_active': true,
+          'price_thb': 19.0,
+          'pay_first': false,
+          'persona_name': 'หมอชะตา',
+          'ai_purpose': 'vision',
+          'tier': 'tarot_chat',
+          'system_prompt':
+              'คุณคือหมอชะตา ดูลายมือผ่านภาพถ่าย ใช้หลักกายภาพประกอบจิตวิทยา',
+        },
+        {
+          'id': 5,
+          'name': 'ราศี 12 ปี',
+          'slug': 'zodiac',
+          'color': '#ef4444',
+          'icon': null,
+          'sessions': 520,
+          'revenue_thb': 0,
+          'is_active': true,
+          'price_thb': null,
+          'pay_first': false,
+          'persona_name': 'ครูดวง',
+          'ai_purpose': 'chat',
+          'tier': null,
+          'system_prompt':
+              'คุณคือครูดวง อธิบายดวงตามปีนักษัตร 12 ปี ตอบสั้นกระชับ ฟรีสำหรับลูกค้าใหม่',
+        },
+        {
+          'id': 6,
+          'name': 'I-Ching',
+          'slug': 'iching',
+          'color': '#22c55e',
+          'icon': null,
+          'sessions': 208,
+          'revenue_thb': 34000,
+          'is_active': false,
+          'price_thb': 29.0,
+          'pay_first': true,
+          'persona_name': 'Master Wei',
+          'ai_purpose': 'prediction_deep',
+          'tier': 'deep',
+          'system_prompt': 'You are Master Wei, expert in I-Ching divination.',
+        },
+      ];
+
+  /// Apply overrides จาก _servicePatches แล้วคืน base list
+  static List<Map<String, dynamic>> _fortuneServicesWithPatches() {
+    return _fortuneServicesBase().map((m) {
+      final id = m['id'] as int;
+      final patch = _servicePatches[id];
+      if (patch == null) return m;
+      return {...m, ...patch};
+    }).toList();
+  }
+
   static FortuneDashboardData fortuneDashboard() => FortuneDashboardData.fromJson({
         'hero': {
           'monthly_revenue_thb': 882000,
@@ -342,68 +475,7 @@ class Mock {
           'avg_rating': 4.86,
           'active_now': 142,
         },
-        'services_summary': [
-          {
-            'id': 1,
-            'name': 'ไพ่ทาโรต์ AI',
-            'slug': 'tarot',
-            'color': '#a855f7',
-            'icon': null,
-            'sessions': 2840,
-            'revenue_thb': 384000,
-            'is_active': true,
-          },
-          {
-            'id': 2,
-            'name': 'โหราศาสตร์ไทย',
-            'slug': 'astrology',
-            'color': '#0ea5e9',
-            'icon': null,
-            'sessions': 1820,
-            'revenue_thb': 218000,
-            'is_active': true,
-          },
-          {
-            'id': 3,
-            'name': 'Celtic Cross VIP',
-            'slug': 'celtic-cross',
-            'color': '#ec4899',
-            'icon': null,
-            'sessions': 412,
-            'revenue_thb': 184000,
-            'is_active': true,
-          },
-          {
-            'id': 4,
-            'name': 'ลายมือ AI',
-            'slug': 'palm-reading',
-            'color': '#f97316',
-            'icon': null,
-            'sessions': 920,
-            'revenue_thb': 62000,
-            'is_active': true,
-          },
-          {
-            'id': 5,
-            'name': 'ราศี 12 ปี',
-            'slug': 'zodiac',
-            'color': '#ef4444',
-            'icon': null,
-            'sessions': 520,
-            'revenue_thb': 0,
-            'is_active': true,
-          },
-          {
-            'id': 6,
-            'name': 'I-Ching',
-            'slug': 'iching',
-            'color': '#22c55e',
-            'icon': null,
-            'sessions': 208,
-            'revenue_thb': 34000,
-            'is_active': false,
-          },
-        ],
+        'services_summary': _fortuneServicesWithPatches(),
       });
 
   static PagedResult<FortuneReading> fortuneReadings() {

@@ -13,6 +13,7 @@ import '../../../shared/widgets/gradient_text.dart';
 import '../../../shared/widgets/starfield.dart';
 import '../data/fortune_repository.dart';
 import '../data/models/fortune_models.dart';
+import 'widgets/service_edit_sheet.dart';
 
 /// Fortune Screen — ระบบดูดวง & ทาโรต์
 ///
@@ -26,6 +27,23 @@ import '../data/models/fortune_models.dart';
 /// - Recent readings list
 class FortuneScreen extends ConsumerWidget {
   const FortuneScreen({super.key});
+
+  Future<void> _openServiceEdit(
+      BuildContext context, WidgetRef ref, FortuneService service) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ServiceEditSheet(service: service),
+    );
+    if (!context.mounted) return;
+    ref.invalidate(fortuneDashboardProvider);
+  }
+
+  Future<void> _toggleService(WidgetRef ref, FortuneService service) async {
+    await ref.read(fortuneRepositoryProvider).toggleService(service.id);
+    ref.invalidate(fortuneDashboardProvider);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -151,9 +169,12 @@ class FortuneScreen extends ConsumerWidget {
                 const SizedBox(height: 22),
 
                 // ── Services grid ──
-                _sectionHeader('บริการดูดวง', subtitle: '6 หมวด'),
+                _sectionHeader(
+                  'บริการดูดวง',
+                  subtitle: 'แตะการ์ดเพื่อแก้ไข · toggle เพื่อเปิด/ปิด',
+                ),
                 const SizedBox(height: 10),
-                _servicesGrid(dashAsync),
+                _servicesGrid(context, ref, dashAsync),
 
                 const SizedBox(height: 22),
 
@@ -200,7 +221,8 @@ class FortuneScreen extends ConsumerWidget {
     );
   }
 
-  Widget _servicesGrid(AsyncValue<FortuneDashboardData> async) {
+  Widget _servicesGrid(
+      BuildContext context, WidgetRef ref, AsyncValue<FortuneDashboardData> async) {
     return async.when(
       data: (d) {
         if (d.services.isEmpty) {
@@ -212,8 +234,10 @@ class FortuneScreen extends ConsumerWidget {
           crossAxisCount: 2,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 1.15,
-          children: d.services.map(_serviceCard).toList(),
+          childAspectRatio: 0.95,
+          children: d.services
+              .map((s) => _serviceCard(context, ref, s))
+              .toList(),
         );
       },
       loading: () => const Padding(
@@ -224,63 +248,174 @@ class FortuneScreen extends ConsumerWidget {
     );
   }
 
-  Widget _serviceCard(FortuneService s) {
+  Widget _serviceCard(BuildContext context, WidgetRef ref, FortuneService s) {
     final color = Color(s.colorHex);
-    final money = NumberFormat.compactCurrency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
-
-    // Map color → hue สำหรับ ClayBall
+    final money = NumberFormat.compactCurrency(
+        locale: 'th_TH', symbol: '฿', decimalDigits: 0);
     final hsl = HSLColor.fromColor(color);
 
-    return GlassCard(
-      fillOpacity: 0.05,
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openServiceEdit(context, ref, s),
+        borderRadius: BorderRadius.circular(18),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: s.isActive ? 0.06 : 0.03),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: s.isActive
+                  ? color.withValues(alpha: 0.25)
+                  : Colors.white.withValues(alpha: 0.08),
+            ),
+          ),
+          child: Stack(
             children: [
-              ClayBall(size: 44, hue: hsl.hue, saturation: 0.85, lightness: 0.6),
-              const Spacer(),
+              Opacity(
+                opacity: s.isActive ? 1.0 : 0.55,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        ClayBall(
+                            size: 40,
+                            hue: hsl.hue,
+                            saturation: 0.85,
+                            lightness: 0.6),
+                        const Spacer(),
+                        // Inline toggle
+                        SizedBox(
+                          height: 22,
+                          child: Switch.adaptive(
+                            value: s.isActive,
+                            activeThumbColor: AppColors.success,
+                            onChanged: (_) => _toggleService(ref, s),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      s.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    if (s.personaName != null)
+                      Text(
+                        '· ${s.personaName}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Color(0xCCFFFFFF), fontSize: 10),
+                      ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        if (s.priceThb != null && s.priceThb! > 0) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.goldStart.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              '${s.priceThb!.toStringAsFixed(0)}฿',
+                              style: const TextStyle(
+                                color: AppColors.goldStart,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ] else
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: const Text(
+                              'FREE',
+                              style: TextStyle(
+                                color: AppColors.success,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        if (s.payFirst)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.purpleStart
+                                  .withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: const Text(
+                              'PAY-1ST',
+                              style: TextStyle(
+                                color: AppColors.purpleStart,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${NumberFormat.compact().format(s.sessions)} · ${money.format(s.revenueThb)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xCCFFFFFF),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               if (!s.isActive)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'PAUSED',
-                    style: TextStyle(color: Colors.red, fontSize: 9, fontWeight: FontWeight.w800),
+                Positioned(
+                  top: 0,
+                  right: 28, // leave room beside the switch
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'OFF',
+                      style: TextStyle(
+                        color: AppColors.error,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            s.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${NumberFormat.compact().format(s.sessions)} sessions',
-            style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 11),
-          ),
-          const Spacer(),
-          Text(
-            money.format(s.revenueThb),
-            style: const TextStyle(
-              color: AppColors.goldStart,
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
