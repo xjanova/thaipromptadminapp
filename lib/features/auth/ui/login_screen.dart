@@ -8,6 +8,7 @@ import '../../../core/update/app_version_provider.dart';
 import '../../../gen/l10n/app_localizations.dart';
 import '../../../shared/widgets/clay_ball.dart';
 import '../../../shared/widgets/coin_3d.dart';
+import '../../../shared/widgets/cube_3d.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/gradient_button.dart';
 import '../providers/auth_controller.dart';
@@ -140,10 +141,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                         ),
-                        Positioned(
+                        const Positioned(
+                          top: -10,
+                          right: -14,
+                          child: Cube3D(
+                            size: 36,
+                            faceA: AppColors.cyanStart,
+                            faceB: AppColors.cyanEnd,
+                            faceC: Color(0xFFA5F3FC),
+                            tilt: -10,
+                          ),
+                        ),
+                        const Positioned(
                           bottom: -8,
                           left: -6,
-                          child: const Coin3D(size: 42),
+                          child: Coin3D(size: 42),
                         ),
                       ],
                     ),

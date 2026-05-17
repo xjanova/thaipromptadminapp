@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/mock/mock_config.dart';
+import '../../../core/mock/mock_data.dart';
 
 class AnalyticsOverview {
   AnalyticsOverview({
@@ -69,6 +71,7 @@ final analyticsRepositoryProvider = Provider<AnalyticsRepository>((ref) {
 });
 
 final analyticsOverviewProvider =
-    FutureProvider.family<AnalyticsOverview, String>((ref, period) {
+    FutureProvider.family<AnalyticsOverview, String>((ref, period) async {
+  if (kMockMode) return mockDelay(Mock.analytics(period));
   return ref.watch(analyticsRepositoryProvider).overview(period: period);
 });

@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/mock/mock_config.dart';
+import '../../../core/mock/mock_data.dart';
 import '../../finance/data/finance_repository.dart' show PagedResult;
 import 'models/user_models.dart';
 
@@ -51,14 +53,17 @@ final usersRepositoryProvider = Provider<UsersRepository>((ref) {
   return UsersRepository(ref.watch(apiClientProvider));
 });
 
-final usersListProvider = FutureProvider<PagedResult<AdminListUser>>((ref) {
+final usersListProvider = FutureProvider<PagedResult<AdminListUser>>((ref) async {
+  if (kMockMode) return mockDelay(Mock.users());
   return ref.watch(usersRepositoryProvider).users();
 });
 
-final usersStatsProvider = FutureProvider<UsersStats>((ref) {
+final usersStatsProvider = FutureProvider<UsersStats>((ref) async {
+  if (kMockMode) return mockDelay(Mock.userStats());
   return ref.watch(usersRepositoryProvider).stats();
 });
 
-final ranksListProvider = FutureProvider<List<AdminRank>>((ref) {
+final ranksListProvider = FutureProvider<List<AdminRank>>((ref) async {
+  if (kMockMode) return mockDelay(Mock.ranks());
   return ref.watch(usersRepositoryProvider).ranks();
 });

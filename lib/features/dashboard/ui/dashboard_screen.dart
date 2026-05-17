@@ -289,6 +289,14 @@ class DashboardScreen extends ConsumerWidget {
 
                   const SizedBox(height: 18),
 
+                  // Weekly sales chart (per concept screens-1.jsx)
+                  dataAsync.maybeWhen(
+                    data: (d) => _WeeklyChartCard(spark: d.sparkline),
+                    orElse: () => const SizedBox(),
+                  ),
+
+                  const SizedBox(height: 18),
+
                   // Quick actions
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -476,6 +484,200 @@ class _HeroSkeleton extends StatelessWidget {
           child: CircularProgressIndicator(
               color: Colors.white.withValues(alpha: 0.7)),
         ),
+      ),
+    );
+  }
+}
+
+/// Weekly sales chart card — แสดงกราฟยอดขายพร้อม period chip selector
+///
+/// อ้างอิงดีไซน์ screens-1.jsx: title + subtitle + 7D/1M/3M chips + curved area chart + day labels
+class _WeeklyChartCard extends StatefulWidget {
+  const _WeeklyChartCard({required this.spark});
+  final List<SparklinePoint> spark;
+
+  @override
+  State<_WeeklyChartCard> createState() => _WeeklyChartCardState();
+}
+
+class _WeeklyChartCardState extends State<_WeeklyChartCard> {
+  String _range = '7D';
+  static const _dayLabels = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'];
+
+  @override
+  Widget build(BuildContext context) {
+    final pointsCount = switch (_range) {
+      '7D' => 7,
+      '1M' => 14,
+      '3M' => widget.spark.length,
+      _ => 7,
+    };
+    final visible = widget.spark.length <= pointsCount
+        ? widget.spark
+        : widget.spark.sublist(widget.spark.length - pointsCount);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ยอดขาย 7 วัน',
+                      style: TextStyle(
+                        color: Color(0xFF0F172A),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      'หมวด Marketplace',
+                      style: TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    for (final r in const ['7D', '1M', '3M'])
+                      GestureDetector(
+                        onTap: () => setState(() => _range = r),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            gradient: _range == r
+                                ? const LinearGradient(colors: [
+                                    Color(0xFF6366F1),
+                                    AppColors.pinkStart,
+                                  ])
+                                : null,
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Text(
+                            r,
+                            style: TextStyle(
+                              color: _range == r
+                                  ? Colors.white
+                                  : const Color(0xFF64748B),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 110,
+            child: visible.isEmpty
+                ? const Center(
+                    child: Text('ยังไม่มีข้อมูล',
+                        style: TextStyle(
+                            color: Color(0xFF94A3B8), fontSize: 11)),
+                  )
+                : LineChart(LineChartData(
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      horizontalInterval:
+                          (visible.map((p) => p.total).reduce((a, b) => a > b ? a : b)) / 4,
+                      getDrawingHorizontalLine: (_) => const FlLine(
+                          color: Color(0xFFF1F5F9), strokeWidth: 1),
+                    ),
+                    titlesData: const FlTitlesData(show: false),
+                    borderData: FlBorderData(show: false),
+                    minY: 0,
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: [
+                          for (int i = 0; i < visible.length; i++)
+                            FlSpot(i.toDouble(), visible[i].total),
+                        ],
+                        isCurved: true,
+                        curveSmoothness: 0.35,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6366F1), AppColors.pinkStart],
+                        ),
+                        barWidth: 3,
+                        dotData: FlDotData(
+                          show: true,
+                          checkToShowDot: (spot, _) =>
+                              spot.x.toInt() == (visible.length ~/ 2),
+                          getDotPainter: (spot, percent, bar, idx) {
+                            return FlDotCirclePainter(
+                              radius: 5,
+                              color: Colors.white,
+                              strokeWidth: 3,
+                              strokeColor: AppColors.purpleStart,
+                            );
+                          },
+                        ),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.purpleStart.withValues(alpha: 0.35),
+                              AppColors.purpleStart.withValues(alpha: 0),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )),
+          ),
+          const SizedBox(height: 4),
+          if (_range == '7D')
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  for (final d in _dayLabels)
+                    Text(
+                      d,
+                      style: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700),
+                    ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

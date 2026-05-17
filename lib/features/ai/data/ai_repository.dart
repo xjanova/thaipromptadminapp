@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/mock/mock_config.dart';
+import '../../../core/mock/mock_data.dart';
 import '../../finance/data/finance_repository.dart' show PagedResult;
 import 'models/ai_models.dart';
 
@@ -45,6 +47,12 @@ class AiRepository {
   }
 
   Future<AiProvider> toggleProvider(int providerId) async {
+    if (kMockMode) {
+      Mock.flipProvider(providerId);
+      final list = Mock.aiProviders();
+      return mockDelay(list.firstWhere((p) => p.id == providerId,
+          orElse: () => list.first));
+    }
     final json = await _api.post<Map<String, dynamic>>(
       '/ai/providers/$providerId/toggle',
       parser: (d) => (d as Map).cast<String, dynamic>(),
@@ -67,6 +75,12 @@ class AiRepository {
   }
 
   Future<AiBot> toggleBot(int botId) async {
+    if (kMockMode) {
+      Mock.flipBot(botId);
+      final page = Mock.aiBots();
+      return mockDelay(page.items.firstWhere((b) => b.id == botId,
+          orElse: () => page.items.first));
+    }
     final json = await _api.post<Map<String, dynamic>>(
       '/ai/bots/$botId/toggle',
       parser: (d) => (d as Map).cast<String, dynamic>(),
@@ -95,18 +109,22 @@ final aiRepositoryProvider = Provider<AiRepository>((ref) {
   return AiRepository(api);
 });
 
-final aiDashboardProvider = FutureProvider<AiDashboardData>((ref) {
+final aiDashboardProvider = FutureProvider<AiDashboardData>((ref) async {
+  if (kMockMode) return mockDelay(Mock.aiDashboard());
   return ref.watch(aiRepositoryProvider).dashboard();
 });
 
-final aiProvidersListProvider = FutureProvider<List<AiProvider>>((ref) {
+final aiProvidersListProvider = FutureProvider<List<AiProvider>>((ref) async {
+  if (kMockMode) return mockDelay(Mock.aiProviders());
   return ref.watch(aiRepositoryProvider).providers();
 });
 
-final aiBotsListProvider = FutureProvider<PagedResult<AiBot>>((ref) {
+final aiBotsListProvider = FutureProvider<PagedResult<AiBot>>((ref) async {
+  if (kMockMode) return mockDelay(Mock.aiBots());
   return ref.watch(aiRepositoryProvider).bots();
 });
 
-final aiTimeseriesProvider = FutureProvider<List<TimeseriesPoint>>((ref) {
+final aiTimeseriesProvider = FutureProvider<List<TimeseriesPoint>>((ref) async {
+  if (kMockMode) return mockDelay(Mock.aiTimeseries());
   return ref.watch(aiRepositoryProvider).timeseries();
 });

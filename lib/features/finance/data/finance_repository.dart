@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/mock/mock_config.dart';
+import '../../../core/mock/mock_data.dart';
 
 /// Wallet record from /api/admin/finance/wallets
 class AdminWallet {
@@ -152,10 +154,20 @@ class FinanceRepository {
   }
 
   Future<void> approveWithdrawal(int id) async {
+    if (kMockMode) {
+      Mock.setWithdrawalStatus(id, 'approved');
+      await mockDelay(null);
+      return;
+    }
     await _api.post<dynamic>('/finance/withdrawals/$id/approve');
   }
 
   Future<void> rejectWithdrawal(int id, String reason) async {
+    if (kMockMode) {
+      Mock.setWithdrawalStatus(id, 'rejected');
+      await mockDelay(null);
+      return;
+    }
     await _api.post<dynamic>('/finance/withdrawals/$id/reject',
         data: {'reason': reason});
   }
@@ -166,12 +178,17 @@ final financeRepositoryProvider = Provider<FinanceRepository>((ref) {
   return FinanceRepository(api);
 });
 
-final walletsProvider = FutureProvider<PagedResult<AdminWallet>>((ref) {
+final walletsProvider = FutureProvider<PagedResult<AdminWallet>>((ref) async {
+  if (kMockMode) return mockDelay(Mock.wallets());
   return ref.watch(financeRepositoryProvider).wallets(page: 1);
 });
 
 final withdrawalsProvider =
     FutureProvider.family<PagedResult<AdminWithdrawal>, String?>(
-  (ref, status) =>
-      ref.watch(financeRepositoryProvider).withdrawals(page: 1, status: status),
+  (ref, status) async {
+    if (kMockMode) return mockDelay(Mock.withdrawals(status: status));
+    return ref
+        .watch(financeRepositoryProvider)
+        .withdrawals(page: 1, status: status);
+  },
 );

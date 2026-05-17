@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/mock/mock_config.dart';
+import '../../../core/mock/mock_data.dart';
 import '../../finance/data/finance_repository.dart' show PagedResult;
 
 class MarketplaceDashboard {
@@ -54,6 +56,40 @@ class MarketplacePlatform {
         platform: json['platform'] as String?,
         isActive: (json['is_active'] as bool?) ?? false,
         lastSyncAt: DateTime.tryParse((json['last_sync_at'] as String?) ?? ''),
+      );
+}
+
+class MarketplaceProduct {
+  MarketplaceProduct({
+    required this.id,
+    required this.name,
+    required this.priceThb,
+    required this.sold,
+    required this.stock,
+    required this.hue,
+    required this.status,
+    this.platform,
+  });
+
+  final int id;
+  final String name;
+  final double priceThb;
+  final int sold;
+  final int stock;
+  final double hue;
+  final String status; // 'live' | 'low' | 'out'
+  final String? platform;
+
+  factory MarketplaceProduct.fromJson(Map<String, dynamic> json) =>
+      MarketplaceProduct(
+        id: ((json['id'] as num?) ?? 0).toInt(),
+        name: (json['name'] as String?) ?? '',
+        priceThb: ((json['price_thb'] as num?) ?? 0).toDouble(),
+        sold: ((json['sold'] as num?) ?? 0).toInt(),
+        stock: ((json['stock'] as num?) ?? 0).toInt(),
+        hue: ((json['hue'] as num?) ?? 220).toDouble(),
+        status: (json['status'] as String?) ?? 'live',
+        platform: json['platform'] as String?,
       );
 }
 
@@ -117,16 +153,35 @@ class MarketplaceRepository {
     );
     return PagedResult.fromJson<MarketplaceOrder>(json, MarketplaceOrder.fromJson);
   }
+
+  Future<PagedResult<MarketplaceProduct>> products({int page = 1, String? status}) async {
+    final json = await _api.get<Map<String, dynamic>>(
+      '/marketplace/products',
+      query: {
+        'page': page,
+        if (status != null) 'status': status,
+      },
+      parser: (d) => (d as Map).cast<String, dynamic>(),
+    );
+    return PagedResult.fromJson<MarketplaceProduct>(json, MarketplaceProduct.fromJson);
+  }
 }
 
 final marketplaceRepositoryProvider = Provider<MarketplaceRepository>((ref) {
   return MarketplaceRepository(ref.watch(apiClientProvider));
 });
 
-final marketplaceDashboardProvider = FutureProvider<MarketplaceDashboard>((ref) {
+final marketplaceDashboardProvider = FutureProvider<MarketplaceDashboard>((ref) async {
+  if (kMockMode) return mockDelay(Mock.marketplaceDashboard());
   return ref.watch(marketplaceRepositoryProvider).dashboard();
 });
 
-final marketplaceOrdersProvider = FutureProvider<PagedResult<MarketplaceOrder>>((ref) {
+final marketplaceOrdersProvider = FutureProvider<PagedResult<MarketplaceOrder>>((ref) async {
+  if (kMockMode) return mockDelay(Mock.marketplaceOrders());
   return ref.watch(marketplaceRepositoryProvider).orders();
+});
+
+final marketplaceProductsProvider = FutureProvider<PagedResult<MarketplaceProduct>>((ref) async {
+  if (kMockMode) return mockDelay(Mock.marketplaceProducts());
+  return ref.watch(marketplaceRepositoryProvider).products();
 });

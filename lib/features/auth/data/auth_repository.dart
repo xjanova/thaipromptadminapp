@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/mock/mock_config.dart';
+import '../../../core/mock/mock_data.dart';
 import 'models/admin_user.dart';
 
 /// Repository ที่ห่อ Admin Auth API endpoints
@@ -19,6 +21,13 @@ class AuthRepository {
     required String deviceId,
     String? deviceName,
   }) async {
+    if (kMockMode) {
+      return mockDelay(LoginResult(
+        requiresTwoFactor: false,
+        token: Mock.token,
+        admin: Mock.admin(),
+      ));
+    }
     final data = await _api.post<Map<String, dynamic>>(
       '/auth/login',
       data: {
@@ -37,6 +46,13 @@ class AuthRepository {
     required String challengeToken,
     required String code,
   }) async {
+    if (kMockMode) {
+      return mockDelay(LoginResult(
+        requiresTwoFactor: false,
+        token: Mock.token,
+        admin: Mock.admin(),
+      ));
+    }
     final data = await _api.post<Map<String, dynamic>>(
       '/auth/verify-2fa',
       data: {
@@ -55,6 +71,13 @@ class AuthRepository {
     String? deviceName,
     String? twoFactorCode,
   }) async {
+    if (kMockMode) {
+      return mockDelay(PairClaimResult(
+        requiresTwoFactor: false,
+        token: Mock.token,
+        admin: Mock.admin(),
+      ));
+    }
     final data = await _api.post<Map<String, dynamic>>(
       '/auth/pair/claim',
       data: {
@@ -70,6 +93,7 @@ class AuthRepository {
 
   /// ดึงข้อมูล admin ปัจจุบัน
   Future<AdminUser> me() async {
+    if (kMockMode) return mockDelay(Mock.admin());
     final data = await _api.get<Map<String, dynamic>>(
       '/auth/me',
       parser: (d) => (d as Map).cast<String, dynamic>(),
@@ -79,6 +103,7 @@ class AuthRepository {
 
   /// Logout — revoke current token
   Future<void> logout() async {
+    if (kMockMode) return;
     await _api.post<dynamic>('/auth/logout');
   }
 }

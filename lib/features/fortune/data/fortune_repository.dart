@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/mock/mock_config.dart';
+import '../../../core/mock/mock_data.dart';
 import '../../finance/data/finance_repository.dart' show PagedResult;
 import 'models/fortune_models.dart';
 
@@ -47,10 +49,12 @@ final fortuneRepositoryProvider = Provider<FortuneRepository>((ref) {
   return FortuneRepository(ref.watch(apiClientProvider));
 });
 
-final fortuneDashboardProvider = FutureProvider<FortuneDashboardData>((ref) {
+final fortuneDashboardProvider = FutureProvider<FortuneDashboardData>((ref) async {
+  if (kMockMode) return mockDelay(Mock.fortuneDashboard());
   return ref.watch(fortuneRepositoryProvider).dashboard();
 });
 
-final fortuneReadingsProvider = FutureProvider<PagedResult<FortuneReading>>((ref) {
+final fortuneReadingsProvider = FutureProvider<PagedResult<FortuneReading>>((ref) async {
+  if (kMockMode) return mockDelay(Mock.fortuneReadings());
   return ref.watch(fortuneRepositoryProvider).readings();
 });
