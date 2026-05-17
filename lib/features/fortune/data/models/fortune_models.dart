@@ -231,6 +231,109 @@ class FortuneBill {
       createdAt == null ? Duration.zero : DateTime.now().difference(createdAt!);
 }
 
+/// Active reading (กำลังทำนาย) — from /api/admin/fortune/active-readings
+///
+/// อ้างอิง brain notes:
+/// - [[Session 2026-05-14 #2 — Fortune AI Loading Ping + Admin Stuck Alert]]
+///   stuck ถ้าเกิน 60s · alert ถ้าเกิน 2min · throttle 1 alert/5min
+/// - [[Thaiprompt Fortune Bot - Admin Takeover & FB Handover Limitations]]
+///   FB มี rate limit · LINE ใช้ replyToken (60s window) แล้ว fallback push
+/// - [[2026-05-17-fortune-celtic-admin-ai-debug-tools-bill-race-lock]]
+///   admin takeover via askQuestionAsAdmin AJAX (30-60s wait)
+class FortuneActiveReading {
+  FortuneActiveReading({
+    required this.id,
+    required this.billNumber,
+    required this.tier,
+    required this.customerName,
+    required this.platform,
+    this.platformUserId,
+    required this.state,
+    required this.stageLabel,
+    this.aiProvider,
+    this.aiModel,
+    required this.startedAt,
+    this.lastActivityAt,
+    this.questionPreview,
+    this.alertSentAt,
+    this.adminTakenOver = false,
+  });
+
+  final int id;
+  final String billNumber;
+  final String tier;
+  final String customerName;
+  final String platform;
+  final String? platformUserId;
+
+  /// state machine state (e.g. CELTIC_PICKING, DEEP_PROCESSING)
+  final String state;
+
+  /// human-friendly stage label (e.g. "กำลังเปิดไพ่ใบที่ 4/10")
+  final String stageLabel;
+
+  final String? aiProvider;
+  final String? aiModel;
+  final DateTime startedAt;
+  final DateTime? lastActivityAt;
+  final String? questionPreview;
+  final DateTime? alertSentAt;
+  final bool adminTakenOver;
+
+  factory FortuneActiveReading.fromJson(Map<String, dynamic> json) {
+    final user = (json['user'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final ai = (json['ai'] as Map?)?.cast<String, dynamic>() ?? const {};
+    return FortuneActiveReading(
+      id: ((json['id'] as num?) ?? 0).toInt(),
+      billNumber: (json['bill_number'] as String?) ?? '',
+      tier: (json['tier'] as String?) ?? 'deep',
+      customerName: (user['name'] as String?) ?? '—',
+      platform: (json['platform'] as String?) ?? 'line',
+      platformUserId: json['platform_user_id'] as String?,
+      state: (json['state'] as String?) ?? 'unknown',
+      stageLabel: (json['stage_label'] as String?) ?? 'กำลังทำนาย',
+      aiProvider: ai['provider'] as String?,
+      aiModel: ai['model'] as String?,
+      startedAt: DateTime.tryParse((json['started_at'] as String?) ?? '') ??
+          DateTime.now(),
+      lastActivityAt:
+          DateTime.tryParse((json['last_activity_at'] as String?) ?? ''),
+      questionPreview: json['question_preview'] as String?,
+      alertSentAt:
+          DateTime.tryParse((json['alert_sent_at'] as String?) ?? ''),
+      adminTakenOver: (json['admin_taken_over'] as bool?) ?? false,
+    );
+  }
+
+  String get tierLabel => switch (tier) {
+        'celtic' => 'Celtic 99฿',
+        'deep' => 'Deep 39฿',
+        'tarot_chat' => 'Tarot Chat',
+        _ => tier,
+      };
+
+  double get tierHue => switch (tier) {
+        'celtic' => 320,
+        'deep' => 270,
+        'tarot_chat' => 200,
+        _ => 220,
+      };
+
+  Duration get elapsed => DateTime.now().difference(startedAt);
+
+  /// alert level: 'ok' < 60s · 'slow' 60-120s · 'stuck' > 120s
+  String get alertLevel {
+    final sec = elapsed.inSeconds;
+    if (sec < 60) return 'ok';
+    if (sec < 120) return 'slow';
+    return 'stuck';
+  }
+
+  bool get isStuck => alertLevel == 'stuck';
+  bool get isSlow => alertLevel == 'slow';
+  bool get hasAlerted => alertSentAt != null;
+}
+
 /// Stats for bills hero (รออนุมัติ N · approved วันนี้ N · revenue ฿N)
 class FortuneBillStats {
   FortuneBillStats({

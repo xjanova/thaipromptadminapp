@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -31,6 +32,7 @@ class FortuneScreen extends ConsumerWidget {
     final dashAsync = ref.watch(fortuneDashboardProvider);
     final readingsAsync = ref.watch(fortuneReadingsProvider);
     final billStatsAsync = ref.watch(fortuneBillStatsProvider);
+    final activeReadingsAsync = ref.watch(fortuneActiveReadingsProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F0A1F),
@@ -38,6 +40,22 @@ class FortuneScreen extends ConsumerWidget {
         title: const Text('ดูดวง & ทาโรต์'),
         backgroundColor: Colors.transparent,
         actions: [
+          // Live readings shortcut with stuck-count badge
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: activeReadingsAsync.maybeWhen(
+              data: (list) => _LiveShortcutButton(
+                activeCount: list.length,
+                stuckCount: list.where((r) => r.isStuck).length,
+                onTap: () => context.push('/fortune/live'),
+              ),
+              orElse: () => _LiveShortcutButton(
+                activeCount: 0,
+                stuckCount: 0,
+                onTap: () => context.push('/fortune/live'),
+              ),
+            ),
+          ),
           // Bills shortcut with pending badge
           Padding(
             padding: const EdgeInsets.only(right: 12),
@@ -120,6 +138,14 @@ class FortuneScreen extends ConsumerWidget {
                 _BillApprovalCta(
                   async: billStatsAsync,
                   onTap: () => context.push('/fortune/bills'),
+                ),
+
+                const SizedBox(height: 10),
+
+                // ── Live readings CTA ──
+                _LiveReadingsCta(
+                  async: activeReadingsAsync,
+                  onTap: () => context.push('/fortune/live'),
                 ),
 
                 const SizedBox(height: 22),
@@ -514,6 +540,183 @@ class _BillShortcutButton extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// AppBar action for Live readings — shows pulsing red dot if stuck
+class _LiveShortcutButton extends StatelessWidget {
+  const _LiveShortcutButton({
+    required this.activeCount,
+    required this.stuckCount,
+    required this.onTap,
+  });
+  final int activeCount;
+  final int stuckCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+            child: const Icon(Icons.podcasts,
+                color: Colors.white, size: 19),
+          ),
+          if (activeCount > 0)
+            Positioned(
+              top: -4,
+              right: -4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: stuckCount > 0
+                        ? [AppColors.error, const Color(0xFFB91C1C)]
+                        : [AppColors.success, const Color(0xFF15803D)],
+                  ),
+                  borderRadius: BorderRadius.circular(9),
+                  border:
+                      Border.all(color: const Color(0xFF0F0A1F), width: 2),
+                ),
+                child: Text(
+                  activeCount > 99 ? '99+' : activeCount.toString(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// CTA card showing live readings count — links to FortuneLiveScreen
+class _LiveReadingsCta extends StatelessWidget {
+  const _LiveReadingsCta({required this.async, required this.onTap});
+  final AsyncValue<List<FortuneActiveReading>> async;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return async.maybeWhen(
+      data: (list) {
+        final total = list.length;
+        final stuck = list.where((r) => r.isStuck).length;
+        final slow = list.where((r) => r.isSlow).length;
+        return InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: stuck > 0
+                  ? AppColors.error.withValues(alpha: 0.15)
+                  : Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: stuck > 0
+                    ? AppColors.error.withValues(alpha: 0.4)
+                    : Colors.white.withValues(alpha: 0.14),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: stuck > 0
+                        ? AppColors.error.withValues(alpha: 0.25)
+                        : AppColors.purpleStart.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(
+                    Icons.podcasts,
+                    color: stuck > 0 ? AppColors.error : AppColors.purpleStart,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'Live การทำนาย · $total',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (total > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: stuck > 0
+                                    ? AppColors.error
+                                    : AppColors.success,
+                                shape: BoxShape.circle,
+                              ),
+                            ).animate(
+                              onPlay: (c) => c.repeat(reverse: true),
+                            ).fadeIn(
+                              duration: const Duration(milliseconds: 800),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        total == 0
+                            ? 'ไม่มีการทำนายที่กำลังทำงาน'
+                            : (stuck > 0
+                                ? '⚠️ $stuck ค้างนานเกิน 2 นาที · $slow ช้า · auto-refresh ทุก 10s'
+                                : '$slow ช้า · auto-refresh ทุก 10s'),
+                        style: TextStyle(
+                          color: stuck > 0
+                              ? AppColors.error
+                              : const Color(0xCCFFFFFF),
+                          fontSize: 11,
+                          fontWeight:
+                              stuck > 0 ? FontWeight.w700 : FontWeight.w500,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios,
+                    color: Color(0x99FFFFFF), size: 12),
+              ],
+            ),
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
     );
   }
 }

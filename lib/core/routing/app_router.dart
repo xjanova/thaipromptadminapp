@@ -11,6 +11,7 @@ import '../../features/analytics/ui/analytics_screen.dart';
 import '../../features/dashboard/ui/dashboard_screen.dart';
 import '../../features/finance/ui/finance_screen.dart';
 import '../../features/fortune/ui/fortune_bills_screen.dart';
+import '../../features/fortune/ui/fortune_live_screen.dart';
 import '../../features/fortune/ui/fortune_screen.dart';
 import '../../features/marketplace/ui/marketplace_screen.dart';
 import '../../features/modules/ui/modules_hub_screen.dart';
@@ -60,6 +61,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/fortune/bills',
               builder: (_, __) => const FortuneBillsScreen()),
+          GoRoute(
+              path: '/fortune/live',
+              builder: (_, __) => const FortuneLiveScreen()),
           GoRoute(path: '/users', builder: (_, __) => const UsersScreen()),
           GoRoute(
               path: '/marketplace', builder: (_, __) => const MarketplaceScreen()),

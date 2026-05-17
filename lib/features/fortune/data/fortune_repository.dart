@@ -116,6 +116,62 @@ class FortuneRepository {
     }
     await _api.post<dynamic>('/fortune/bills/$id/resend-image');
   }
+
+  // ── Active Readings (Live monitor) ──
+  Future<List<FortuneActiveReading>> activeReadings() async {
+    if (kMockMode) return mockDelay(Mock.fortuneActiveReadings());
+    final json = await _api.get<Map<String, dynamic>>(
+      '/fortune/active-readings',
+      parser: (d) => (d as Map).cast<String, dynamic>(),
+    );
+    final list = (json['data'] as List?) ?? const [];
+    return list
+        .whereType<Map>()
+        .map((m) => FortuneActiveReading.fromJson(m.cast<String, dynamic>()))
+        .toList();
+  }
+
+  /// Admin Ask AI — sync AJAX takeover (pattern from
+  /// [[2026-05-17-fortune-celtic-admin-ai-debug-tools-bill-race-lock]])
+  /// admin waits 30-60s; bypasses canAskMoreCeltic + time window;
+  /// uses MAX(seq)+1 + retry to avoid race with customer thread
+  Future<void> adminAskAi(int readingId, String question) async {
+    if (kMockMode) {
+      Mock.markAdminTakeover(readingId);
+      // realistic AI takeover delay (1-2s in mock to feel responsive)
+      await mockDelay(null, delay: const Duration(milliseconds: 1200));
+      return;
+    }
+    await _api.post<dynamic>(
+      '/fortune/active-readings/$readingId/admin-ask-ai',
+      data: {'question': question},
+    );
+  }
+
+  /// Admin sends a text message to customer (bypassing bot)
+  Future<void> sendAdminMessage(int readingId, String text) async {
+    if (kMockMode) {
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>(
+      '/fortune/active-readings/$readingId/send-message',
+      data: {'text': text},
+    );
+  }
+
+  /// Cancel reading + refund (combined safety hatch)
+  Future<void> cancelReading(int readingId, String reason) async {
+    if (kMockMode) {
+      Mock.cancelActiveReading(readingId);
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>(
+      '/fortune/active-readings/$readingId/cancel',
+      data: {'reason': reason},
+    );
+  }
 }
 
 final fortuneRepositoryProvider = Provider<FortuneRepository>((ref) {
@@ -141,4 +197,11 @@ final fortuneBillsProvider =
 
 final fortuneBillStatsProvider = FutureProvider<FortuneBillStats>((ref) async {
   return ref.watch(fortuneRepositoryProvider).billStats();
+});
+
+/// Active readings (Live monitor) — auto-refresh ทุก 10s ด้วย Timer
+/// ใน UI (Riverpod ไม่มี polling built-in — ใช้ `ref.invalidate()` แทน)
+final fortuneActiveReadingsProvider =
+    FutureProvider<List<FortuneActiveReading>>((ref) async {
+  return ref.watch(fortuneRepositoryProvider).activeReadings();
 });

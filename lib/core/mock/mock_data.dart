@@ -32,6 +32,12 @@ class Mock {
   static final Map<int, String> _billStatusOverride = {};
   static final Map<int, String> _billRejectReasonOverride = {};
 
+  /// activeReadingId → true means admin took over (badge in UI)
+  static final Set<int> _adminTakenOverReadings = {};
+
+  /// activeReadingId → true means cancelled (removed from list)
+  static final Set<int> _cancelledReadings = {};
+
   // ────────────────────────────────────────────────────────────
   // Toggle helpers (called from mocked repository methods)
   // ────────────────────────────────────────────────────────────
@@ -69,6 +75,14 @@ class Mock {
     if (rejectReason != null && rejectReason.isNotEmpty) {
       _billRejectReasonOverride[id] = rejectReason;
     }
+  }
+
+  static void markAdminTakeover(int readingId) {
+    _adminTakenOverReadings.add(readingId);
+  }
+
+  static void cancelActiveReading(int readingId) {
+    _cancelledReadings.add(readingId);
   }
 
   // ────────────────────────────────────────────────────────────
@@ -745,6 +759,130 @@ class Mock {
       todayRevenueThb: todayRevenue,
       rejectedTodayCount: rejected,
     );
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // Fortune Active Readings (Live monitor)
+  // อ้างอิง brain: stuck > 60s (slow) / > 120s (stuck) / alert_sent หลัง 60s
+  // ────────────────────────────────────────────────────────────
+
+  static List<FortuneActiveReading> fortuneActiveReadings() {
+    final now = DateTime.now();
+    final dateTag =
+        '${now.year.toString().substring(2)}${_pad2(now.month)}${_pad2(now.day)}';
+    // varied elapsed times to demo alert levels
+    final raw = [
+      {
+        'id': 5001,
+        'bill_number': 'FTU-$dateTag-R3092',
+        'tier': 'celtic',
+        'state': 'CELTIC_PICKING',
+        'stage_label': 'กำลังเปิดไพ่ใบที่ 4/10',
+        'started_at': now.subtract(const Duration(seconds: 28)).toIso8601String(),
+        'last_activity_at':
+            now.subtract(const Duration(seconds: 4)).toIso8601String(),
+        'question_preview': 'อยากรู้เรื่องเนื้อคู่',
+        'ai': {'provider': 'OpenAI', 'model': 'gpt-4o'},
+        'user': {'name': 'พลอย จันทรา'},
+        'platform': 'line',
+        'platform_user_id': 'U44425abec76f4458ef731274a056212d',
+      },
+      {
+        'id': 5002,
+        'bill_number': 'FTU-$dateTag-R3091',
+        'tier': 'deep',
+        'state': 'DEEP_PROCESSING',
+        'stage_label': 'AI กำลังประมวลผล (Deep 39฿)',
+        'started_at': now.subtract(const Duration(seconds: 78)).toIso8601String(),
+        'last_activity_at':
+            now.subtract(const Duration(seconds: 22)).toIso8601String(),
+        'question_preview': 'งานใหม่จะดีกว่าเดิมไหม?',
+        'ai': {'provider': 'Anthropic', 'model': 'claude-sonnet-4-6'},
+        'user': {'name': 'สมชาย ใจดี'},
+        'platform': 'facebook',
+      },
+      {
+        'id': 5003,
+        'bill_number': 'FTU-$dateTag-R3090',
+        'tier': 'celtic',
+        'state': 'CELTIC_AWAITING_QUESTION',
+        'stage_label': 'รอลูกค้าพิมพ์คำถาม',
+        'started_at':
+            now.subtract(const Duration(seconds: 145)).toIso8601String(),
+        'last_activity_at':
+            now.subtract(const Duration(seconds: 95)).toIso8601String(),
+        'question_preview': null,
+        'ai': null,
+        'user': {'name': 'Mei Wong'},
+        'platform': 'line',
+        'alert_sent_at':
+            now.subtract(const Duration(seconds: 85)).toIso8601String(),
+      },
+      {
+        'id': 5004,
+        'bill_number': 'FTU-$dateTag-R3089',
+        'tier': 'tarot_chat',
+        'state': 'CHAT_THINKING',
+        'stage_label': 'AI ตอบคำถาม (Chat)',
+        'started_at':
+            now.subtract(const Duration(seconds: 192)).toIso8601String(),
+        'last_activity_at':
+            now.subtract(const Duration(seconds: 192)).toIso8601String(),
+        'question_preview': 'ปีนี้จะได้เลื่อนตำแหน่งไหม?',
+        'ai': {'provider': 'Google', 'model': 'gemini-2.0-flash'},
+        'user': {'name': 'ภาคิน ทรัพย์ทวี'},
+        'platform': 'line',
+        'alert_sent_at':
+            now.subtract(const Duration(seconds: 132)).toIso8601String(),
+      },
+      {
+        'id': 5005,
+        'bill_number': 'FTU-$dateTag-R3088',
+        'tier': 'celtic',
+        'state': 'CELTIC_PICKING',
+        'stage_label': 'กำลังเปิดไพ่ใบที่ 9/10',
+        'started_at': now.subtract(const Duration(seconds: 42)).toIso8601String(),
+        'last_activity_at':
+            now.subtract(const Duration(seconds: 6)).toIso8601String(),
+        'question_preview': 'ดวงรายเดือนพฤษภาคม',
+        'ai': null,
+        'user': {'name': 'Lisa Anderson'},
+        'platform': 'line',
+      },
+      {
+        'id': 5006,
+        'bill_number': 'FTU-$dateTag-R3086',
+        'tier': 'celtic',
+        'state': 'CELTIC_VISION_PROCESSING',
+        'stage_label': 'AI Vision อ่านรูปภาพ',
+        'started_at': now.subtract(const Duration(seconds: 52)).toIso8601String(),
+        'last_activity_at':
+            now.subtract(const Duration(seconds: 12)).toIso8601String(),
+        'question_preview': 'อยากรู้เรื่องการลงทุนปีนี้',
+        'ai': {'provider': 'OpenAI', 'model': 'gpt-4o (vision)'},
+        'user': {'name': 'Yuki Tanaka'},
+        'platform': 'line',
+      },
+    ];
+    return raw
+        .where((m) => !_cancelledReadings.contains(m['id']))
+        .map((m) {
+          final id = m['id'] as int;
+          final patched = Map<String, dynamic>.from(m);
+          if (_adminTakenOverReadings.contains(id)) {
+            patched['admin_taken_over'] = true;
+          }
+          return FortuneActiveReading.fromJson(patched);
+        })
+        .toList()
+        // sort: stuck first, then slow, then ok; within group by elapsed desc
+        ..sort((a, b) {
+          final order = {'stuck': 0, 'slow': 1, 'ok': 2};
+          final ao = order[a.alertLevel] ?? 99;
+          final bo = order[b.alertLevel] ?? 99;
+          if (ao != bo) return ao.compareTo(bo);
+          return b.elapsed.compareTo(a.elapsed);
+        });
   }
 
   // ────────────────────────────────────────────────────────────
