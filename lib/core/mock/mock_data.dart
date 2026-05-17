@@ -28,6 +28,10 @@ class Mock {
   /// withdrawalId → new status (ใช้ตอน approve/reject)
   static final Map<int, String> _withdrawalStatusOverride = {};
 
+  /// billId → new fortune bill status (approve/reject/refund)
+  static final Map<int, String> _billStatusOverride = {};
+  static final Map<int, String> _billRejectReasonOverride = {};
+
   // ────────────────────────────────────────────────────────────
   // Toggle helpers (called from mocked repository methods)
   // ────────────────────────────────────────────────────────────
@@ -57,6 +61,14 @@ class Mock {
   /// อัพเดทสถานะ withdrawal (approve/reject)
   static void setWithdrawalStatus(int id, String status) {
     _withdrawalStatusOverride[id] = status;
+  }
+
+  /// อัพเดทสถานะ fortune bill (approve/reject/refund)
+  static void setBillStatus(int id, String status, {String? rejectReason}) {
+    _billStatusOverride[id] = status;
+    if (rejectReason != null && rejectReason.isNotEmpty) {
+      _billRejectReasonOverride[id] = rejectReason;
+    }
   }
 
   // ────────────────────────────────────────────────────────────
@@ -414,6 +426,324 @@ class Mock {
         'total': 480,
       },
       FortuneReading.fromJson,
+    );
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // Fortune Bills (อนุมัติบิล)
+  // อ้างอิงรูปแบบจริง: FTU-YYMMDD-R{readingId} (Celtic 99 / Deep 39)
+  // ────────────────────────────────────────────────────────────
+
+  static String _pad2(int n) => n.toString().padLeft(2, '0');
+
+  static List<Map<String, dynamic>> _fortuneBillsRaw() {
+    final now = DateTime.now();
+    final dateTag = '${now.year.toString().substring(2)}${_pad2(now.month)}${_pad2(now.day)}';
+    return [
+      // 4 pending payment (รอลูกค้าจ่าย)
+      {
+        'id': 901,
+        'bill_number': 'FTU-$dateTag-R3092',
+        'tier': 'celtic',
+        'status': 'pending_payment',
+        'amount_thb': 99.0,
+        'fee_thb': 0.0,
+        'net_thb': 99.0,
+        'payment_method': 'promptpay',
+        'slip_image_url': null,
+        'question_preview': 'จะเจอเนื้อคู่ปีนี้ไหมคะ? อยากรู้รายละเอียดด้วย',
+        'reading_id': 3092,
+        'created_at':
+            now.subtract(const Duration(minutes: 3)).toIso8601String(),
+        'user': {'name': 'พลอย จันทรา'},
+        'platform': 'line',
+        'platform_user_id': 'U44425abec76f4458ef731274a056212d',
+      },
+      {
+        'id': 902,
+        'bill_number': 'FTU-$dateTag-R3091',
+        'tier': 'deep',
+        'status': 'pending_payment',
+        'amount_thb': 39.0,
+        'fee_thb': 0.0,
+        'net_thb': 39.0,
+        'payment_method': 'promptpay',
+        'slip_image_url': null,
+        'question_preview': 'งานใหม่จะดีกว่าเดิมไหม?',
+        'reading_id': 3091,
+        'created_at':
+            now.subtract(const Duration(minutes: 8)).toIso8601String(),
+        'user': {'name': 'สมชาย ใจดี'},
+        'platform': 'facebook',
+      },
+      {
+        'id': 903,
+        'bill_number': 'FTU-$dateTag-R3090',
+        'tier': 'celtic',
+        'status': 'pending_payment',
+        'amount_thb': 99.0,
+        'fee_thb': 0.0,
+        'net_thb': 99.0,
+        'payment_method': 'promptpay',
+        'slip_image_url': null,
+        'question_preview': 'ความรักกับแฟนคนเก่าจะกลับมาไหม',
+        'reading_id': 3090,
+        'created_at':
+            now.subtract(const Duration(minutes: 14)).toIso8601String(),
+        'user': {'name': 'Mei Wong'},
+        'platform': 'line',
+      },
+      {
+        'id': 904,
+        'bill_number': 'FTU-$dateTag-R3089',
+        'tier': 'tarot_chat',
+        'status': 'pending_payment',
+        'amount_thb': 59.0,
+        'fee_thb': 0.0,
+        'net_thb': 59.0,
+        'payment_method': 'stripe',
+        'slip_image_url': null,
+        'question_preview': 'ปีนี้จะได้เลื่อนตำแหน่งไหม?',
+        'reading_id': 3089,
+        'created_at':
+            now.subtract(const Duration(minutes: 22)).toIso8601String(),
+        'user': {'name': 'ภาคิน ทรัพย์ทวี'},
+        'platform': 'line',
+      },
+
+      // 3 paid (รอ admin confirm) — มี slip image แล้ว
+      {
+        'id': 905,
+        'bill_number': 'FTU-$dateTag-R3088',
+        'tier': 'celtic',
+        'status': 'paid',
+        'amount_thb': 99.0,
+        'fee_thb': 0.0,
+        'net_thb': 99.0,
+        'payment_method': 'promptpay',
+        'slip_image_url': 'https://placeholder.example/slip1.jpg',
+        'question_preview': 'ดวงรายเดือนพฤษภาคม',
+        'reading_id': 3088,
+        'created_at':
+            now.subtract(const Duration(minutes: 28)).toIso8601String(),
+        'paid_at': now.subtract(const Duration(minutes: 4)).toIso8601String(),
+        'user': {'name': 'Lisa Anderson'},
+        'platform': 'line',
+      },
+      {
+        'id': 906,
+        'bill_number': 'FTU-$dateTag-R3087',
+        'tier': 'deep',
+        'status': 'paid',
+        'amount_thb': 39.0,
+        'fee_thb': 0.0,
+        'net_thb': 39.0,
+        'payment_method': 'promptpay',
+        'slip_image_url': 'https://placeholder.example/slip2.jpg',
+        'question_preview': 'การเงินช่วงนี้',
+        'reading_id': 3087,
+        'created_at':
+            now.subtract(const Duration(hours: 1)).toIso8601String(),
+        'paid_at': now.subtract(const Duration(minutes: 12)).toIso8601String(),
+        'user': {'name': 'ปนัดดา วงศ์สุข'},
+        'platform': 'facebook',
+      },
+      {
+        'id': 907,
+        'bill_number': 'FTU-$dateTag-R3086',
+        'tier': 'celtic',
+        'status': 'paid',
+        'amount_thb': 99.0,
+        'fee_thb': 0.0,
+        'net_thb': 99.0,
+        'payment_method': 'promptpay',
+        'slip_image_url': 'https://placeholder.example/slip3.jpg',
+        'question_preview': 'อยากรู้เรื่องการลงทุนปีนี้',
+        'reading_id': 3086,
+        'created_at':
+            now.subtract(const Duration(hours: 1, minutes: 22))
+                .toIso8601String(),
+        'paid_at': now.subtract(const Duration(minutes: 18)).toIso8601String(),
+        'user': {'name': 'Yuki Tanaka'},
+        'platform': 'line',
+      },
+
+      // 3 confirmed (admin อนุมัติแล้ว — บิล healthy)
+      {
+        'id': 908,
+        'bill_number': 'FTU-$dateTag-R3085',
+        'tier': 'celtic',
+        'status': 'reading_done',
+        'amount_thb': 99.0,
+        'fee_thb': 0.0,
+        'net_thb': 99.0,
+        'payment_method': 'promptpay',
+        'slip_image_url': 'https://placeholder.example/slip4.jpg',
+        'question_preview': 'คำถามเรื่องสุขภาพ',
+        'reading_id': 3085,
+        'created_at':
+            now.subtract(const Duration(hours: 2)).toIso8601String(),
+        'paid_at':
+            now.subtract(const Duration(hours: 2, minutes: -10))
+                .toIso8601String(),
+        'confirmed_at':
+            now.subtract(const Duration(hours: 1, minutes: 50))
+                .toIso8601String(),
+        'user': {'name': 'Carlos Rivera'},
+        'platform': 'line',
+      },
+      {
+        'id': 909,
+        'bill_number': 'FTU-$dateTag-R3084',
+        'tier': 'deep',
+        'status': 'reading_done',
+        'amount_thb': 39.0,
+        'fee_thb': 0.0,
+        'net_thb': 39.0,
+        'payment_method': 'stripe',
+        'slip_image_url': null,
+        'question_preview': 'งานใหม่กับงานเก่า',
+        'reading_id': 3084,
+        'created_at':
+            now.subtract(const Duration(hours: 3)).toIso8601String(),
+        'confirmed_at':
+            now.subtract(const Duration(hours: 2, minutes: 55))
+                .toIso8601String(),
+        'user': {'name': 'ธนพล อิ่มสุข'},
+        'platform': 'facebook',
+      },
+      {
+        'id': 910,
+        'bill_number': 'FTU-$dateTag-R3083',
+        'tier': 'celtic',
+        'status': 'reading_done',
+        'amount_thb': 99.0,
+        'fee_thb': 0.0,
+        'net_thb': 99.0,
+        'payment_method': 'promptpay',
+        'slip_image_url': 'https://placeholder.example/slip5.jpg',
+        'question_preview': 'การเดินทางต่างประเทศ',
+        'reading_id': 3083,
+        'created_at':
+            now.subtract(const Duration(hours: 5)).toIso8601String(),
+        'confirmed_at':
+            now.subtract(const Duration(hours: 4, minutes: 55))
+                .toIso8601String(),
+        'user': {'name': 'พิมพ์ใจ ศรีสุข'},
+        'platform': 'line',
+      },
+
+      // 1 rejected
+      {
+        'id': 911,
+        'bill_number': 'FTU-$dateTag-R3082',
+        'tier': 'celtic',
+        'status': 'rejected',
+        'amount_thb': 99.0,
+        'fee_thb': 0.0,
+        'net_thb': 99.0,
+        'payment_method': 'promptpay',
+        'slip_image_url': 'https://placeholder.example/slip6.jpg',
+        'question_preview': 'อยากรู้ดวงปีนี้',
+        'reading_id': 3082,
+        'created_at':
+            now.subtract(const Duration(hours: 6)).toIso8601String(),
+        'reject_reason': 'สลิปปลอม — ยอดเงินไม่ตรง',
+        'user': {'name': 'นาง สมหญิง'},
+        'platform': 'facebook',
+      },
+
+      // 1 refunded
+      {
+        'id': 912,
+        'bill_number': 'FTU-$dateTag-R3081',
+        'tier': 'celtic',
+        'status': 'refunded',
+        'amount_thb': 99.0,
+        'fee_thb': 0.0,
+        'net_thb': 99.0,
+        'payment_method': 'promptpay',
+        'slip_image_url': 'https://placeholder.example/slip7.jpg',
+        'question_preview': 'ความรักจะดีไหมปีนี้',
+        'reading_id': 3081,
+        'created_at':
+            now.subtract(const Duration(hours: 8)).toIso8601String(),
+        'reject_reason': 'AI ตอบไม่ครบ — refund 99฿',
+        'user': {'name': 'อรพรรณ สวัสดิ์'},
+        'platform': 'line',
+      },
+    ];
+  }
+
+  static PagedResult<FortuneBill> fortuneBills({String? status, String? tier}) {
+    final all = _fortuneBillsRaw().map((m) {
+      final id = m['id'] as int;
+      final patched = Map<String, dynamic>.from(m);
+      // apply status override
+      if (_billStatusOverride.containsKey(id)) {
+        patched['status'] = _billStatusOverride[id];
+      }
+      if (_billRejectReasonOverride.containsKey(id)) {
+        patched['reject_reason'] = _billRejectReasonOverride[id];
+      }
+      return patched;
+    }).toList();
+
+    final filtered = all.where((m) {
+      if (status != null && m['status'] != status) return false;
+      if (tier != null && m['tier'] != tier) return false;
+      return true;
+    }).toList();
+
+    // sort: pending first, then by created_at desc
+    filtered.sort((a, b) {
+      final ap = a['status'] == 'pending_payment' ? 0 : (a['status'] == 'paid' ? 1 : 2);
+      final bp = b['status'] == 'pending_payment' ? 0 : (b['status'] == 'paid' ? 1 : 2);
+      if (ap != bp) return ap.compareTo(bp);
+      return (b['created_at'] as String).compareTo(a['created_at'] as String);
+    });
+
+    return PagedResult.fromJson<FortuneBill>(
+      {
+        'data': filtered,
+        'current_page': 1,
+        'last_page': 1,
+        'total': filtered.length,
+      },
+      FortuneBill.fromJson,
+    );
+  }
+
+  static FortuneBillStats fortuneBillStats() {
+    final all = _fortuneBillsRaw().map((m) {
+      final id = m['id'] as int;
+      final patched = Map<String, dynamic>.from(m);
+      if (_billStatusOverride.containsKey(id)) {
+        patched['status'] = _billStatusOverride[id];
+      }
+      return patched;
+    }).toList();
+
+    final pending =
+        all.where((m) => m['status'] == 'pending_payment').length;
+    final paidUnconfirmed = all.where((m) => m['status'] == 'paid').length;
+    final confirmed = all.where((m) {
+      final s = m['status'] as String;
+      return s == 'confirmed' || s == 'reading_started' || s == 'reading_done';
+    }).length;
+    final rejected = all.where((m) => m['status'] == 'rejected').length;
+
+    final todayRevenue = all.where((m) {
+      final s = m['status'] as String;
+      return s == 'confirmed' || s == 'reading_started' || s == 'reading_done';
+    }).fold<double>(0, (sum, m) => sum + ((m['amount_thb'] as num).toDouble()));
+
+    return FortuneBillStats(
+      pendingCount: pending,
+      paidUnconfirmedCount: paidUnconfirmed,
+      confirmedTodayCount: confirmed,
+      todayRevenueThb: todayRevenue,
+      rejectedTodayCount: rejected,
     );
   }
 

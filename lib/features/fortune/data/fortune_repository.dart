@@ -43,6 +43,79 @@ class FortuneRepository {
       parser: (d) => (d as Map).cast<String, dynamic>(),
     );
   }
+
+  // ── Bills ──
+  Future<PagedResult<FortuneBill>> bills({
+    int page = 1,
+    String? status,
+    String? tier,
+    String? search,
+  }) async {
+    if (kMockMode) return mockDelay(Mock.fortuneBills(status: status, tier: tier));
+    final json = await _api.get<Map<String, dynamic>>(
+      '/fortune/bills',
+      query: {
+        'page': page,
+        if (status != null) 'status': status,
+        if (tier != null) 'tier': tier,
+        if (search != null && search.isNotEmpty) 'search': search,
+      },
+      parser: (d) => (d as Map).cast<String, dynamic>(),
+    );
+    return PagedResult.fromJson<FortuneBill>(json, FortuneBill.fromJson);
+  }
+
+  Future<FortuneBillStats> billStats() async {
+    if (kMockMode) return mockDelay(Mock.fortuneBillStats());
+    final json = await _api.get<Map<String, dynamic>>(
+      '/fortune/bills/stats',
+      parser: (d) => (d as Map).cast<String, dynamic>(),
+    );
+    return FortuneBillStats.fromJson(json);
+  }
+
+  Future<void> approveBill(int id) async {
+    if (kMockMode) {
+      Mock.setBillStatus(id, 'confirmed');
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>('/fortune/bills/$id/approve');
+  }
+
+  Future<void> rejectBill(int id, String reason) async {
+    if (kMockMode) {
+      Mock.setBillStatus(id, 'rejected', rejectReason: reason);
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>(
+      '/fortune/bills/$id/reject',
+      data: {'reason': reason},
+    );
+  }
+
+  Future<void> refundBill(int id, String reason) async {
+    if (kMockMode) {
+      Mock.setBillStatus(id, 'refunded', rejectReason: reason);
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>(
+      '/fortune/bills/$id/refund',
+      data: {'reason': reason},
+    );
+  }
+
+  /// Resend last card image (for stuck readings — pattern from
+  /// "Fortune LINE Celtic — recovery patterns" brain note)
+  Future<void> resendLastImage(int id) async {
+    if (kMockMode) {
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>('/fortune/bills/$id/resend-image');
+  }
 }
 
 final fortuneRepositoryProvider = Provider<FortuneRepository>((ref) {
@@ -57,4 +130,15 @@ final fortuneDashboardProvider = FutureProvider<FortuneDashboardData>((ref) asyn
 final fortuneReadingsProvider = FutureProvider<PagedResult<FortuneReading>>((ref) async {
   if (kMockMode) return mockDelay(Mock.fortuneReadings());
   return ref.watch(fortuneRepositoryProvider).readings();
+});
+
+/// Bills list filtered by status (null = all)
+final fortuneBillsProvider =
+    FutureProvider.family<PagedResult<FortuneBill>, String?>(
+        (ref, status) async {
+  return ref.watch(fortuneRepositoryProvider).bills(status: status);
+});
+
+final fortuneBillStatsProvider = FutureProvider<FortuneBillStats>((ref) async {
+  return ref.watch(fortuneRepositoryProvider).billStats();
 });

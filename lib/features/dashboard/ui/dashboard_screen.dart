@@ -328,7 +328,7 @@ class DashboardScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _quickAction(d.quickActionApprovals.toString(),
-                            'อนุมัติ', 130, () => context.go('/finance')),
+                            'อนุมัติบิล', 130, () => context.go('/fortune/bills')),
                         _quickAction(d.quickActionWithdrawals.toString(),
                             'ถอนเงิน', 35, () => context.go('/finance')),
                         _quickAction(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/api/api_envelope.dart';
@@ -29,12 +30,32 @@ class FortuneScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dashAsync = ref.watch(fortuneDashboardProvider);
     final readingsAsync = ref.watch(fortuneReadingsProvider);
+    final billStatsAsync = ref.watch(fortuneBillStatsProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F0A1F),
       appBar: AppBar(
         title: const Text('ดูดวง & ทาโรต์'),
         backgroundColor: Colors.transparent,
+        actions: [
+          // Bills shortcut with pending badge
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: billStatsAsync.maybeWhen(
+              data: (s) {
+                final pending = s.pendingCount + s.paidUnconfirmedCount;
+                return _BillShortcutButton(
+                  pendingCount: pending,
+                  onTap: () => context.push('/fortune/bills'),
+                );
+              },
+              orElse: () => _BillShortcutButton(
+                pendingCount: 0,
+                onTap: () => context.push('/fortune/bills'),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -92,6 +113,14 @@ class FortuneScreen extends ConsumerWidget {
 
                 // ── 4-stat bar ──
                 _statBar(dashAsync),
+
+                const SizedBox(height: 14),
+
+                // ── Bill approval CTA ──
+                _BillApprovalCta(
+                  async: billStatsAsync,
+                  onTap: () => context.push('/fortune/bills'),
+                ),
 
                 const SizedBox(height: 22),
 
@@ -430,4 +459,165 @@ class FortuneScreen extends ConsumerWidget {
           child: Text(label, style: const TextStyle(color: Color(0x88FFFFFF))),
         ),
       );
+}
+
+/// AppBar action button with pending badge
+class _BillShortcutButton extends StatelessWidget {
+  const _BillShortcutButton({required this.pendingCount, required this.onTap});
+  final int pendingCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+            child: const Icon(Icons.receipt_long,
+                color: Colors.white, size: 19),
+          ),
+          if (pendingCount > 0)
+            Positioned(
+              top: -4,
+              right: -4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.error, Color(0xFFB91C1C)],
+                  ),
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: const Color(0xFF0F0A1F), width: 2),
+                ),
+                child: Text(
+                  pendingCount > 99 ? '99+' : pendingCount.toString(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// CTA card showing pending bills count — links to FortuneBillsScreen
+class _BillApprovalCta extends StatelessWidget {
+  const _BillApprovalCta({required this.async, required this.onTap});
+  final AsyncValue<FortuneBillStats> async;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final money =
+        NumberFormat.compactCurrency(locale: 'th_TH', symbol: '฿', decimalDigits: 0);
+    return async.maybeWhen(
+      data: (s) {
+        final total = s.pendingCount + s.paidUnconfirmedCount;
+        final hasPending = total > 0;
+        return InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: hasPending
+                  ? const LinearGradient(
+                      colors: [
+                        AppColors.warning,
+                        Color(0xFFEA580C),
+                        AppColors.pinkStart,
+                      ],
+                      begin: Alignment(-1, -1),
+                      end: Alignment(1, 1),
+                    )
+                  : LinearGradient(
+                      colors: [
+                        AppColors.success.withValues(alpha: 0.4),
+                        AppColors.success.withValues(alpha: 0.2),
+                      ],
+                    ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: hasPending
+                  ? [
+                      BoxShadow(
+                        color: AppColors.warning.withValues(alpha: 0.5),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    hasPending ? Icons.priority_high : Icons.check_circle,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        hasPending
+                            ? 'มีบิลรออนุมัติ $total รายการ'
+                            : 'ไม่มีบิลค้างอนุมัติ',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        hasPending
+                            ? '${s.pendingCount} รอจ่าย · ${s.paidUnconfirmedCount} จ่ายแล้วรอ confirm · วันนี้รายได้ ${money.format(s.todayRevenueThb)}'
+                            : 'วันนี้รายได้ ${money.format(s.todayRevenueThb)} · ผ่านการอนุมัติ ${s.confirmedTodayCount} บิล',
+                        style: const TextStyle(
+                          color: Color(0xE6FFFFFF),
+                          fontSize: 11,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward_ios,
+                    color: Colors.white, size: 14),
+              ],
+            ),
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
 }
