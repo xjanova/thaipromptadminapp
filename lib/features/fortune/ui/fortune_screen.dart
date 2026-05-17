@@ -12,6 +12,7 @@ import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/gradient_text.dart';
 import '../../../shared/widgets/starfield.dart';
 import '../data/fortune_repository.dart';
+import '../data/models/ai_pool_models.dart';
 import '../data/models/fortune_models.dart';
 import 'widgets/service_edit_sheet.dart';
 
@@ -164,6 +165,14 @@ class FortuneScreen extends ConsumerWidget {
                 _LiveReadingsCta(
                   async: activeReadingsAsync,
                   onTap: () => context.push('/fortune/live'),
+                ),
+
+                const SizedBox(height: 10),
+
+                // ── AI Pool CTA ──
+                _AiPoolCta(
+                  async: ref.watch(aiPoolSettingsProvider),
+                  onTap: () => context.push('/fortune/ai-pool'),
                 ),
 
                 const SizedBox(height: 22),
@@ -838,6 +847,86 @@ class _LiveReadingsCta extends StatelessWidget {
                           fontSize: 11,
                           fontWeight:
                               stuck > 0 ? FontWeight.w700 : FontWeight.w500,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios,
+                    color: Color(0x99FFFFFF), size: 12),
+              ],
+            ),
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+}
+
+/// CTA card for AI Pool config — links to FortuneAiPoolScreen
+class _AiPoolCta extends StatelessWidget {
+  const _AiPoolCta({required this.async, required this.onTap});
+  final AsyncValue<AiPoolSettings> async;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return async.maybeWhen(
+      data: (s) {
+        final unhealthy = s.totalKeys - s.healthyKeys;
+        return InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: unhealthy > 0
+                  ? AppColors.warning.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: unhealthy > 0
+                    ? AppColors.warning.withValues(alpha: 0.35)
+                    : Colors.white.withValues(alpha: 0.14),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppColors.cyanStart.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Icon(Icons.hub,
+                      color: AppColors.cyanStart, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AI Pool · ${s.healthyKeys}/${s.totalKeys} healthy',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        unhealthy > 0
+                            ? '⚠️ $unhealthy keys ไม่ healthy · global mode: ${s.globalMode}'
+                            : 'global mode: ${s.globalMode} · keys ทั้งหมดพร้อมใช้',
+                        style: TextStyle(
+                          color: unhealthy > 0
+                              ? AppColors.warning
+                              : const Color(0xCCFFFFFF),
+                          fontSize: 11,
                           height: 1.4,
                         ),
                       ),

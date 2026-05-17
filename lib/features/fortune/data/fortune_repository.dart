@@ -4,6 +4,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/mock/mock_config.dart';
 import '../../../core/mock/mock_data.dart';
 import '../../finance/data/finance_repository.dart' show PagedResult;
+import 'models/ai_pool_models.dart';
 import 'models/fortune_models.dart';
 
 /// Repository สำหรับ /api/admin/fortune/*
@@ -194,6 +195,78 @@ class FortuneRepository {
       data: {'reason': reason},
     );
   }
+
+  // ── AI Pool config ──
+  Future<AiPoolSettings> aiPoolSettings() async {
+    if (kMockMode) return mockDelay(Mock.aiPoolSettings());
+    final json = await _api.get<Map<String, dynamic>>(
+      '/fortune/ai-pool/settings',
+      parser: (d) => (d as Map).cast<String, dynamic>(),
+    );
+    return AiPoolSettings.fromJson(json);
+  }
+
+  Future<List<AiApiKey>> aiPoolKeys({String? purpose}) async {
+    if (kMockMode) return mockDelay(Mock.aiPoolKeys(purpose: purpose));
+    final json = await _api.get<Map<String, dynamic>>(
+      '/fortune/ai-pool/keys',
+      query: {if (purpose != null) 'purpose': purpose},
+      parser: (d) => (d as Map).cast<String, dynamic>(),
+    );
+    final list = (json['data'] as List?) ?? const [];
+    return list
+        .whereType<Map>()
+        .map((m) => AiApiKey.fromJson(m.cast<String, dynamic>()))
+        .toList();
+  }
+
+  Future<void> setAiPoolGlobalMode(String mode) async {
+    if (kMockMode) {
+      Mock.setAiPoolGlobalMode(mode);
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>(
+      '/fortune/ai-pool/settings',
+      data: {'global_mode': mode},
+    );
+  }
+
+  Future<void> toggleAiKey(int id) async {
+    if (kMockMode) {
+      Mock.toggleAiKey(id);
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>('/fortune/ai-pool/keys/$id/toggle');
+  }
+
+  Future<void> updateAiKey(int id, AiKeyPatch patch) async {
+    if (kMockMode) {
+      Mock.patchAiKey(id, patch);
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>(
+      '/fortune/ai-pool/keys/$id/update',
+      data: patch.toJson(),
+    );
+  }
+
+  /// "Test key now" — runs a probe and sets last_test_passed_at / error_at
+  /// (mock: 80% success, sets timestamp; 20% failure, sets error timestamp)
+  Future<bool> testAiKey(int id) async {
+    if (kMockMode) {
+      final success = Mock.testAiKey(id);
+      await mockDelay(null, delay: const Duration(milliseconds: 1100));
+      return success;
+    }
+    final json = await _api.post<Map<String, dynamic>>(
+      '/fortune/ai-pool/keys/$id/test',
+      parser: (d) => (d as Map).cast<String, dynamic>(),
+    );
+    return (json['ok'] as bool?) ?? false;
+  }
 }
 
 final fortuneRepositoryProvider = Provider<FortuneRepository>((ref) {
@@ -226,4 +299,14 @@ final fortuneBillStatsProvider = FutureProvider<FortuneBillStats>((ref) async {
 final fortuneActiveReadingsProvider =
     FutureProvider<List<FortuneActiveReading>>((ref) async {
   return ref.watch(fortuneRepositoryProvider).activeReadings();
+});
+
+/// AI Pool settings + keys list (family by purpose, null = all)
+final aiPoolSettingsProvider = FutureProvider<AiPoolSettings>((ref) async {
+  return ref.watch(fortuneRepositoryProvider).aiPoolSettings();
+});
+
+final aiPoolKeysProvider =
+    FutureProvider.family<List<AiApiKey>, String?>((ref, purpose) async {
+  return ref.watch(fortuneRepositoryProvider).aiPoolKeys(purpose: purpose);
 });

@@ -4,6 +4,7 @@ import '../../features/analytics/data/analytics_repository.dart';
 import '../../features/auth/data/models/admin_user.dart';
 import '../../features/dashboard/data/dashboard_repository.dart';
 import '../../features/finance/data/finance_repository.dart';
+import '../../features/fortune/data/models/ai_pool_models.dart';
 import '../../features/fortune/data/models/fortune_models.dart';
 import '../../features/marketplace/data/marketplace_repository.dart';
 import '../../features/users/data/models/user_models.dart';
@@ -40,6 +41,10 @@ class Mock {
 
   /// serviceId → patched fields (active/price/payFirst/persona/color/prompt)
   static final Map<int, Map<String, dynamic>> _servicePatches = {};
+
+  /// keyId → patched AI Pool fields
+  static final Map<int, Map<String, dynamic>> _aiKeyPatches = {};
+  static String _aiPoolGlobalMode = 'priority';
 
   // ────────────────────────────────────────────────────────────
   // Toggle helpers (called from mocked repository methods)
@@ -101,6 +106,45 @@ class Mock {
   static void patchFortuneService(int id, FortuneServicePatch patch) {
     final cur = _servicePatches[id] ?? {};
     _servicePatches[id] = {...cur, ...patch.toJson()};
+  }
+
+  // ── AI Pool mutators ──
+  static void setAiPoolGlobalMode(String mode) {
+    _aiPoolGlobalMode = mode;
+  }
+
+  static void toggleAiKey(int id) {
+    final cur = _aiKeyPatches[id] ?? {};
+    final base = _aiPoolKeysBase().firstWhere(
+      (m) => m['id'] == id,
+      orElse: () => {'is_active': true},
+    );
+    final curActive = cur['is_active'] ?? base['is_active'] ?? true;
+    _aiKeyPatches[id] = {...cur, 'is_active': !(curActive as bool)};
+  }
+
+  static void patchAiKey(int id, AiKeyPatch patch) {
+    final cur = _aiKeyPatches[id] ?? {};
+    _aiKeyPatches[id] = {...cur, ...patch.toJson()};
+  }
+
+  /// Returns true on (simulated) test pass — sets last_test_passed_at to now
+  static bool testAiKey(int id) {
+    // pseudo-random success: even-id always passes, odd-id has 60% pass rate
+    final success = id.isEven || (id * 7 % 10) >= 4;
+    final cur = _aiKeyPatches[id] ?? {};
+    if (success) {
+      _aiKeyPatches[id] = {
+        ...cur,
+        'last_test_passed_at': DateTime.now().toIso8601String(),
+      };
+    } else {
+      _aiKeyPatches[id] = {
+        ...cur,
+        'last_test_error_at': DateTime.now().toIso8601String(),
+      };
+    }
+    return success;
   }
 
   // ────────────────────────────────────────────────────────────
@@ -955,6 +999,200 @@ class Mock {
           if (ao != bo) return ao.compareTo(bo);
           return b.elapsed.compareTo(a.elapsed);
         });
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // AI Pool (per brain: Pool-first + Health Gate + Auto-Recovery)
+  // ────────────────────────────────────────────────────────────
+
+  static List<Map<String, dynamic>> _aiPoolKeysBase() {
+    final now = DateTime.now();
+    final passOk = now.subtract(const Duration(minutes: 4)).toIso8601String();
+    final passStale = now.subtract(const Duration(hours: 18)).toIso8601String();
+    final passDay = now.subtract(const Duration(days: 2)).toIso8601String();
+    final errRecent = now.subtract(const Duration(hours: 1)).toIso8601String();
+    return [
+      // ── OpenAI ──
+      {
+        'id': 1001,
+        'provider': 'openai',
+        'display_name': 'OpenAI · GPT-4o Primary',
+        'model': 'gpt-4o',
+        'priority': 1,
+        'purposes': ['prediction_celtic', 'prediction_deep', 'chat', 'vision'],
+        'is_active': true,
+        'last_test_passed_at': passOk,
+        'cost_thb_today': 14200.0,
+        'quota_pct': 84.0,
+        'usage_count': 2840,
+        'note': 'Primary key — Tier 1',
+      },
+      {
+        'id': 1002,
+        'provider': 'openai',
+        'display_name': 'OpenAI · GPT-4o Backup',
+        'model': 'gpt-4o',
+        'priority': 2,
+        'purposes': ['prediction_celtic', 'prediction_deep', 'chat'],
+        'is_active': true,
+        'last_test_passed_at': passOk,
+        'cost_thb_today': 8200.0,
+        'quota_pct': 42.0,
+        'usage_count': 1620,
+        'note': 'Failover backup',
+      },
+      {
+        'id': 1003,
+        'provider': 'openai',
+        'display_name': 'OpenAI · o1-preview',
+        'model': 'o1-preview',
+        'priority': 3,
+        'purposes': ['prediction_celtic'],
+        'is_active': true,
+        'last_test_passed_at': passStale,
+        'cost_thb_today': 6000.0,
+        'quota_pct': 18.0,
+        'usage_count': 320,
+        'note': 'Reasoning — high cost',
+      },
+      // ── Anthropic ──
+      {
+        'id': 1004,
+        'provider': 'anthropic',
+        'display_name': 'Anthropic · Claude Sonnet 4.6',
+        'model': 'claude-sonnet-4-6',
+        'priority': 1,
+        'purposes': ['prediction_celtic', 'prediction_deep', 'chat'],
+        'is_active': true,
+        'last_test_passed_at': passOk,
+        'cost_thb_today': 12400.0,
+        'quota_pct': 62.0,
+        'usage_count': 1840,
+        'note': null,
+      },
+      {
+        'id': 1005,
+        'provider': 'anthropic',
+        'display_name': 'Anthropic · Claude Haiku 4.5',
+        'model': 'claude-haiku-4-5',
+        'priority': 2,
+        'purposes': ['chat', 'banner'],
+        'is_active': true,
+        'last_test_passed_at': passOk,
+        'cost_thb_today': 1200.0,
+        'quota_pct': 28.0,
+        'usage_count': 4200,
+        'note': 'Cheap & fast',
+      },
+      // ── Google ──
+      {
+        'id': 1006,
+        'provider': 'google',
+        'display_name': 'Google · Gemini 2.0 Flash',
+        'model': 'gemini-2.0-flash',
+        'priority': 1,
+        'purposes': ['prediction_deep', 'chat', 'banner'],
+        'is_active': true,
+        'last_test_passed_at': passOk,
+        'cost_thb_today': 4800.0,
+        'quota_pct': 38.0,
+        'usage_count': 1920,
+        'note': null,
+      },
+      {
+        'id': 1007,
+        'provider': 'google',
+        'display_name': 'Google · Gemini 2.0 Pro',
+        'model': 'gemini-2.0-pro',
+        'priority': 2,
+        'purposes': ['prediction_celtic', 'vision'],
+        'is_active': true,
+        'last_test_passed_at': passStale,
+        'cost_thb_today': 2400.0,
+        'quota_pct': 22.0,
+        'usage_count': 340,
+        'note': 'Vision-capable',
+      },
+      // ── Failing / unhealthy keys ──
+      {
+        'id': 1008,
+        'provider': 'openai',
+        'display_name': 'OpenAI · GPT-4o EU',
+        'model': 'gpt-4o',
+        'priority': 4,
+        'purposes': ['chat'],
+        'is_active': true,
+        'last_test_passed_at': null, // unhealthy
+        'last_test_error_at': errRecent,
+        'cost_thb_today': 0.0,
+        'quota_pct': 0.0,
+        'usage_count': 0,
+        'note': 'Rate limited — test failed',
+      },
+      {
+        'id': 1009,
+        'provider': 'huggingface',
+        'display_name': 'HuggingFace · Llama-3.3-70B',
+        'model': 'meta-llama/Llama-3.3-70B-Instruct',
+        'priority': 5,
+        'purposes': ['chat', 'banner'],
+        'is_active': false,
+        'last_test_passed_at': passDay,
+        'cost_thb_today': 0.0,
+        'quota_pct': 0.0,
+        'usage_count': 0,
+        'note': 'Disabled — too slow for primary',
+      },
+      {
+        'id': 1010,
+        'provider': 'local',
+        'display_name': 'Local · Llama 3.1 70B (self-host)',
+        'model': 'llama-3.1-70b-instruct',
+        'priority': 3,
+        'purposes': ['chat', 'banner'],
+        'is_active': true,
+        'last_test_passed_at': passOk,
+        'cost_thb_today': 0.0,
+        'quota_pct': 12.0,
+        'usage_count': 820,
+        'note': 'Self-hosted — free but limited',
+      },
+    ];
+  }
+
+  static List<Map<String, dynamic>> _aiPoolKeysWithPatches() {
+    return _aiPoolKeysBase().map((m) {
+      final id = m['id'] as int;
+      final patch = _aiKeyPatches[id];
+      if (patch == null) return m;
+      return {...m, ...patch};
+    }).toList();
+  }
+
+  static List<AiApiKey> aiPoolKeys({String? purpose}) {
+    final filtered = _aiPoolKeysWithPatches().where((m) {
+      if (purpose == null) return true;
+      final purposes = (m['purposes'] as List).map((e) => e.toString()).toList();
+      return purposes.contains(purpose);
+    }).toList();
+    // sort by priority asc (1 = highest)
+    filtered.sort(
+        (a, b) => (a['priority'] as num).compareTo(b['priority'] as num));
+    return filtered.map((m) => AiApiKey.fromJson(m)).toList();
+  }
+
+  static AiPoolSettings aiPoolSettings() {
+    final all = _aiPoolKeysWithPatches();
+    final healthy = all.where((m) {
+      final isActive = m['is_active'] as bool? ?? true;
+      final passedAt = m['last_test_passed_at'] as String?;
+      return isActive && passedAt != null && passedAt.isNotEmpty;
+    }).length;
+    return AiPoolSettings(
+      globalMode: _aiPoolGlobalMode,
+      totalKeys: all.length,
+      healthyKeys: healthy,
+    );
   }
 
   // ────────────────────────────────────────────────────────────
