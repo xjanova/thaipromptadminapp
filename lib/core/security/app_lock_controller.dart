@@ -10,7 +10,11 @@ import 'pin_manager.dart';
 /// - เมื่อแอพถูก background นานเกิน `lockTimeout` → set unlocked=false
 /// - PIN screen subscribes provider แล้ว block หน้าจอ admin app
 class AppLockState {
-  AppLockState({required this.hasPin, required this.unlocked});
+  AppLockState({
+    required this.hasPin,
+    required this.unlocked,
+    this.bootstrapped = false,
+  });
 
   /// User ตั้ง PIN ไหม
   final bool hasPin;
@@ -18,19 +22,27 @@ class AppLockState {
   /// ผ่าน PIN แล้ว (auto true ถ้า hasPin = false)
   final bool unlocked;
 
-  AppLockState copyWith({bool? hasPin, bool? unlocked}) => AppLockState(
+  /// อ่าน state จาก secure storage แล้วหรือยัง (กัน race ตอน cold start)
+  final bool bootstrapped;
+
+  AppLockState copyWith({bool? hasPin, bool? unlocked, bool? bootstrapped}) =>
+      AppLockState(
         hasPin: hasPin ?? this.hasPin,
         unlocked: unlocked ?? this.unlocked,
+        bootstrapped: bootstrapped ?? this.bootstrapped,
       );
 
   /// ควรแสดง PIN screen หรือไม่
-  bool get needsUnlock => hasPin && !unlocked;
+  ///
+  /// ระหว่าง bootstrap → return true เสมอ (สมมุติว่ามี PIN ไว้ก่อน)
+  /// → กัน security gap ที่ user เห็น content ก่อน PIN gate ตอน cold start
+  bool get needsUnlock => !bootstrapped || (hasPin && !unlocked);
 }
 
 class AppLockController extends StateNotifier<AppLockState>
     with WidgetsBindingObserver {
   AppLockController(this._pin)
-      : super(AppLockState(hasPin: false, unlocked: true)) {
+      : super(AppLockState(hasPin: true, unlocked: false, bootstrapped: false)) {
     WidgetsBinding.instance.addObserver(this);
     _bootstrap();
   }
@@ -44,7 +56,11 @@ class AppLockController extends StateNotifier<AppLockState>
 
   Future<void> _bootstrap() async {
     final has = await _pin.hasPin();
-    state = AppLockState(hasPin: has, unlocked: !has);
+    state = AppLockState(
+      hasPin: has,
+      unlocked: !has, // ไม่มี PIN → unlocked เลย
+      bootstrapped: true,
+    );
   }
 
   /// เรียกหลัง user ตั้ง PIN ครั้งแรก (จาก Settings)

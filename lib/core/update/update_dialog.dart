@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -41,6 +42,13 @@ class _UpdateDialog extends StatefulWidget {
 class _UpdateDialogState extends State<_UpdateDialog> {
   OtaUpdateState? _otaState;
   bool _downloading = false;
+  StreamSubscription<OtaUpdateState>? _otaSub;
+
+  @override
+  void dispose() {
+    _otaSub?.cancel(); // ยกเลิก download ถ้า user ปิด dialog ระหว่างดาวน์โหลด
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -313,7 +321,8 @@ class _UpdateDialogState extends State<_UpdateDialog> {
         return;
       }
       setState(() => _downloading = true);
-      AutoUpdater().downloadAndInstall(apk.browserDownloadUrl).listen(
+      _otaSub?.cancel();
+      _otaSub = AutoUpdater().downloadAndInstall(apk.browserDownloadUrl).listen(
         (state) {
           if (!mounted) return;
           setState(() => _otaState = state);

@@ -15,6 +15,24 @@ import 'gen/l10n/app_localizations.dart';
 /// Global navigator key — ใช้สำหรับ show update dialog จาก background flow
 final rootNavKey = GlobalKey<NavigatorState>();
 
+/// Splash ที่แสดงระหว่าง bootstrap AppLockController (กัน flash content
+/// ก่อน PIN gate ตอน cold start)
+class _BootSplash extends StatelessWidget {
+  const _BootSplash();
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: Color(0xFF0A0A0F),
+      child: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: Color(0xFFA855F7),
+        ),
+      ),
+    );
+  }
+}
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
@@ -69,6 +87,10 @@ class _ThaipromptAdminAppState extends ConsumerState<ThaipromptAdminApp> {
       // PIN gate overlay — ถ้า user ตั้ง PIN และยังไม่ปลด → block หน้าจอทั้งแอพ
       builder: (context, child) {
         final lockState = ref.watch(appLockControllerProvider);
+        // ระหว่าง bootstrap → splash (กัน security gap ตอน cold start)
+        if (!lockState.bootstrapped) {
+          return const _BootSplash();
+        }
         if (!lockState.needsUnlock) {
           return child ?? const SizedBox();
         }
