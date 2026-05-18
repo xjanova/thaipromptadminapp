@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/api/api_envelope.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../gen/l10n/app_localizations.dart';
+import '../../../shared/widgets/starfield.dart';
 import '../providers/auth_controller.dart';
 
 /// หน้าสแกน QR สำหรับ pair กับเว็บ
@@ -26,9 +31,15 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
   bool _processing = false;
   bool _torchOn = false;
 
+  /// แต่ละตัวอักษรของ code ที่ "พิมพ์" ออกมา (animation แบบ Tping)
+  String _typedCode = '';
+  bool _showSuccess = false;
+  Timer? _typeTimer;
+
   @override
   void dispose() {
     _scannerController.dispose();
+    _typeTimer?.cancel();
     super.dispose();
   }
 
@@ -40,6 +51,10 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
 
     setState(() => _processing = true);
     await _scannerController.stop();
+    HapticFeedback.mediumImpact();
+
+    // ── Tping-style typing animation: พิมพ์ code ทีละตัว ──
+    await _typeAnimation(code);
 
     try {
       final result =
@@ -49,7 +64,10 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
         // ขอ 2FA — ขออีกครั้งพร้อม code
         final code2fa = await _ask2faCode();
         if (code2fa == null || !mounted) {
-          setState(() => _processing = false);
+          setState(() {
+            _processing = false;
+            _typedCode = '';
+          });
           await _scannerController.start();
           return;
         }
@@ -57,17 +75,39 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
             .read(authControllerProvider.notifier)
             .claimPair(code, twoFactorCode: code2fa);
         if (!mounted) return;
-        // router จะ redirect ไป dashboard
       }
+      // success — flash green checkmark
+      HapticFeedback.heavyImpact();
+      setState(() => _showSuccess = true);
+      await Future.delayed(const Duration(milliseconds: 850));
+      // router จะ redirect ไป dashboard เพราะ auth state เปลี่ยน
     } on ApiException catch (e) {
       _showError(e.message);
-      setState(() => _processing = false);
+      setState(() {
+        _processing = false;
+        _typedCode = '';
+      });
       await _scannerController.start();
     } catch (e) {
       _showError(e.toString());
-      setState(() => _processing = false);
+      setState(() {
+        _processing = false;
+        _typedCode = '';
+      });
       await _scannerController.start();
     }
+  }
+
+  /// Type code char-by-char (Tping-style auto-typing UX)
+  Future<void> _typeAnimation(String code) async {
+    setState(() => _typedCode = '');
+    for (var i = 0; i < code.length; i++) {
+      await Future.delayed(const Duration(milliseconds: 75));
+      if (!mounted) return;
+      HapticFeedback.selectionClick();
+      setState(() => _typedCode = code.substring(0, i + 1));
+    }
+    await Future.delayed(const Duration(milliseconds: 200));
   }
 
   Future<String?> _ask2faCode() async {
@@ -168,6 +208,116 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
     );
   }
 
+  Widget _typingOverlay() {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.88),
+      child: Stack(
+        children: [
+          const Positioned.fill(child: Starfield(starCount: 40, seed: 99)),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Tping-style typed code with caret
+                _showSuccess
+                    ? _successCheck()
+                    : _typedCodeView(),
+                const SizedBox(height: 22),
+                Text(
+                  _showSuccess
+                      ? '✨ จับคู่อุปกรณ์สำเร็จ'
+                      : 'กำลังจับคู่กับเซิร์ฟเวอร์...',
+                  style: TextStyle(
+                    color: _showSuccess ? AppColors.success : Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ).animate(key: ValueKey(_showSuccess)).fadeIn(
+                    duration: const Duration(milliseconds: 300)),
+                if (!_showSuccess) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'รหัสถูกส่งให้ระบบแล้ว',
+                    style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 12),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _typedCodeView() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.purpleStart, AppColors.pinkStart],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.pinkStart.withValues(alpha: 0.5),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _typedCode,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 6,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+          // Blinking caret
+          Container(
+            width: 3,
+            height: 32,
+            margin: const EdgeInsets.only(left: 4),
+            color: Colors.white,
+          ).animate(
+            onPlay: (c) => c.repeat(reverse: true),
+          ).fadeIn(duration: const Duration(milliseconds: 380)),
+        ],
+      ),
+    );
+  }
+
+  Widget _successCheck() {
+    return Container(
+      width: 100,
+      height: 100,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.success, Color(0xFF15803D)],
+        ),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.success.withValues(alpha: 0.6),
+            blurRadius: 26,
+            spreadRadius: 4,
+          ),
+        ],
+      ),
+      child: const Icon(Icons.check, color: Colors.white, size: 56),
+    ).animate().scale(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.elasticOut,
+          begin: const Offset(0.5, 0.5),
+          end: const Offset(1, 1),
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppL10n.of(context);
@@ -212,21 +362,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
             ),
           ),
 
-          if (_processing)
-            Container(
-              color: Colors.black54,
-              child: const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(color: Colors.white),
-                    SizedBox(height: 14),
-                    Text('กำลังจับคู่...',
-                        style: TextStyle(color: Colors.white, fontSize: 16)),
-                  ],
-                ),
-              ),
-            ),
+          if (_processing) _typingOverlay(),
 
           // Bottom panel
           Positioned(

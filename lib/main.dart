@@ -4,10 +4,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/routing/app_router.dart';
+import 'core/security/app_lock_controller.dart';
 import 'core/theme/app_theme.dart';
 import 'core/update/update_checker.dart';
 import 'core/update/update_dialog.dart';
 import 'features/auth/providers/auth_controller.dart';
+import 'features/auth/ui/pin_entry_screen.dart';
 import 'gen/l10n/app_localizations.dart';
 
 /// Global navigator key — ใช้สำหรับ show update dialog จาก background flow
@@ -64,6 +66,20 @@ class _ThaipromptAdminAppState extends ConsumerState<ThaipromptAdminApp> {
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       routerConfig: router,
+      // PIN gate overlay — ถ้า user ตั้ง PIN และยังไม่ปลด → block หน้าจอทั้งแอพ
+      builder: (context, child) {
+        final lockState = ref.watch(appLockControllerProvider);
+        if (!lockState.needsUnlock) {
+          return child ?? const SizedBox();
+        }
+        // PIN gate — full-screen overlay (cannot dismiss)
+        return PinEntryScreen(
+          mode: PinScreenMode.unlock,
+          canCancel: false,
+          onSuccess: () =>
+              ref.read(appLockControllerProvider.notifier).markUnlocked(),
+        );
+      },
       // ใช้ rootNavKey ผ่าน GoRouter delegate (set ใน app_router.dart)
       localizationsDelegates: const [
         AppL10n.delegate,

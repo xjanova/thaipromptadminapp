@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/security/app_lock_controller.dart';
+import '../../../core/security/biometric_service.dart';
+import '../../../core/security/pin_manager.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/update/app_version_provider.dart';
 import '../../../core/update/update_checker.dart';
@@ -9,6 +12,7 @@ import '../../../shared/widgets/clay_ball.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../auth/data/models/admin_user.dart';
 import '../../auth/providers/auth_controller.dart';
+import '../../auth/ui/pin_entry_screen.dart';
 
 /// Settings / Profile Screen
 ///
@@ -28,6 +32,31 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _notifications = true;
   bool _darkMode = false;
+  bool _hasPin = false;
+  bool _biometricEnabled = false;
+  bool _biometricSupported = false;
+  bool _bootstrapping = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSecurityState();
+  }
+
+  Future<void> _loadSecurityState() async {
+    final pin = ref.read(pinManagerProvider);
+    final bio = ref.read(biometricServiceProvider);
+    final hasPin = await pin.hasPin();
+    final biometricEnabled = await bio.isEnabled();
+    final biometricSupported = await bio.isSupported();
+    if (!mounted) return;
+    setState(() {
+      _hasPin = hasPin;
+      _biometricEnabled = biometricEnabled;
+      _biometricSupported = biometricSupported;
+      _bootstrapping = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +92,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     _RowItem(
                       icon: Icons.shield_outlined,
-                      label: 'ความปลอดภัย',
+                      label: 'ความปลอดภัย (2FA)',
                       sub: admin?.twoFactorEnabled == true
                           ? '2FA เปิดใช้งาน'
                           : '2FA ปิด',
@@ -76,6 +105,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       sub: 'อัปเดต 30 วันก่อน',
                       hue: 280,
                     ),
+                  ]),
+                  const SizedBox(height: 14),
+                  _sectionLabel('PIN & Biometric'),
+                  _section([
+                    _RowItem(
+                      icon: Icons.pin_outlined,
+                      label: _hasPin ? 'เปลี่ยน PIN' : 'ตั้ง PIN (6 หลัก)',
+                      sub: _hasPin
+                          ? 'PIN ตั้งไว้แล้ว · บังคับกรอกเมื่อเปิดแอพ'
+                          : 'ยังไม่ตั้ง · แตะเพื่อเพิ่มชั้นความปลอดภัย',
+                      hue: 280,
+                      badge: _hasPin ? 'เปิด' : null,
+                      onTap: _bootstrapping ? null : _setupOrChangePin,
+                    ),
+                    if (_hasPin)
+                      _RowItem(
+                        icon: Icons.lock_open,
+                        label: 'ลบ PIN',
+                        sub: 'จะไม่บังคับกรอกตอนเปิดแอพอีก',
+                        hue: 0,
+                        onTap: _bootstrapping ? null : _clearPin,
+                      ),
+                    if (_biometricSupported)
+                      _RowItem(
+                        icon: Icons.fingerprint,
+                        label: 'ปลดล็อกด้วย Fingerprint / Face',
+                        sub: _biometricEnabled
+                            ? 'เปิดอยู่ · กดแทนการพิมพ์ PIN'
+                            : (_hasPin
+                                ? 'แตะเพื่อเปิดใช้งาน'
+                                : 'ต้องตั้ง PIN ก่อน'),
+                        hue: 200,
+                        toggle: _biometricEnabled,
+                        onToggle: _hasPin && !_bootstrapping
+                            ? (v) => _toggleBiometric(v)
+                            : null,
+                      ),
                   ]),
                   const SizedBox(height: 14),
                   _sectionLabel('แอดมิน'),
@@ -616,6 +682,107 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       );
     }
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // PIN & Biometric flows
+  // ────────────────────────────────────────────────────────────
+
+  Future<void> _setupOrChangePin() async {
+    final mode = _hasPin ? PinScreenMode.change : PinScreenMode.setup;
+    final ok = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => PinEntryScreen(
+          mode: mode,
+          canCancel: true,
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+    ref.read(appLockControllerProvider.notifier).onPinSet();
+    await _loadSecurityState();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('ตั้ง PIN เรียบร้อย'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _clearPin() async {
+    // ก่อนลบต้องยืนยัน PIN ปัจจุบัน
+    final ok = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => const PinEntryScreen(
+          mode: PinScreenMode.unlock,
+          canCancel: true,
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.bgPanel,
+        title:
+            const Text('ลบ PIN?', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'แอพจะเปิดได้โดยไม่ต้องกรอก PIN — แน่ใจไหม?',
+          style: TextStyle(color: Color(0xD9FFFFFF)),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('ยกเลิก')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child:
+                const Text('ลบ', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    await ref.read(pinManagerProvider).clearPin();
+    // ปิด biometric ด้วย (เพราะ depends on PIN)
+    await ref.read(biometricServiceProvider).setEnabled(false);
+    if (!mounted) return;
+    ref.read(appLockControllerProvider.notifier).onPinCleared();
+    await _loadSecurityState();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('ลบ PIN เรียบร้อย'),
+        backgroundColor: AppColors.warning,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _toggleBiometric(bool enable) async {
+    if (enable) {
+      // ทดสอบ biometric ก่อนเปิด
+      final ok = await ref.read(biometricServiceProvider).authenticate(
+            reason: 'ยืนยันตัวตนเพื่อเปิดใช้ Biometric',
+            biometricOnly: true,
+          );
+      if (!ok) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('ไม่สามารถยืนยันด้วย biometric ได้'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+    }
+    await ref.read(biometricServiceProvider).setEnabled(enable);
+    if (!mounted) return;
+    await _loadSecurityState();
   }
 }
 

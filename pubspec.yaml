@@ -49,6 +49,14 @@ dependencies:
   device_info_plus: ^11.2.0
   url_launcher: ^6.3.1
 
+  # ── Auth hardening (Phase 12) ──
+  local_auth: ^2.3.0                   # fingerprint / face / device auth
+  crypto: ^3.0.5                       # sha256 for PIN hash
+  permission_handler: ^11.3.1          # REQUEST_INSTALL_PACKAGES
+
+  # ── Auto-update (OTA APK install) ──
+  ota_update: ^7.0.0                   # in-app APK download + install (Android)
+
   # ── Misc ──
   collection: ^1.19.0
 
