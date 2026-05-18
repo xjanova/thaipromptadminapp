@@ -5,6 +5,7 @@ import '../../features/auth/data/models/admin_user.dart';
 import '../../features/dashboard/data/dashboard_repository.dart';
 import '../../features/finance/data/finance_repository.dart';
 import '../../features/fortune/data/models/ai_pool_models.dart';
+import '../../features/fortune/data/models/chat_models.dart';
 import '../../features/fortune/data/models/fortune_models.dart';
 import '../../features/marketplace/data/marketplace_repository.dart';
 import '../../features/users/data/models/user_models.dart';
@@ -45,6 +46,15 @@ class Mock {
   /// keyId → patched AI Pool fields
   static final Map<int, Map<String, dynamic>> _aiKeyPatches = {};
   static String _aiPoolGlobalMode = 'priority';
+
+  /// readingId → takeover until (sets `takeover_active` status)
+  static final Map<int, DateTime> _takeoverUntil = {};
+
+  /// readingId → list of appended admin messages
+  static final Map<int, List<Map<String, dynamic>>> _adminMessages = {};
+
+  /// readingId → resumed (admin sent /ai) — clears takeover state
+  static final Set<int> _resumedReadings = {};
 
   // ────────────────────────────────────────────────────────────
   // Toggle helpers (called from mocked repository methods)
@@ -126,6 +136,54 @@ class Mock {
   static void patchAiKey(int id, AiKeyPatch patch) {
     final cur = _aiKeyPatches[id] ?? {};
     _aiKeyPatches[id] = {...cur, ...patch.toJson()};
+  }
+
+  // ── Takeover mutators ──
+  static void startTakeover(int readingId, int minutes) {
+    _takeoverUntil[readingId] =
+        DateTime.now().add(Duration(minutes: minutes));
+    _resumedReadings.remove(readingId);
+  }
+
+  static void extendTakeover(int readingId, int minutes) {
+    final current = _takeoverUntil[readingId] ?? DateTime.now();
+    final base =
+        current.isAfter(DateTime.now()) ? current : DateTime.now();
+    _takeoverUntil[readingId] = base.add(Duration(minutes: minutes));
+  }
+
+  static void resumeAi(int readingId) {
+    _takeoverUntil.remove(readingId);
+    _resumedReadings.add(readingId);
+    // System message: takeover ended
+    appendSystemMessage(readingId, 'Admin คืนการควบคุมให้ AI · /ai resumed',
+        kind: 'takeover_ended');
+  }
+
+  static void appendAdminMessage(int readingId, String text) {
+    final list = _adminMessages.putIfAbsent(readingId, () => []);
+    list.add({
+      'id': 9000 + (readingId * 100) + list.length,
+      'reading_id': readingId,
+      'sender': 'admin',
+      'admin_name': 'แม่หมอ',
+      'text': text,
+      'at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  static void appendSystemMessage(int readingId, String text,
+      {String kind = 'note'}) {
+    final list = _adminMessages.putIfAbsent(readingId, () => []);
+    list.add({
+      'id': 9000 + (readingId * 100) + list.length,
+      'reading_id': readingId,
+      'sender': 'system',
+      'text': text,
+      'at': DateTime.now().toIso8601String(),
+      'is_system': true,
+      'system_kind': kind,
+    });
   }
 
   /// Returns true on (simulated) test pass — sets last_test_passed_at to now
@@ -999,6 +1057,377 @@ class Mock {
           if (ao != bo) return ao.compareTo(bo);
           return b.elapsed.compareTo(a.elapsed);
         });
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // Takeover Inbox + Chat
+  // Brain: customer_handoff_keywords (คุยกับคน/แอดมิน/แม่หมอ ฯลฯ),
+  // takeover_default_minutes 30-60, HUMAN_AGENT tag for FB
+  // ────────────────────────────────────────────────────────────
+
+  static List<Map<String, dynamic>> _fortuneConversationsBase() {
+    final now = DateTime.now();
+    final dateTag =
+        '${now.year.toString().substring(2)}${_pad2(now.month)}${_pad2(now.day)}';
+    return [
+      // ❗ ลูกค้าขอแอดมิน 2 คน
+      {
+        'reading_id': 7001,
+        'bill_number': 'FTU-$dateTag-R3092',
+        'tier': 'celtic',
+        'status': 'customer_requested_admin',
+        'user': {'name': 'พลอย จันทรา', 'avatar_url': null},
+        'platform': 'line',
+        'platform_user_id': 'U44425abec76f4458ef731274a056212d',
+        'last_message_at':
+            now.subtract(const Duration(minutes: 1)).toIso8601String(),
+        'last_message_preview': 'คุยกับแม่หมอได้ไหมคะ ขอสอบถามเรื่องเปลี่ยนคำถาม',
+        'last_message_sender': 'customer',
+        'request_keyword': 'คุยกับแม่หมอ',
+        'unread_admin_count': 3,
+      },
+      {
+        'reading_id': 7002,
+        'bill_number': 'FTU-$dateTag-R3088',
+        'tier': 'deep',
+        'status': 'customer_requested_admin',
+        'user': {'name': 'สมชาย ใจดี', 'avatar_url': null},
+        'platform': 'facebook',
+        'last_message_at':
+            now.subtract(const Duration(minutes: 4)).toIso8601String(),
+        'last_message_preview': 'ขอแอดมินช่วยตอบหน่อยครับ AI ตอบไม่ตรง',
+        'last_message_sender': 'customer',
+        'request_keyword': 'ขอแอดมิน',
+        'unread_admin_count': 1,
+      },
+      // ⏳ Takeover ใกล้หมดเวลา
+      {
+        'reading_id': 7003,
+        'bill_number': 'FTU-$dateTag-R3081',
+        'tier': 'celtic',
+        'status': 'takeover_expiring',
+        'user': {'name': 'Lisa Anderson', 'avatar_url': null},
+        'platform': 'line',
+        'last_message_at':
+            now.subtract(const Duration(minutes: 2)).toIso8601String(),
+        'last_message_preview':
+            'ขอบคุณค่ะแม่หมอ แล้วเรื่องการเงินล่ะคะ',
+        'last_message_sender': 'customer',
+        'takeover_until':
+            now.add(const Duration(minutes: 3)).toIso8601String(),
+        'unread_admin_count': 1,
+      },
+      // 💬 Takeover active ปกติ
+      {
+        'reading_id': 7004,
+        'bill_number': 'FTU-$dateTag-R3079',
+        'tier': 'deep',
+        'status': 'takeover_active',
+        'user': {'name': 'Mei Wong', 'avatar_url': null},
+        'platform': 'line',
+        'last_message_at':
+            now.subtract(const Duration(minutes: 12)).toIso8601String(),
+        'last_message_preview': 'ค่ะ จะรอนะคะ',
+        'last_message_sender': 'customer',
+        'takeover_until':
+            now.add(const Duration(minutes: 28)).toIso8601String(),
+        'unread_admin_count': 0,
+      },
+      // 🤖 Bot คุยปกติ
+      {
+        'reading_id': 7005,
+        'bill_number': 'FTU-$dateTag-R3076',
+        'tier': 'celtic',
+        'status': 'active_bot',
+        'user': {'name': 'Yuki Tanaka', 'avatar_url': null},
+        'platform': 'line',
+        'last_message_at':
+            now.subtract(const Duration(minutes: 18)).toIso8601String(),
+        'last_message_preview': 'หมอจันทราจะทำนายเรื่องการงานของคุณ...',
+        'last_message_sender': 'bot',
+        'unread_admin_count': 0,
+      },
+      {
+        'reading_id': 7006,
+        'bill_number': 'FTU-$dateTag-R3074',
+        'tier': 'tarot_chat',
+        'status': 'active_bot',
+        'user': {'name': 'Carlos Rivera', 'avatar_url': null},
+        'platform': 'facebook',
+        'last_message_at':
+            now.subtract(const Duration(hours: 1)).toIso8601String(),
+        'last_message_preview': 'OK got it, will think about it. Thanks!',
+        'last_message_sender': 'customer',
+        'unread_admin_count': 0,
+      },
+      // ✅ ปิดแล้ว
+      {
+        'reading_id': 7007,
+        'bill_number': 'FTU-$dateTag-R3060',
+        'tier': 'celtic',
+        'status': 'closed',
+        'user': {'name': 'ปนัดดา วงศ์สุข', 'avatar_url': null},
+        'platform': 'line',
+        'last_message_at':
+            now.subtract(const Duration(hours: 5)).toIso8601String(),
+        'last_message_preview': '🙏 ขอบคุณค่ะแม่หมอ',
+        'last_message_sender': 'customer',
+        'unread_admin_count': 0,
+      },
+    ];
+  }
+
+  static List<FortuneConversation> fortuneConversations() {
+    final list = _fortuneConversationsBase().map((m) {
+      final id = m['reading_id'] as int;
+      final patched = Map<String, dynamic>.from(m);
+      // Apply takeover overrides
+      if (_takeoverUntil.containsKey(id)) {
+        final until = _takeoverUntil[id]!;
+        patched['takeover_until'] = until.toIso8601String();
+        final minutesLeft = until.difference(DateTime.now()).inMinutes;
+        patched['status'] = minutesLeft <= 5
+            ? 'takeover_expiring'
+            : 'takeover_active';
+      } else if (_resumedReadings.contains(id)) {
+        patched['status'] = 'active_bot';
+        patched['takeover_until'] = null;
+      }
+      // If admin sent messages → bump last_message_*
+      final admin = _adminMessages[id];
+      if (admin != null && admin.isNotEmpty) {
+        final lastAdmin = admin.last;
+        patched['last_message_at'] = lastAdmin['at'];
+        patched['last_message_preview'] = lastAdmin['text'];
+        patched['last_message_sender'] = lastAdmin['sender'];
+      }
+      return FortuneConversation.fromJson(patched);
+    }).toList()
+      // sort by status priority → then last_message_at desc
+      ..sort((a, b) {
+        final cmp = a.status.sortRank.compareTo(b.status.sortRank);
+        if (cmp != 0) return cmp;
+        if (a.lastMessageAt == null && b.lastMessageAt == null) return 0;
+        if (a.lastMessageAt == null) return 1;
+        if (b.lastMessageAt == null) return -1;
+        return b.lastMessageAt!.compareTo(a.lastMessageAt!);
+      });
+    return list;
+  }
+
+  static TakeoverStats takeoverStats() {
+    final all = fortuneConversations();
+    return TakeoverStats(
+      customerRequests: all
+          .where((c) => c.status == ConversationStatus.customerRequestedAdmin)
+          .length,
+      takeoverActive: all
+          .where((c) => c.status == ConversationStatus.takeoverActive)
+          .length,
+      takeoverExpiring: all
+          .where((c) => c.status == ConversationStatus.takeoverExpiring)
+          .length,
+      closedToday:
+          all.where((c) => c.status == ConversationStatus.closed).length,
+    );
+  }
+
+  static List<ChatMessage> chatMessages(int readingId) {
+    final now = DateTime.now();
+    // Base scripted thread per conversation (varies by readingId)
+    final base = _baseChatMessages(readingId, now);
+    // Append admin messages from override
+    final admin = _adminMessages[readingId] ?? const [];
+    final all = [...base, ...admin];
+    // Sort ascending by at
+    all.sort((a, b) => (a['at'] as String).compareTo(b['at'] as String));
+    return all.map((m) => ChatMessage.fromJson(m)).toList();
+  }
+
+  static List<Map<String, dynamic>> _baseChatMessages(
+      int readingId, DateTime now) {
+    // Different scripts per reading id
+    switch (readingId) {
+      case 7001:
+        return [
+          _msg(7001, 'customer', 'สวัสดีค่ะ',
+              now.subtract(const Duration(minutes: 22))),
+          _msg(7001, 'bot',
+              '✨ หมอจันทราพร้อมรับใช้ค่ะ · เลือกบริการที่ต้องการได้เลย',
+              now.subtract(const Duration(minutes: 22, seconds: -10))),
+          _msg(7001, 'customer', 'ขอ Celtic Cross ค่ะ',
+              now.subtract(const Duration(minutes: 21))),
+          _msg(7001, 'bot',
+              '🔮 Celtic Cross 99฿ · พิมพ์คำถาม + โอนเงินตามบิล FTU-...',
+              now.subtract(const Duration(minutes: 20, seconds: 30))),
+          _msg(7001, 'customer', 'อยากรู้เรื่องเนื้อคู่ค่ะ',
+              now.subtract(const Duration(minutes: 18))),
+          _msg(7001, 'bot',
+              '🌸 หมอจะดูไพ่ Celtic Cross 10 ใบให้นะคะ · ขอเวลาสักครู่...',
+              now.subtract(const Duration(minutes: 17, seconds: 50))),
+          _msg(7001, 'bot',
+              'ใบที่ 1: The Star — ความหวังและแรงบันดาลใจ ความรักที่บริสุทธิ์...',
+              now.subtract(const Duration(minutes: 10))),
+          _msg(7001, 'customer',
+              'ขอเปลี่ยนคำถามได้ไหมคะ เพราะเพิ่งคิดออก',
+              now.subtract(const Duration(minutes: 3))),
+          _msg(7001, 'bot',
+              'ขออภัยค่ะ · บิลนี้ได้ลงคำถามไปแล้ว ไม่สามารถเปลี่ยนได้',
+              now.subtract(const Duration(minutes: 2, seconds: 30))),
+          _msgKeyword(
+              7001,
+              'คุยกับแม่หมอได้ไหมคะ ขอสอบถามเรื่องเปลี่ยนคำถาม',
+              now.subtract(const Duration(minutes: 1))),
+        ];
+      case 7002:
+        return [
+          _msg(7002, 'customer', 'จ่ายแล้วครับ',
+              now.subtract(const Duration(minutes: 35))),
+          _msg(7002, 'bot',
+              'ขอบคุณค่ะ · ระบบกำลังตรวจสอบบิล...',
+              now.subtract(const Duration(minutes: 34, seconds: 40))),
+          _msg(7002, 'bot',
+              '✅ ยืนยันการจ่ายแล้ว · กำลังทำนายเชิงลึก...',
+              now.subtract(const Duration(minutes: 30))),
+          _msg(7002, 'bot',
+              'ดวงเดือนนี้กำลังเปิดทางด้านการเงิน...',
+              now.subtract(const Duration(minutes: 28))),
+          _msg(7002, 'customer',
+              'ตอบไม่ตรงกับคำถามครับ ผมถามเรื่องงานไม่ใช่เงิน',
+              now.subtract(const Duration(minutes: 10))),
+          _msgKeyword(7002,
+              'ขอแอดมินช่วยตอบหน่อยครับ AI ตอบไม่ตรง',
+              now.subtract(const Duration(minutes: 4))),
+        ];
+      case 7003:
+        return [
+          _msg(7003, 'customer', 'อยากดูเรื่องความรักค่ะ',
+              now.subtract(const Duration(minutes: 50))),
+          _msg(7003, 'bot',
+              'หมอจะดูไพ่ Celtic ให้นะคะ · ขอเวลาสักครู่',
+              now.subtract(const Duration(minutes: 49))),
+          _msg(7003, 'bot',
+              'ใบ The Lovers ที่ตำแหน่งปัจจุบัน...',
+              now.subtract(const Duration(minutes: 45))),
+          _msgSystem(7003,
+              'Admin เปิด takeover · เวลา 30 นาที',
+              now.subtract(const Duration(minutes: 35)),
+              kind: 'takeover_started'),
+          _msg(7003, 'admin', 'แม่หมอเองนะคะ มีอะไรให้ช่วยเพิ่มไหม',
+              now.subtract(const Duration(minutes: 34)),
+              adminName: 'แม่หมอจันทรา'),
+          _msg(7003, 'customer', 'อยากถามเรื่องเงินด้วยค่ะ',
+              now.subtract(const Duration(minutes: 25))),
+          _msg(7003, 'admin',
+              'ดวงการเงินคุณช่วงนี้กำลังเข้ามาดีค่ะ มีโอกาสได้ลาภ',
+              now.subtract(const Duration(minutes: 24)),
+              adminName: 'แม่หมอจันทรา'),
+          _msg(7003, 'customer',
+              'ขอบคุณค่ะแม่หมอ แล้วเรื่องการเงินล่ะคะ',
+              now.subtract(const Duration(minutes: 2))),
+        ];
+      case 7004:
+        return [
+          _msg(7004, 'customer', '请问什么时候可以开始?',
+              now.subtract(const Duration(hours: 1))),
+          _msg(7004, 'bot',
+              '🌙 เริ่มได้เลยค่ะ · กรุณาพิมพ์คำถาม',
+              now.subtract(const Duration(minutes: 58))),
+          _msgSystem(7004, 'Admin เปิด takeover · เวลา 60 นาที',
+              now.subtract(const Duration(minutes: 45)),
+              kind: 'takeover_started'),
+          _msg(7004, 'admin', 'ผมเข้ามาช่วยแม่หมอตอบเองครับ มีอะไรสงสัยไหม',
+              now.subtract(const Duration(minutes: 44)),
+              adminName: 'Admin Kris'),
+          _msg(7004, 'customer', 'ค่ะ จะรอนะคะ',
+              now.subtract(const Duration(minutes: 12))),
+        ];
+      case 7005:
+        return [
+          _msg(7005, 'customer', 'สวัสดีครับ',
+              now.subtract(const Duration(minutes: 30))),
+          _msg(7005, 'bot',
+              '✨ หมอจันทราพร้อมรับใช้ค่ะ',
+              now.subtract(const Duration(minutes: 29, seconds: 50))),
+          _msg(7005, 'customer', 'ขอดูเรื่องการงาน',
+              now.subtract(const Duration(minutes: 25))),
+          _msg(7005, 'bot',
+              'หมอจันทราจะทำนายเรื่องการงานของคุณ...',
+              now.subtract(const Duration(minutes: 18))),
+        ];
+      case 7006:
+        return [
+          _msg(7006, 'customer', 'Hi can I ask about my career?',
+              now.subtract(const Duration(hours: 2))),
+          _msg(7006, 'bot',
+              'Sure! Please share your birth date and the specific question.',
+              now.subtract(const Duration(hours: 2, minutes: -1))),
+          _msg(7006, 'customer', '1992-05-14, will I get promoted this year?',
+              now.subtract(const Duration(hours: 1, minutes: 50))),
+          _msg(7006, 'bot',
+              'The cards suggest a strong period of growth between July-September...',
+              now.subtract(const Duration(hours: 1, minutes: 30))),
+          _msg(7006, 'customer', 'OK got it, will think about it. Thanks!',
+              now.subtract(const Duration(hours: 1))),
+        ];
+      case 7007:
+        return [
+          _msg(7007, 'customer', 'อยากรู้ดวงปีนี้ค่ะ',
+              now.subtract(const Duration(hours: 6))),
+          _msg(7007, 'bot',
+              'หมอจันทราจะทำนายให้นะคะ',
+              now.subtract(const Duration(hours: 6, minutes: -1))),
+          _msg(7007, 'bot',
+              'ดวงปีนี้คุณมีโชคใหญ่ในเดือนตุลาคม...',
+              now.subtract(const Duration(hours: 5, minutes: 30))),
+          _msg(7007, 'customer', '🙏 ขอบคุณค่ะแม่หมอ',
+              now.subtract(const Duration(hours: 5))),
+          _msgSystem(7007, 'Reading ปิด · ผ่านการประเมิน 5 ดาว',
+              now.subtract(const Duration(hours: 5, minutes: -2)),
+              kind: 'closed'),
+        ];
+      default:
+        return [];
+    }
+  }
+
+  static Map<String, dynamic> _msg(
+      int readingId, String sender, String text, DateTime at,
+      {String? adminName}) {
+    return {
+      'id': readingId * 100 + at.millisecondsSinceEpoch % 100,
+      'reading_id': readingId,
+      'sender': sender,
+      'text': text,
+      'at': at.toIso8601String(),
+      if (adminName != null) 'admin_name': adminName,
+    };
+  }
+
+  static Map<String, dynamic> _msgKeyword(
+      int readingId, String text, DateTime at) {
+    return {
+      'id': readingId * 100 + at.millisecondsSinceEpoch % 100,
+      'reading_id': readingId,
+      'sender': 'customer',
+      'text': text,
+      'at': at.toIso8601String(),
+      'is_keyword_match': true,
+    };
+  }
+
+  static Map<String, dynamic> _msgSystem(
+      int readingId, String text, DateTime at,
+      {String kind = 'note'}) {
+    return {
+      'id': readingId * 100 + at.millisecondsSinceEpoch % 100,
+      'reading_id': readingId,
+      'sender': 'system',
+      'text': text,
+      'at': at.toIso8601String(),
+      'is_system': true,
+      'system_kind': kind,
+    };
   }
 
   // ────────────────────────────────────────────────────────────

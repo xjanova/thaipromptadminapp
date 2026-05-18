@@ -12,6 +12,8 @@ import '../../features/dashboard/ui/dashboard_screen.dart';
 import '../../features/finance/ui/finance_screen.dart';
 import '../../features/fortune/ui/fortune_ai_pool_screen.dart';
 import '../../features/fortune/ui/fortune_bills_screen.dart';
+import '../../features/fortune/ui/fortune_chat_screen.dart';
+import '../../features/fortune/ui/fortune_inbox_screen.dart';
 import '../../features/fortune/ui/fortune_live_screen.dart';
 import '../../features/fortune/ui/fortune_screen.dart';
 import '../../features/marketplace/ui/marketplace_screen.dart';
@@ -68,6 +70,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/fortune/ai-pool',
               builder: (_, __) => const FortuneAiPoolScreen()),
+          GoRoute(
+              path: '/fortune/inbox',
+              builder: (_, __) => const FortuneInboxScreen()),
+          GoRoute(
+            path: '/fortune/chat/:readingId',
+            builder: (_, state) => FortuneChatScreen(
+              readingId: int.parse(state.pathParameters['readingId']!),
+            ),
+          ),
           GoRoute(path: '/users', builder: (_, __) => const UsersScreen()),
           GoRoute(
               path: '/marketplace', builder: (_, __) => const MarketplaceScreen()),

@@ -13,6 +13,7 @@ import '../../../shared/widgets/gradient_text.dart';
 import '../../../shared/widgets/starfield.dart';
 import '../data/fortune_repository.dart';
 import '../data/models/ai_pool_models.dart';
+import '../data/models/chat_models.dart';
 import '../data/models/fortune_models.dart';
 import 'widgets/service_edit_sheet.dart';
 
@@ -52,6 +53,7 @@ class FortuneScreen extends ConsumerWidget {
     final readingsAsync = ref.watch(fortuneReadingsProvider);
     final billStatsAsync = ref.watch(fortuneBillStatsProvider);
     final activeReadingsAsync = ref.watch(fortuneActiveReadingsProvider);
+    final takeoverStatsAsync = ref.watch(takeoverStatsProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F0A1F),
@@ -59,6 +61,22 @@ class FortuneScreen extends ConsumerWidget {
         title: const Text('ดูดวง & ทาโรต์'),
         backgroundColor: Colors.transparent,
         actions: [
+          // Inbox shortcut (alert when customers requesting admin)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: takeoverStatsAsync.maybeWhen(
+              data: (s) => _InboxShortcutButton(
+                customerRequests: s.customerRequests,
+                takeoverExpiring: s.takeoverExpiring,
+                onTap: () => context.push('/fortune/inbox'),
+              ),
+              orElse: () => _InboxShortcutButton(
+                customerRequests: 0,
+                takeoverExpiring: 0,
+                onTap: () => context.push('/fortune/inbox'),
+              ),
+            ),
+          ),
           // Live readings shortcut with stuck-count badge
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -152,6 +170,14 @@ class FortuneScreen extends ConsumerWidget {
                 _statBar(dashAsync),
 
                 const SizedBox(height: 14),
+
+                // ── Inbox CTA (#1 priority — customer requests to admin) ──
+                _InboxCta(
+                  async: takeoverStatsAsync,
+                  onTap: () => context.push('/fortune/inbox'),
+                ),
+
+                const SizedBox(height: 10),
 
                 // ── Bill approval CTA ──
                 _BillApprovalCta(
@@ -684,6 +710,221 @@ class _BillShortcutButton extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// AppBar action for Inbox — pulsing red badge when customers wait
+class _InboxShortcutButton extends StatelessWidget {
+  const _InboxShortcutButton({
+    required this.customerRequests,
+    required this.takeoverExpiring,
+    required this.onTap,
+  });
+  final int customerRequests;
+  final int takeoverExpiring;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final urgent = customerRequests > 0;
+    final warning = takeoverExpiring > 0;
+    final total = customerRequests + takeoverExpiring;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+            child: const Icon(Icons.mark_chat_unread_outlined,
+                color: Colors.white, size: 19),
+          ),
+          if (total > 0)
+            Positioned(
+              top: -4,
+              right: -4,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                constraints:
+                    const BoxConstraints(minWidth: 18, minHeight: 18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: urgent
+                        ? [AppColors.error, const Color(0xFFB91C1C)]
+                        : (warning
+                            ? [AppColors.warning, const Color(0xFFEA580C)]
+                            : [
+                                AppColors.cyanStart,
+                                AppColors.cyanEnd
+                              ]),
+                  ),
+                  borderRadius: BorderRadius.circular(9),
+                  border:
+                      Border.all(color: const Color(0xFF0F0A1F), width: 2),
+                ),
+                child: Text(
+                  total > 99 ? '99+' : total.toString(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+                ),
+              ).animate(
+                target: urgent ? 1 : 0,
+                onPlay: (c) => c.repeat(reverse: true),
+              ).scale(
+                duration: const Duration(milliseconds: 600),
+                begin: const Offset(1, 1),
+                end: const Offset(1.15, 1.15),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Inbox CTA card — most prominent on Fortune screen when customers waiting
+class _InboxCta extends StatelessWidget {
+  const _InboxCta({required this.async, required this.onTap});
+  final AsyncValue<TakeoverStats> async;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return async.maybeWhen(
+      data: (s) {
+        final urgent = s.customerRequests > 0;
+        return InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: urgent
+                  ? const LinearGradient(
+                      colors: [
+                        AppColors.error,
+                        Color(0xFFDC2626),
+                        AppColors.pinkStart,
+                      ],
+                      begin: Alignment(-1, -1),
+                      end: Alignment(1, 1),
+                    )
+                  : LinearGradient(
+                      colors: [
+                        AppColors.cyanStart.withValues(alpha: 0.3),
+                        AppColors.purpleStart.withValues(alpha: 0.2),
+                      ],
+                    ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: urgent
+                  ? [
+                      BoxShadow(
+                        color: AppColors.error.withValues(alpha: 0.5),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        urgent
+                            ? Icons.support_agent
+                            : Icons.mark_chat_unread,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    if (urgent)
+                      Positioned(
+                        top: -3,
+                        right: -3,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: AppColors.error,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ).animate(
+                          onPlay: (c) => c.repeat(reverse: true),
+                        ).fadeIn(
+                            duration: const Duration(milliseconds: 700)),
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        urgent
+                            ? 'ลูกค้าขอคุยกับแอดมิน ${s.customerRequests} คน'
+                            : 'Inbox · ${s.takeoverActive + s.takeoverExpiring} takeover active',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        urgent
+                            ? 'แตะเพื่อเปิด Takeover & ตอบลูกค้า · ${s.takeoverExpiring} ใกล้หมดเวลา'
+                            : '${s.closedToday} ปิดแล้ววันนี้ · poll ทุก 12s',
+                        style: const TextStyle(
+                          color: Color(0xE6FFFFFF),
+                          fontSize: 11,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios,
+                    color: Colors.white, size: 14),
+              ],
+            ),
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
     );
   }
 }

@@ -5,6 +5,7 @@ import '../../../core/mock/mock_config.dart';
 import '../../../core/mock/mock_data.dart';
 import '../../finance/data/finance_repository.dart' show PagedResult;
 import 'models/ai_pool_models.dart';
+import 'models/chat_models.dart';
 import 'models/fortune_models.dart';
 
 /// Repository สำหรับ /api/admin/fortune/*
@@ -267,6 +268,105 @@ class FortuneRepository {
     );
     return (json['ok'] as bool?) ?? false;
   }
+
+  // ── Takeover Inbox + Chat ──
+  // Backend routes (per brain note): /admin/takeover/* — list, status,
+  // takeover, extend, resume, send-message
+
+  Future<List<FortuneConversation>> conversations() async {
+    if (kMockMode) return mockDelay(Mock.fortuneConversations());
+    final json = await _api.get<Map<String, dynamic>>(
+      '/takeover/conversations',
+      parser: (d) => (d as Map).cast<String, dynamic>(),
+    );
+    final list = (json['data'] as List?) ?? const [];
+    return list
+        .whereType<Map>()
+        .map((m) => FortuneConversation.fromJson(m.cast<String, dynamic>()))
+        .toList();
+  }
+
+  Future<TakeoverStats> takeoverStats() async {
+    if (kMockMode) return mockDelay(Mock.takeoverStats());
+    final json = await _api.get<Map<String, dynamic>>(
+      '/takeover/stats',
+      parser: (d) => (d as Map).cast<String, dynamic>(),
+    );
+    return TakeoverStats.fromJson(json);
+  }
+
+  Future<List<ChatMessage>> messages(int readingId) async {
+    if (kMockMode) return mockDelay(Mock.chatMessages(readingId));
+    final json = await _api.get<Map<String, dynamic>>(
+      '/takeover/$readingId/messages',
+      parser: (d) => (d as Map).cast<String, dynamic>(),
+    );
+    final list = (json['data'] as List?) ?? const [];
+    return list
+        .whereType<Map>()
+        .map((m) => ChatMessage.fromJson(m.cast<String, dynamic>()))
+        .toList();
+  }
+
+  /// Start admin takeover — backend pattern:
+  /// POST /admin/takeover/{reading}/takeover { minutes }
+  Future<void> startTakeover(int readingId, {int minutes = 60}) async {
+    if (kMockMode) {
+      Mock.startTakeover(readingId, minutes);
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>(
+      '/takeover/$readingId/takeover',
+      data: {'minutes': minutes},
+    );
+  }
+
+  /// Extend ongoing takeover
+  /// POST /admin/takeover/{reading}/extend { minutes }
+  Future<void> extendTakeover(int readingId, {int minutes = 30}) async {
+    if (kMockMode) {
+      Mock.extendTakeover(readingId, minutes);
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>(
+      '/takeover/$readingId/extend',
+      data: {'minutes': minutes},
+    );
+  }
+
+  /// Resume control to AI — like sending `/ai` in chat
+  /// POST /admin/takeover/{reading}/resume
+  Future<void> resumeAi(int readingId) async {
+    if (kMockMode) {
+      Mock.resumeAi(readingId);
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>('/takeover/$readingId/resume');
+  }
+
+  /// Admin sends a message in customer's chat
+  /// POST /admin/takeover/{reading}/send-message
+  ///
+  /// Pattern from brain: pass `from_admin=true, message_tag='HUMAN_AGENT'`
+  /// for FB so the 7-day window applies (not 24hr)
+  Future<void> sendChatMessage(int readingId, String text) async {
+    if (kMockMode) {
+      Mock.appendAdminMessage(readingId, text);
+      await mockDelay(null);
+      return;
+    }
+    await _api.post<dynamic>(
+      '/takeover/$readingId/send-message',
+      data: {
+        'text': text,
+        'from_admin': true,
+        'message_tag': 'HUMAN_AGENT',
+      },
+    );
+  }
 }
 
 final fortuneRepositoryProvider = Provider<FortuneRepository>((ref) {
@@ -309,4 +409,19 @@ final aiPoolSettingsProvider = FutureProvider<AiPoolSettings>((ref) async {
 final aiPoolKeysProvider =
     FutureProvider.family<List<AiApiKey>, String?>((ref, purpose) async {
   return ref.watch(fortuneRepositoryProvider).aiPoolKeys(purpose: purpose);
+});
+
+// ── Takeover / Chat providers ──
+final fortuneConversationsProvider =
+    FutureProvider<List<FortuneConversation>>((ref) async {
+  return ref.watch(fortuneRepositoryProvider).conversations();
+});
+
+final takeoverStatsProvider = FutureProvider<TakeoverStats>((ref) async {
+  return ref.watch(fortuneRepositoryProvider).takeoverStats();
+});
+
+final chatMessagesProvider =
+    FutureProvider.family<List<ChatMessage>, int>((ref, readingId) async {
+  return ref.watch(fortuneRepositoryProvider).messages(readingId);
 });
