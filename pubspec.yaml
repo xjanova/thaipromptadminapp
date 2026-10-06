@@ -1,5 +1,5 @@
 name: thaipromptadmin
-description: "Thaiprompt Admin Mobile App — จัดการระบบหลังบ้าน main.thaiprompt.online จากมือถือ"
+description: "ไทยพร้อม แอดมิน — ศูนย์ควบคุมหลังบ้าน main.thaiprompt.online บนมือถือ"
 publish_to: 'none'
 
 version: 0.2.0+3
@@ -19,7 +19,6 @@ dependencies:
 
   # ── State management & DI ──
   flutter_riverpod: ^2.6.1
-  riverpod_annotation: ^2.6.1
 
   # ── Routing ──
   go_router: ^14.6.2
@@ -32,16 +31,8 @@ dependencies:
   flutter_secure_storage: ^9.2.2       # token (Keychain / Keystore)
   shared_preferences: ^2.3.3           # non-sensitive prefs
 
-  # ── Models / serialization ──
-  freezed_annotation: ^2.4.4
-  json_annotation: ^4.9.0
-
   # ── UI ──
-  google_fonts: ^6.2.1
-  flutter_svg: ^2.0.16
-  flutter_animate: ^4.5.0
-  fl_chart: ^0.69.2
-  qr_flutter: ^4.1.0
+  phosphor_flutter: ^2.1.0             # ไอคอนเส้นชุดเดียวกับแอปลูกค้า
   mobile_scanner: ^5.2.3               # QR scanner (camera)
 
   # ── Device / app info ──
@@ -57,25 +48,35 @@ dependencies:
   # ── Auto-update (OTA APK install) ──
   ota_update: ^7.0.0                   # in-app APK download + install (Android)
 
-  # ── Misc ──
-  collection: ^1.19.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
 
-  # Code generation
-  build_runner: ^2.4.13
-  riverpod_generator: ^2.6.3
-  freezed: ^2.5.7
-  json_serializable: ^6.9.0
-  custom_lint: ^0.7.0
-  riverpod_lint: ^2.6.3
-
 flutter:
   uses-material-design: true
   generate: true                       # enable l10n generator
   assets:
-    - assets/images/
-    - assets/icons/
+    - assets/images/icons/
+    - assets/images/brand/
+
+  # ฟอนต์ฝังในแอป (ไม่โหลดจากเน็ตตอนเปิด) — Anuphan = ข้อความทั้งหมด, Noto Serif Thai = หัวเรื่องรอยัล
+  fonts:
+    - family: Anuphan
+      fonts:
+        - asset: assets/fonts/Anuphan-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Anuphan-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Anuphan-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Anuphan-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Anuphan-Bold.ttf
+          weight: 700
+    - family: NotoSerifThai
+      fonts:
+        - asset: assets/fonts/NotoSerifThai-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSerifThai-Bold.ttf
+          weight: 700

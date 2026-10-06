@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/routing/app_router.dart';
 import 'core/security/app_lock_controller.dart';
-import 'core/theme/app_theme.dart';
+import 'core/theme/tp_palette.dart';
+import 'core/theme/tp_theme.dart';
 import 'core/update/update_checker.dart';
 import 'core/update/update_dialog.dart';
 import 'features/auth/providers/auth_controller.dart';
@@ -21,14 +22,24 @@ class _BootSplash extends StatelessWidget {
   const _BootSplash();
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: Color(0xFF0A0A0F),
-      child: Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: Color(0xFFA855F7),
+    // ใช้พื้นหลังลายกนกเดียวกับหน้าปลดล็อก — เปลี่ยนหน้าแล้วไม่กระพริบ
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Color(0xFF05070C),
+        image: DecorationImage(
+          image: AssetImage('assets/images/brand/login_bg.webp'),
+          fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
         ),
       ),
+      child: Stack(children: [
+        Positioned(
+          top: MediaQuery.sizeOf(context).height * 0.267 - 38,
+          left: 0,
+          right: 0,
+          child: Center(child: Image.asset('assets/images/brand/tp-mark.webp', width: 76)),
+        ),
+      ]),
     );
   }
 }
@@ -78,11 +89,13 @@ class _ThaipromptAdminAppState extends ConsumerState<ThaipromptAdminApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
+    final look = ref.watch(tpLookProvider);
 
     return MaterialApp.router(
-      title: 'Thaiprompt Admin',
+      title: 'ไทยพร้อม แอดมิน',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
+      theme: buildTpTheme(TpPalette.of(look)),
+      themeAnimationDuration: const Duration(milliseconds: 320),
       routerConfig: router,
       // PIN gate overlay — ถ้า user ตั้ง PIN และยังไม่ปลด → block หน้าจอทั้งแอพ
       builder: (context, child) {

@@ -20,7 +20,7 @@
     <!-- Optional: เปิด URL ไป browser (url_launcher) — ไม่ต้องประกาศ permission แต่ต้องประกาศ queries -->
 
     <application
-        android:label="Thaiprompt Admin"
+        android:label="ไทยพร้อม แอดมิน"
         android:usesCleartextTraffic="false"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

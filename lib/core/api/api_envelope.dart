@@ -28,7 +28,8 @@ class ApiEnvelope<T> {
           : (dataParser != null ? dataParser(raw) : raw as T),
       message: json['message'] as String?,
       errors: (json['errors'] as Map?)?.cast<String, dynamic>(),
-      errorCode: json['error_code'] as String?,
+      // backend บางตัวส่ง `code` แทน `error_code` (EnsureAccountActive)
+      errorCode: (json['error_code'] ?? json['code'])?.toString(),
     );
   }
 }
@@ -54,4 +55,12 @@ class ApiException implements Exception {
 
   @override
   String toString() => 'ApiException($statusCode): $message';
+}
+
+/// ข้อผิดพลาดของการกระทำ (approve/reject ฯลฯ) ที่ backend ส่งข้อความภาษาไทยมาแล้ว — แสดงตรงได้เลย
+class ActionError implements Exception {
+  ActionError(this.message);
+  final String message;
+  @override
+  String toString() => message;
 }

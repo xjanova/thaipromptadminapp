@@ -1,427 +1,681 @@
+import 'dart:ui' show Color;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
-import '../../../core/mock/mock_config.dart';
-import '../../../core/mock/mock_data.dart';
-import '../../finance/data/finance_repository.dart' show PagedResult;
-import 'models/ai_pool_models.dart';
-import 'models/chat_models.dart';
-import 'models/fortune_models.dart';
+import '../../../core/api/api_envelope.dart';
+import '../../../core/api/paged.dart';
+import '../../../shared/ui/tp_format.dart';
+import '../../work/data/work_repository.dart' show FortuneBill;
 
-/// Repository สำหรับ /api/admin/fortune/*
-class FortuneRepository {
-  FortuneRepository(this._api);
-  final ApiClient _api;
+// ═════════════════════════ ตัวช่วยอ่าน JSON ═════════════════════════
 
-  Future<FortuneDashboardData> dashboard({String period = 'month'}) async {
-    final json = await _api.get<Map<String, dynamic>>(
-      '/fortune/dashboard',
-      query: {'period': period},
-      parser: (d) => (d as Map).cast<String, dynamic>(),
-    );
-    return FortuneDashboardData.fromJson(json);
-  }
+Map<String, dynamic> _m(dynamic v) => v is Map ? v.cast<String, dynamic>() : const {};
 
-  Future<PagedResult<FortuneReading>> readings({
-    int page = 1,
-    String? search,
-    bool? isPaid,
-  }) async {
-    final json = await _api.get<Map<String, dynamic>>(
-      '/fortune/readings',
-      query: {
-        'page': page,
-        if (search != null && search.isNotEmpty) 'search': search,
-        if (isPaid != null) 'is_paid': isPaid ? 1 : 0,
-      },
-      parser: (d) => (d as Map).cast<String, dynamic>(),
-    );
-    return PagedResult.fromJson<FortuneReading>(json, FortuneReading.fromJson);
-  }
+List<Map<String, dynamic>> _list(dynamic v) =>
+    v is List ? v.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList() : const [];
 
-  Future<Map<String, dynamic>> readingStats() async {
-    return _api.get<Map<String, dynamic>>(
-      '/fortune/readings/stats',
-      parser: (d) => (d as Map).cast<String, dynamic>(),
-    );
-  }
+/// อีโมจิ/สัญลักษณ์ภาพที่เซิร์ฟเวอร์ใส่มาในป้าย (🔮 ⭐ ✅ ❌ ⏳ ฯลฯ) — ตัวอักษรไทย ฿ • — → ไม่โดน
+final _emoji = RegExp(
+  r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{2300}-\u{23FF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]',
+  unicode: true,
+);
+final _spaces = RegExp(r'\s{2,}');
+final _parenOpen = RegExp(r'\(\s+');
+final _parenClose = RegExp(r'\s+\)');
+final _thai = RegExp(r'[฀-๿]');
 
-  // ── Bills ──
-  Future<PagedResult<FortuneBill>> bills({
-    int page = 1,
-    String? status,
-    String? tier,
-    String? search,
-  }) async {
-    if (kMockMode) return mockDelay(Mock.fortuneBills(status: status, tier: tier));
-    final json = await _api.get<Map<String, dynamic>>(
-      '/fortune/bills',
-      query: {
-        'page': page,
-        if (status != null) 'status': status,
-        if (tier != null) 'tier': tier,
-        if (search != null && search.isNotEmpty) 'search': search,
-      },
-      parser: (d) => (d as Map).cast<String, dynamic>(),
-    );
-    return PagedResult.fromJson<FortuneBill>(json, FortuneBill.fromJson);
-  }
+/// ตัดอีโมจิออกจากข้อความที่มาจากเซิร์ฟเวอร์ (กติกาดีไซน์: ห้ามอีโมจิในหน้าจอ)
+/// เช่น "Smart (⭐ กระจาย load)" → "Smart (กระจาย load)"
+String fortuneCleanText(String? v) => (v ?? '')
+    .replaceAll(_emoji, '')
+    .replaceAll(_spaces, ' ')
+    .replaceAll(_parenOpen, '(')
+    .replaceAll(_parenClose, ')')
+    .trim();
 
-  Future<FortuneBillStats> billStats() async {
-    if (kMockMode) return mockDelay(Mock.fortuneBillStats());
-    final json = await _api.get<Map<String, dynamic>>(
-      '/fortune/bills/stats',
-      parser: (d) => (d as Map).cast<String, dynamic>(),
-    );
-    return FortuneBillStats.fromJson(json);
-  }
+/// ข้อความที่ตัดอีโมจิแล้ว — ว่าง = null
+String? _clean(dynamic v) {
+  if (v == null) return null;
+  final s = fortuneCleanText(v.toString());
+  return s.isEmpty ? null : s;
+}
 
-  Future<void> approveBill(int id) async {
-    if (kMockMode) {
-      Mock.setBillStatus(id, 'confirmed');
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>('/fortune/bills/$id/approve');
-  }
+/// สี hex จากเซิร์ฟเวอร์ (#ff6699 / #f69 / ff6699) → Color · อ่านไม่ได้ = null
+Color? fortuneHexColor(String? hex) {
+  if (hex == null) return null;
+  var h = hex.trim().replaceFirst('#', '');
+  if (h.length == 3) h = h.split('').map((c) => '$c$c').join();
+  if (h.length == 6) h = 'FF$h';
+  if (h.length != 8) return null;
+  final v = int.tryParse(h, radix: 16);
+  return v == null ? null : Color(v);
+}
 
-  Future<void> rejectBill(int id, String reason) async {
-    if (kMockMode) {
-      Mock.setBillStatus(id, 'rejected', rejectReason: reason);
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>(
-      '/fortune/bills/$id/reject',
-      data: {'reason': reason},
-    );
-  }
+// ═════════════════════════ ตัวกรองบิล ═════════════════════════
 
-  Future<void> refundBill(int id, String reason) async {
-    if (kMockMode) {
-      Mock.setBillStatus(id, 'refunded', rejectReason: reason);
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>(
-      '/fortune/bills/$id/refund',
-      data: {'reason': reason},
-    );
-  }
+/// ช่องทางแชทที่กรองได้ใน `fortune/bills?platform=`
+enum FortunePlatform {
+  facebook('facebook', 'Messenger'),
+  line('line', 'LINE'),
+  telegram('telegram', 'Telegram'),
+  other('other', 'อื่น ๆ');
 
-  /// Resend last card image (for stuck readings — pattern from
-  /// "Fortune LINE Celtic — recovery patterns" brain note)
-  Future<void> resendLastImage(int id) async {
-    if (kMockMode) {
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>('/fortune/bills/$id/resend-image');
-  }
+  const FortunePlatform(this.key, this.label);
+  final String key;
+  final String label;
+}
 
-  // ── Services (โทเก้น on/off + edit) ──
-  Future<void> toggleService(int id) async {
-    if (kMockMode) {
-      Mock.toggleFortuneService(id);
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>('/fortune/services/$id/toggle');
-  }
+/// แพคเกจที่กรองได้ใน `fortune/bills?package=` (ป้ายตรงกับหน้าเว็บ FortuneBillsController::PACKAGES)
+enum FortunePackage {
+  deep('deep', 'ดูพื้นดวง 39฿'),
+  celtic('celtic', 'Celtic 99฿'),
+  freeCard('free_card', 'ไพ่ฟรี'),
+  basic('basic', 'พื้นฐาน'),
+  juntra('juntra', 'เว็บจันทรา');
 
-  Future<void> updateService(int id, FortuneServicePatch patch) async {
-    if (kMockMode) {
-      Mock.patchFortuneService(id, patch);
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>(
-      '/fortune/services/$id/update',
-      data: patch.toJson(),
-    );
-  }
+  const FortunePackage(this.key, this.label);
+  final String key;
+  final String label;
+}
 
-  // ── Active Readings (Live monitor) ──
-  Future<List<FortuneActiveReading>> activeReadings() async {
-    if (kMockMode) return mockDelay(Mock.fortuneActiveReadings());
-    final json = await _api.get<Map<String, dynamic>>(
-      '/fortune/active-readings',
-      parser: (d) => (d as Map).cast<String, dynamic>(),
-    );
-    final list = (json['data'] as List?) ?? const [];
-    return list
-        .whereType<Map>()
-        .map((m) => FortuneActiveReading.fromJson(m.cast<String, dynamic>()))
-        .toList();
-  }
+// ═════════════════════════ สรุปธุรกิจดูดวง (fortune/dashboard) ═════════════════════════
 
-  /// Admin Ask AI — sync AJAX takeover (pattern from
-  /// [[2026-05-17-fortune-celtic-admin-ai-debug-tools-bill-race-lock]])
-  /// admin waits 30-60s; bypasses canAskMoreCeltic + time window;
-  /// uses MAX(seq)+1 + retry to avoid race with customer thread
-  Future<void> adminAskAi(int readingId, String question) async {
-    if (kMockMode) {
-      Mock.markAdminTakeover(readingId);
-      // realistic AI takeover delay (1-2s in mock to feel responsive)
-      await mockDelay(null, delay: const Duration(milliseconds: 1200));
-      return;
-    }
-    await _api.post<dynamic>(
-      '/fortune/active-readings/$readingId/admin-ask-ai',
-      data: {'question': question},
-    );
-  }
+enum FortunePeriod {
+  today('today', 'วันนี้'),
+  week('week', 'สัปดาห์นี้'),
+  month('month', 'เดือนนี้');
 
-  /// Admin sends a text message to customer (bypassing bot)
-  Future<void> sendAdminMessage(int readingId, String text) async {
-    if (kMockMode) {
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>(
-      '/fortune/active-readings/$readingId/send-message',
-      data: {'text': text},
-    );
-  }
+  const FortunePeriod(this.key, this.label);
+  final String key;
+  final String label;
+}
 
-  /// Cancel reading + refund (combined safety hatch)
-  Future<void> cancelReading(int readingId, String reason) async {
-    if (kMockMode) {
-      Mock.cancelActiveReading(readingId);
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>(
-      '/fortune/active-readings/$readingId/cancel',
-      data: {'reason': reason},
-    );
-  }
+/// สถิติต่อหมวดคำถาม (เฉพาะหมวดที่เปิดอยู่)
+class FortuneCategoryStat {
+  const FortuneCategoryStat({required this.id, required this.name, this.color, this.sessions = 0, this.revenue = 0});
+  final int id;
+  final String name;
+  final String? color;
+  final int sessions;
+  final double revenue;
 
-  // ── AI Pool config ──
-  Future<AiPoolSettings> aiPoolSettings() async {
-    if (kMockMode) return mockDelay(Mock.aiPoolSettings());
-    final json = await _api.get<Map<String, dynamic>>(
-      '/fortune/ai-pool/settings',
-      parser: (d) => (d as Map).cast<String, dynamic>(),
-    );
-    return AiPoolSettings.fromJson(json);
-  }
+  factory FortuneCategoryStat.fromJson(Map<String, dynamic> j) => FortuneCategoryStat(
+        id: TpFmt.toInt(j['id']),
+        name: _clean(j['name']) ?? 'ไม่มีชื่อหมวด',
+        color: j['color']?.toString(),
+        sessions: TpFmt.toInt(j['sessions']),
+        revenue: TpFmt.toDouble(j['revenue_thb']),
+      );
+}
 
-  Future<List<AiApiKey>> aiPoolKeys({String? purpose}) async {
-    if (kMockMode) return mockDelay(Mock.aiPoolKeys(purpose: purpose));
-    final json = await _api.get<Map<String, dynamic>>(
-      '/fortune/ai-pool/keys',
-      query: {if (purpose != null) 'purpose': purpose},
-      parser: (d) => (d as Map).cast<String, dynamic>(),
-    );
-    final list = (json['data'] as List?) ?? const [];
-    return list
-        .whereType<Map>()
-        .map((m) => AiApiKey.fromJson(m.cast<String, dynamic>()))
-        .toList();
-  }
+/// GET fortune/dashboard?period=
+///
+/// หมายเหตุนิยาม (ตามโค้ด backend):
+/// - [revenue] = ผลรวม amount_paid ของบิลที่ "สร้างในช่วงนี้" และจ่ายแล้ว (ไม่รวมเว็บจันทรา)
+/// - [sessions] = จำนวนแถว fortune_readings ที่สร้างในช่วงนี้ (นับทุกบทสนทนา รวมที่ไม่ได้ออกบิล)
+class FortuneDashboard {
+  const FortuneDashboard({
+    this.revenue = 0,
+    this.sessions = 0,
+    this.avgRating = 0,
+    this.activeNow = 0,
+    this.categories = const [],
+  });
 
-  Future<void> setAiPoolGlobalMode(String mode) async {
-    if (kMockMode) {
-      Mock.setAiPoolGlobalMode(mode);
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>(
-      '/fortune/ai-pool/settings',
-      data: {'global_mode': mode},
-    );
-  }
+  final double revenue;
+  final int sessions;
+  final double avgRating;
+  final int activeNow;
+  final List<FortuneCategoryStat> categories;
 
-  Future<void> toggleAiKey(int id) async {
-    if (kMockMode) {
-      Mock.toggleAiKey(id);
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>('/fortune/ai-pool/keys/$id/toggle');
-  }
-
-  Future<void> updateAiKey(int id, AiKeyPatch patch) async {
-    if (kMockMode) {
-      Mock.patchAiKey(id, patch);
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>(
-      '/fortune/ai-pool/keys/$id/update',
-      data: patch.toJson(),
-    );
-  }
-
-  /// "Test key now" — runs a probe and sets last_test_passed_at / error_at
-  /// (mock: 80% success, sets timestamp; 20% failure, sets error timestamp)
-  Future<bool> testAiKey(int id) async {
-    if (kMockMode) {
-      final success = Mock.testAiKey(id);
-      await mockDelay(null, delay: const Duration(milliseconds: 1100));
-      return success;
-    }
-    final json = await _api.post<Map<String, dynamic>>(
-      '/fortune/ai-pool/keys/$id/test',
-      parser: (d) => (d as Map).cast<String, dynamic>(),
-    );
-    return (json['ok'] as bool?) ?? false;
-  }
-
-  // ── Takeover Inbox + Chat ──
-  // Backend routes (per brain note): /admin/takeover/* — list, status,
-  // takeover, extend, resume, send-message
-
-  Future<List<FortuneConversation>> conversations() async {
-    if (kMockMode) return mockDelay(Mock.fortuneConversations());
-    final json = await _api.get<Map<String, dynamic>>(
-      '/takeover/conversations',
-      parser: (d) => (d as Map).cast<String, dynamic>(),
-    );
-    final list = (json['data'] as List?) ?? const [];
-    return list
-        .whereType<Map>()
-        .map((m) => FortuneConversation.fromJson(m.cast<String, dynamic>()))
-        .toList();
-  }
-
-  Future<TakeoverStats> takeoverStats() async {
-    if (kMockMode) return mockDelay(Mock.takeoverStats());
-    final json = await _api.get<Map<String, dynamic>>(
-      '/takeover/stats',
-      parser: (d) => (d as Map).cast<String, dynamic>(),
-    );
-    return TakeoverStats.fromJson(json);
-  }
-
-  Future<List<ChatMessage>> messages(int readingId) async {
-    if (kMockMode) return mockDelay(Mock.chatMessages(readingId));
-    final json = await _api.get<Map<String, dynamic>>(
-      '/takeover/$readingId/messages',
-      parser: (d) => (d as Map).cast<String, dynamic>(),
-    );
-    final list = (json['data'] as List?) ?? const [];
-    return list
-        .whereType<Map>()
-        .map((m) => ChatMessage.fromJson(m.cast<String, dynamic>()))
-        .toList();
-  }
-
-  /// Start admin takeover — backend pattern:
-  /// POST /admin/takeover/{reading}/takeover { minutes }
-  Future<void> startTakeover(int readingId, {int minutes = 60}) async {
-    if (kMockMode) {
-      Mock.startTakeover(readingId, minutes);
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>(
-      '/takeover/$readingId/takeover',
-      data: {'minutes': minutes},
-    );
-  }
-
-  /// Extend ongoing takeover
-  /// POST /admin/takeover/{reading}/extend { minutes }
-  Future<void> extendTakeover(int readingId, {int minutes = 30}) async {
-    if (kMockMode) {
-      Mock.extendTakeover(readingId, minutes);
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>(
-      '/takeover/$readingId/extend',
-      data: {'minutes': minutes},
-    );
-  }
-
-  /// Resume control to AI — like sending `/ai` in chat
-  /// POST /admin/takeover/{reading}/resume
-  Future<void> resumeAi(int readingId) async {
-    if (kMockMode) {
-      Mock.resumeAi(readingId);
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>('/takeover/$readingId/resume');
-  }
-
-  /// Admin sends a message in customer's chat
-  /// POST /admin/takeover/{reading}/send-message
-  ///
-  /// Pattern from brain: pass `from_admin=true, message_tag='HUMAN_AGENT'`
-  /// for FB so the 7-day window applies (not 24hr)
-  Future<void> sendChatMessage(int readingId, String text) async {
-    if (kMockMode) {
-      Mock.appendAdminMessage(readingId, text);
-      await mockDelay(null);
-      return;
-    }
-    await _api.post<dynamic>(
-      '/takeover/$readingId/send-message',
-      data: {
-        'text': text,
-        'from_admin': true,
-        'message_tag': 'HUMAN_AGENT',
-      },
+  factory FortuneDashboard.fromJson(Map<String, dynamic> j) {
+    final h = _m(j['hero']);
+    return FortuneDashboard(
+      revenue: TpFmt.toDouble(h['monthly_revenue_thb']),
+      sessions: TpFmt.toInt(h['sessions_count']),
+      avgRating: TpFmt.toDouble(h['avg_rating']),
+      activeNow: TpFmt.toInt(h['active_now']),
+      categories: _list(j['services_summary']).map(FortuneCategoryStat.fromJson).toList(),
     );
   }
 }
 
-final fortuneRepositoryProvider = Provider<FortuneRepository>((ref) {
-  return FortuneRepository(ref.watch(apiClientProvider));
-});
+// ═════════════════════════ คำทำนายสด (fortune/active-readings) ═════════════════════════
 
-final fortuneDashboardProvider = FutureProvider<FortuneDashboardData>((ref) async {
-  if (kMockMode) return mockDelay(Mock.fortuneDashboard());
-  return ref.watch(fortuneRepositoryProvider).dashboard();
-});
+class LiveReading {
+  const LiveReading({
+    required this.id,
+    required this.billNumber,
+    required this.packageLabel,
+    required this.stuck,
+    this.customerName,
+    this.platform,
+    this.stageLabel,
+    this.stageDetail,
+    this.paidAt,
+    this.lastActivityAt,
+    this.minutesSinceActivity,
+    this.stuckReason,
+    this.takenOver = false,
+  });
 
-final fortuneReadingsProvider = FutureProvider<PagedResult<FortuneReading>>((ref) async {
-  if (kMockMode) return mockDelay(Mock.fortuneReadings());
-  return ref.watch(fortuneRepositoryProvider).readings();
-});
+  final int id;
+  final String billNumber;
+  final String packageLabel;
+  final bool stuck;
+  final String? customerName;
+  final String? platform;
+  final String? stageLabel;
+  final String? stageDetail;
+  final DateTime? paidAt;
+  final DateTime? lastActivityAt;
 
-/// Bills list filtered by status (null = all)
-final fortuneBillsProvider =
-    FutureProvider.family<PagedResult<FortuneBill>, String?>(
-        (ref, status) async {
-  return ref.watch(fortuneRepositoryProvider).bills(status: status);
-});
+  /// null = เซิร์ฟเวอร์ไม่รู้เวลาขยับล่าสุด
+  final int? minutesSinceActivity;
+  final String? stuckReason;
+  final bool takenOver;
 
-final fortuneBillStatsProvider = FutureProvider<FortuneBillStats>((ref) async {
-  return ref.watch(fortuneRepositoryProvider).billStats();
-});
+  /// เหตุผลที่ค้างเป็นภาษาไทย
+  String? get stuckLabel => switch (stuckReason) {
+        null => stuck ? 'ระบบไม่ขยับ' : null,
+        'ai_generating_timeout' => 'AI ทำนายไม่เสร็จ',
+        'deep_job_failed' => 'งานทำนายล้มเหลว',
+        _ => 'ระบบไม่ขยับ',
+      };
 
-/// Active readings (Live monitor) — auto-refresh ทุก 10s ด้วย Timer
-/// ใน UI (Riverpod ไม่มี polling built-in — ใช้ `ref.invalidate()` แทน)
-final fortuneActiveReadingsProvider =
-    FutureProvider<List<FortuneActiveReading>>((ref) async {
-  return ref.watch(fortuneRepositoryProvider).activeReadings();
-});
+  factory LiveReading.fromJson(Map<String, dynamic> j) {
+    final stage = _m(j['stage']);
+    final id = TpFmt.toInt(j['reading_id'] ?? j['id']);
+    return LiveReading(
+      id: id,
+      billNumber: (j['bill_number'] ?? 'R$id').toString(),
+      packageLabel: _clean(j['package_label']) ?? 'ดูดวง',
+      stuck: j['stuck'] == true,
+      customerName: _clean(j['customer_name']),
+      platform: j['platform']?.toString(),
+      stageLabel: _clean(stage['label']),
+      stageDetail: _clean(stage['detail']),
+      paidAt: TpFmt.parse(j['paid_at']),
+      lastActivityAt: TpFmt.parse(j['last_activity_at']),
+      minutesSinceActivity: j['minutes_since_activity'] == null ? null : TpFmt.toInt(j['minutes_since_activity']),
+      stuckReason: j['stuck_reason']?.toString(),
+      takenOver: j['is_taken_over'] == true,
+    );
+  }
+}
 
-/// AI Pool settings + keys list (family by purpose, null = all)
-final aiPoolSettingsProvider = FutureProvider<AiPoolSettings>((ref) async {
-  return ref.watch(fortuneRepositoryProvider).aiPoolSettings();
-});
+/// หน้าแบ่งของคำทำนายสด + ตัวนับรวม (`summary` นับจากทุกแถว ไม่ขึ้นกับตัวกรอง stuck)
+class LiveReadingsPage extends Paged<LiveReading> {
+  LiveReadingsPage({
+    required super.items,
+    super.page,
+    super.lastPage,
+    super.total,
+    super.perPage,
+    this.summaryTotal = 0,
+    this.summaryStuck = 0,
+  });
 
-final aiPoolKeysProvider =
-    FutureProvider.family<List<AiApiKey>, String?>((ref, purpose) async {
-  return ref.watch(fortuneRepositoryProvider).aiPoolKeys(purpose: purpose);
-});
+  final int summaryTotal;
+  final int summaryStuck;
 
-// ── Takeover / Chat providers ──
-final fortuneConversationsProvider =
-    FutureProvider<List<FortuneConversation>>((ref) async {
-  return ref.watch(fortuneRepositoryProvider).conversations();
-});
+  factory LiveReadingsPage.parse(dynamic raw) {
+    final base = Paged.parse(raw, LiveReading.fromJson);
+    final s = _m(_m(raw)['summary']);
+    return LiveReadingsPage(
+      items: base.items,
+      page: base.page,
+      lastPage: base.lastPage,
+      total: base.total,
+      perPage: base.perPage,
+      summaryTotal: s.isEmpty ? base.total : TpFmt.toInt(s['total']),
+      summaryStuck: s.isEmpty ? base.items.where((e) => e.stuck).length : TpFmt.toInt(s['stuck']),
+    );
+  }
+}
 
-final takeoverStatsProvider = FutureProvider<TakeoverStats>((ref) async {
-  return ref.watch(fortuneRepositoryProvider).takeoverStats();
-});
+// ═════════════════════════ AI Pool (fortune/ai-pool) ═════════════════════════
 
-final chatMessagesProvider =
-    FutureProvider.family<List<ChatMessage>, int>((ref, readingId) async {
-  return ref.watch(fortuneRepositoryProvider).messages(readingId);
-});
+/// โหมดวนคีย์ — ป้ายจากเซิร์ฟเวอร์ "Smart (⭐ กระจาย load อัจฉริยะ — แนะนำ)" แยกเป็นชื่อ + คำอธิบาย
+class AiMode {
+  const AiMode({required this.key, required this.title, this.description});
+  final String key;
+  final String title;
+  final String? description;
+
+  factory AiMode.fromJson(Map<String, dynamic> j) {
+    final key = (j['key'] ?? '').toString();
+    final label = _clean(j['label']) ?? key;
+    final open = label.indexOf('(');
+    if (open > 0 && label.endsWith(')')) {
+      final desc = label.substring(open + 1, label.length - 1).trim();
+      return AiMode(key: key, title: label.substring(0, open).trim(), description: desc.isEmpty ? null : desc);
+    }
+    return AiMode(key: key, title: label);
+  }
+}
+
+class AiProviderInfo {
+  const AiProviderInfo({
+    required this.provider,
+    required this.name,
+    required this.rotationMode,
+    this.keysTotal = 0,
+    this.keysHealthy = 0,
+  });
+
+  final String provider;
+  final String name;
+  final String rotationMode;
+  final int keysTotal;
+  final int keysHealthy;
+
+  AiProviderInfo copyWith({String? rotationMode, int? keysTotal, int? keysHealthy}) => AiProviderInfo(
+        provider: provider,
+        name: name,
+        rotationMode: rotationMode ?? this.rotationMode,
+        keysTotal: keysTotal ?? this.keysTotal,
+        keysHealthy: keysHealthy ?? this.keysHealthy,
+      );
+
+  factory AiProviderInfo.fromJson(Map<String, dynamic> j) => AiProviderInfo(
+        provider: (j['provider'] ?? '').toString(),
+        name: _clean(j['name']) ?? (j['provider'] ?? 'ไม่ระบุ').toString(),
+        rotationMode: (j['rotation_mode'] ?? 'round_robin').toString(),
+        keysTotal: TpFmt.toInt(j['keys_total']),
+        keysHealthy: TpFmt.toInt(j['keys_healthy']),
+      );
+}
+
+/// คีย์ AI หนึ่งตัว — ไม่มีค่าคีย์จริง (เห็นแค่ 4 ตัวท้ายใน [keyMasked])
+class AiKey {
+  const AiKey({
+    required this.id,
+    required this.provider,
+    required this.providerName,
+    required this.label,
+    required this.isActive,
+    required this.healthy,
+    this.model,
+    this.priority = 0,
+    this.purposeLabel,
+    this.isCritical = false,
+    this.disabledUntil,
+    this.lastTestPassedAt,
+    this.lastTestFailedAt,
+    this.lastTestMessage,
+    this.lastError,
+    this.lastErrorAt,
+    this.consecutiveErrors = 0,
+    this.lastUsedAt,
+    this.usageRequests = 0,
+    this.usageTokens = 0,
+    this.usageErrors = 0,
+    this.keyMasked = '••••',
+  });
+
+  final int id;
+  final String provider;
+  final String providerName;
+  final String label;
+  final bool isActive;
+  final bool healthy;
+  final String? model;
+  final int priority;
+
+  /// ป้ายจุดประสงค์ (ตัดอีโมจิแล้ว)
+  final String? purposeLabel;
+  final bool isCritical;
+  final DateTime? disabledUntil;
+  final DateTime? lastTestPassedAt;
+  final DateTime? lastTestFailedAt;
+  final String? lastTestMessage;
+  final String? lastError;
+  final DateTime? lastErrorAt;
+  final int consecutiveErrors;
+  final DateTime? lastUsedAt;
+  final int usageRequests;
+  final int usageTokens;
+  final int usageErrors;
+  final String keyMasked;
+
+  /// ป้ายจุดประสงค์แบบสั้น (ตัดวงเล็บอธิบายท้ายออก) สำหรับป้ายเม็ดยา
+  String? get purposeShort {
+    final p = purposeLabel;
+    if (p == null) return null;
+    final i = p.indexOf(' (');
+    return i > 0 ? p.substring(0, i).trim() : p;
+  }
+
+  /// ถูกพักชั่วคราวอยู่ไหม (เทียบเวลาเครื่อง)
+  bool get isSuspended => disabledUntil != null && disabledUntil!.isAfter(DateTime.now());
+
+  /// ผลทดสอบล่าสุดคือไม่ผ่าน (ไม่ผ่านใหม่กว่าผ่าน)
+  bool get lastTestFailed =>
+      lastTestFailedAt != null && (lastTestPassedAt == null || lastTestFailedAt!.isAfter(lastTestPassedAt!));
+
+  factory AiKey.fromJson(Map<String, dynamic> j) {
+    final u = _m(j['usage_today']);
+    final id = TpFmt.toInt(j['id']);
+    return AiKey(
+      id: id,
+      provider: (j['provider'] ?? '').toString(),
+      providerName: _clean(j['provider_name']) ?? (j['provider'] ?? 'ไม่ระบุ').toString(),
+      label: _clean(j['label']) ?? 'คีย์ #$id',
+      isActive: j['is_active'] == true,
+      healthy: j['healthy'] == true,
+      model: _clean(j['model']),
+      priority: TpFmt.toInt(j['priority']),
+      purposeLabel: _clean(j['purpose_label']),
+      isCritical: j['is_critical'] == true,
+      disabledUntil: TpFmt.parse(j['disabled_until']),
+      lastTestPassedAt: TpFmt.parse(j['last_test_passed_at']),
+      lastTestFailedAt: TpFmt.parse(j['last_test_failed_at']),
+      lastTestMessage: _clean(j['last_test_message']),
+      lastError: _clean(j['last_error']),
+      lastErrorAt: TpFmt.parse(j['last_error_at']),
+      consecutiveErrors: TpFmt.toInt(j['consecutive_errors']),
+      lastUsedAt: TpFmt.parse(j['last_used_at']),
+      usageRequests: TpFmt.toInt(u['requests']),
+      usageTokens: TpFmt.toInt(u['tokens']),
+      usageErrors: TpFmt.toInt(u['errors']),
+      keyMasked: (j['key_masked'] ?? '••••').toString(),
+    );
+  }
+}
+
+class AiPool {
+  const AiPool({
+    required this.globalMode,
+    required this.globalModeWritable,
+    required this.modes,
+    required this.providers,
+    required this.keys,
+    required this.total,
+    required this.healthy,
+    required this.active,
+    required this.canManage,
+  });
+
+  final String globalMode;
+  final bool globalModeWritable;
+  final List<AiMode> modes;
+  final List<AiProviderInfo> providers;
+  final List<AiKey> keys;
+  final int total;
+  final int healthy;
+  final int active;
+
+  /// สิทธิ์เขียน (super admin หรือ manage_api_keys) — false = ดูได้อย่างเดียว
+  final bool canManage;
+
+  int get requestsToday => keys.fold(0, (s, k) => s + k.usageRequests);
+  int get errorsToday => keys.fold(0, (s, k) => s + k.usageErrors);
+
+  AiMode? mode(String key) {
+    for (final m in modes) {
+      if (m.key == key) return m;
+    }
+    return null;
+  }
+
+  String modeTitle(String key) => mode(key)?.title ?? key;
+
+  List<AiKey> keysOf(String provider) => keys.where((k) => k.provider == provider).toList();
+
+  /// แทนที่คีย์หนึ่งตัวแล้วคำนวณตัวนับใหม่ในเครื่อง (หลังเปิด/ปิด/ทดสอบ)
+  AiPool withKey(AiKey key) => _rebuild(keys: [for (final k in keys) k.id == key.id ? key : k]);
+
+  AiPool withProviderMode(String provider, String mode) => _rebuild(
+        providers: [for (final p in providers) p.provider == provider ? p.copyWith(rotationMode: mode) : p],
+      );
+
+  AiPool _rebuild({List<AiKey>? keys, List<AiProviderInfo>? providers}) {
+    final ks = keys ?? this.keys;
+    final pv = [
+      for (final p in providers ?? this.providers)
+        p.copyWith(
+          keysTotal: ks.where((k) => k.provider == p.provider).length,
+          keysHealthy: ks.where((k) => k.provider == p.provider && k.healthy).length,
+        ),
+    ];
+    return AiPool(
+      globalMode: globalMode,
+      globalModeWritable: globalModeWritable,
+      modes: modes,
+      providers: pv,
+      keys: ks,
+      total: ks.length,
+      healthy: ks.where((k) => k.healthy).length,
+      active: ks.where((k) => k.isActive).length,
+      canManage: canManage,
+    );
+  }
+
+  factory AiPool.fromJson(Map<String, dynamic> j) {
+    final keys = _list(j['keys']).map(AiKey.fromJson).toList();
+    var providers = _list(j['providers']).map(AiProviderInfo.fromJson).toList();
+    // เซิร์ฟเวอร์ไม่ได้ส่งรายชื่อ provider มา → สร้างจากคีย์ (กันคีย์หายจากหน้าจอ)
+    if (providers.isEmpty && keys.isNotEmpty) {
+      final seen = <String>{};
+      providers = [
+        for (final k in keys)
+          if (seen.add(k.provider)) AiProviderInfo(provider: k.provider, name: k.providerName, rotationMode: 'round_robin'),
+      ];
+    }
+    final s = _m(j['summary']);
+    return AiPool(
+      globalMode: (j['global_mode'] ?? 'smart').toString(),
+      globalModeWritable: j['global_mode_writable'] == true,
+      modes: _list(j['modes']).map(AiMode.fromJson).toList(),
+      providers: providers,
+      keys: keys,
+      total: s.isEmpty ? keys.length : TpFmt.toInt(s['total']),
+      healthy: s.isEmpty ? keys.where((k) => k.healthy).length : TpFmt.toInt(s['healthy']),
+      active: s.isEmpty ? keys.where((k) => k.isActive).length : TpFmt.toInt(s['active']),
+      canManage: j['can_manage'] == true,
+    )._rebuild();
+  }
+}
+
+/// ผลการกด "ทดสอบ" คีย์
+class AiKeyTestResult {
+  const AiKeyTestResult({required this.passed, this.message, this.responseTimeMs, this.modelWarning, this.key});
+  final bool passed;
+  final String? message;
+  final int? responseTimeMs;
+  final String? modelWarning;
+  final AiKey? key;
+}
+
+// ═════════════════════════ บริการ/แพคเกจ (fortune/services) ═════════════════════════
+
+class FortuneServiceItem {
+  const FortuneServiceItem({required this.id, required this.name, required this.price, required this.isActive});
+  final String id;
+  final String name;
+  final double price;
+  final bool isActive;
+
+  factory FortuneServiceItem.fromJson(Map<String, dynamic> j) => FortuneServiceItem(
+        id: (j['id'] ?? '').toString(),
+        name: _clean(j['name']) ?? (j['id'] ?? 'แพคเกจ').toString(),
+        price: TpFmt.toDouble(j['price_thb']),
+        isActive: j['is_active'] == true,
+      );
+}
+
+/// หมวดคำถาม — `icon` จากเซิร์ฟเวอร์เป็นอีโมจิ จึงไม่เก็บ (ห้ามแสดง)
+class FortuneCategoryItem {
+  const FortuneCategoryItem({required this.id, required this.name, this.color, required this.isActive});
+  final int id;
+  final String name;
+  final String? color;
+  final bool isActive;
+
+  factory FortuneCategoryItem.fromJson(Map<String, dynamic> j) => FortuneCategoryItem(
+        id: TpFmt.toInt(j['id']),
+        name: _clean(j['name']) ?? 'ไม่มีชื่อหมวด',
+        color: j['color']?.toString(),
+        isActive: j['is_active'] == true,
+      );
+}
+
+class FortuneServices {
+  const FortuneServices({this.services = const [], this.categories = const [], this.writable = false});
+  final List<FortuneServiceItem> services;
+  final List<FortuneCategoryItem> categories;
+  final bool writable;
+
+  factory FortuneServices.fromJson(Map<String, dynamic> j) => FortuneServices(
+        services: _list(j['services']).map(FortuneServiceItem.fromJson).toList(),
+        categories: _list(j['categories']).map(FortuneCategoryItem.fromJson).toList(),
+        writable: j['writable'] == true,
+      );
+}
+
+// ═════════════════════════ Repository ═════════════════════════
+
+class FortuneRepository {
+  FortuneRepository(this._api);
+  final ApiClient _api;
+
+  Future<FortuneDashboard> dashboard(FortunePeriod period) async {
+    final data = await _api.get<dynamic>('/fortune/dashboard', query: {'period': period.key});
+    return FortuneDashboard.fromJson(_m(data));
+  }
+
+  /// ค้นบิลดูดวงทุกสถานะ (`status=all` = ทุกกอง)
+  Future<Paged<FortuneBill>> searchBills({
+    String status = 'all',
+    String? search,
+    FortunePlatform? platform,
+    FortunePackage? package,
+    int page = 1,
+  }) async {
+    final q = (search ?? '').trim();
+    final data = await _api.get<dynamic>('/fortune/bills', query: {
+      'status': status,
+      'page': page,
+      'per_page': 20,
+      if (q.isNotEmpty) 'search': q.length > 100 ? q.substring(0, 100) : q,
+      if (platform != null) 'platform': platform.key,
+      if (package != null) 'package': package.key,
+    });
+    return Paged.parse(data, FortuneBill.fromJson);
+  }
+
+  /// บิลจ่ายแล้วที่กำลังใช้บริการ (ค้างขึ้นก่อน — เรียงจากเซิร์ฟเวอร์)
+  Future<LiveReadingsPage> liveReadings({bool stuckOnly = false, int page = 1, int perPage = 20}) async {
+    final data = await _api.get<dynamic>('/fortune/active-readings', query: {
+      'page': page,
+      'per_page': perPage,
+      // Laravel boolean รับ 1/0 — ห้ามส่ง "true"
+      if (stuckOnly) 'stuck': 1,
+    });
+    return LiveReadingsPage.parse(data);
+  }
+
+  Future<AiPool> aiPool() async {
+    final data = await _api.get<dynamic>('/fortune/ai-pool');
+    return AiPool.fromJson(_m(data));
+  }
+
+  /// สลับเปิด/ปิดคีย์ (endpoint เป็น toggle ไม่ใช่ set) — คืนคีย์สถานะล่าสุด + ข้อความ
+  Future<(AiKey?, String?)> toggleKey(int id) async {
+    final res = await _api.dio.post<Map<String, dynamic>>('/fortune/ai-pool/keys/$id/toggle');
+    final body = _expectOk(res.data, res.statusCode);
+    final k = _m(_m(body['data'])['key']);
+    return (k.isEmpty ? null : AiKey.fromJson(k), _clean(body['message']));
+  }
+
+  /// ทดสอบคีย์ — ไม่ผ่านตอบ HTTP 200 + success:false + data.passed:false (เป็น "ผลทดสอบ" ไม่ใช่ error)
+  Future<AiKeyTestResult> testKey(int id) async {
+    final res = await _api.dio.post<Map<String, dynamic>>('/fortune/ai-pool/keys/$id/test');
+    final body = res.data ?? const <String, dynamic>{};
+    final code = res.statusCode ?? 500;
+    final data = _m(body['data']);
+    if (code >= 400 || (body['success'] != true && !data.containsKey('passed'))) {
+      _expectOk(body, code == 200 ? 500 : code);
+    }
+    final k = _m(data['key']);
+    final ms = data['response_time_ms'];
+    return AiKeyTestResult(
+      passed: data['passed'] == true || (body['success'] == true && !data.containsKey('passed')),
+      message: _clean(body['message']),
+      responseTimeMs: ms == null ? null : TpFmt.toInt(ms),
+      modelWarning: _clean(data['model_warning']),
+      key: k.isEmpty ? null : AiKey.fromJson(k),
+    );
+  }
+
+  /// ตั้งโหมดวนคีย์ราย provider (โหมดรวมตั้งจาก env เท่านั้น)
+  Future<String?> setProviderMode(String provider, String mode) async {
+    final res = await _api.dio.post<Map<String, dynamic>>(
+      '/fortune/ai-pool/mode',
+      data: {'provider': provider, 'mode': mode},
+    );
+    return _clean(_expectOk(res.data, res.statusCode)['message']);
+  }
+
+  Future<FortuneServices> services() async {
+    final data = await _api.get<dynamic>('/fortune/services');
+    return FortuneServices.fromJson(_m(data));
+  }
+
+  /// ตรวจผลของคำขอที่ยิงผ่าน dio ตรง ๆ — คืน body ถ้าสำเร็จ ไม่งั้น throw ข้อความไทยที่อ่านได้
+  Map<String, dynamic> _expectOk(Map<String, dynamic>? body, int? code) {
+    final b = body ?? const <String, dynamic>{};
+    final c = code ?? 500;
+    if (c < 400 && b['success'] != false) return b;
+    if (c == 401) {
+      // ให้ AuthController พากลับหน้าเข้าสู่ระบบ (เหมือน ApiClient._unwrap)
+      ApiClient.onUnauthorized?.call();
+      throw ApiException(statusCode: 401, message: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+    }
+    final msg = _clean(b['message']);
+    // ข้อความไทยจาก backend แสดงได้เลย · ข้อความอังกฤษ (เช่น validation ค่าเริ่มต้นของ Laravel) แทนด้วยข้อความไทย
+    if (msg != null && _thai.hasMatch(msg)) throw ActionError(msg);
+    throw ActionError(switch (c) {
+      403 => 'บัญชีนี้ไม่มีสิทธิ์ทำรายการนี้',
+      404 => 'ไม่พบรายการนี้ในระบบ (อาจถูกลบไปแล้ว)',
+      422 => 'ข้อมูลไม่ถูกต้อง',
+      429 => 'ทำรายการถี่เกินไป รอสักครู่แล้วลองใหม่',
+      _ => 'ทำรายการไม่สำเร็จ ($c)',
+    });
+  }
+}
+
+final fortuneRepositoryProvider = Provider<FortuneRepository>((ref) => FortuneRepository(ref.watch(apiClientProvider)));
+
+/// สรุปธุรกิจดูดวงตามช่วงเวลา
+final fortuneDashboardProvider = FutureProvider.autoDispose.family<FortuneDashboard, FortunePeriod>(
+    (ref, period) => ref.watch(fortuneRepositoryProvider).dashboard(period));
+
+/// ตัวนับคำทำนายสด (กำลังทำ / ค้าง) — ขอแค่ 1 แถว เอา summary
+final liveSummaryProvider = FutureProvider.autoDispose<LiveReadingsPage>(
+    (ref) => ref.watch(fortuneRepositoryProvider).liveReadings(perPage: 1));
+
+final fortuneServicesProvider =
+    FutureProvider.autoDispose<FortuneServices>((ref) => ref.watch(fortuneRepositoryProvider).services());
+
+/// คลังคีย์ AI — แก้คีย์ทีละตัวในหน่วยความจำได้ (ไม่ต้องโหลดใหม่ทั้งหน้าหลังกดสวิตช์)
+class AiPoolNotifier extends AutoDisposeAsyncNotifier<AiPool> {
+  @override
+  Future<AiPool> build() => ref.watch(fortuneRepositoryProvider).aiPool();
+
+  void patchKey(AiKey key) {
+    final cur = state.valueOrNull;
+    if (cur == null) return;
+    state = AsyncData(cur.withKey(key));
+  }
+
+  void patchMode(String provider, String mode) {
+    final cur = state.valueOrNull;
+    if (cur == null) return;
+    state = AsyncData(cur.withProviderMode(provider, mode));
+  }
+}
+
+final aiPoolProvider = AsyncNotifierProvider.autoDispose<AiPoolNotifier, AiPool>(AiPoolNotifier.new);

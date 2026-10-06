@@ -133,6 +133,9 @@ class AppVersion implements Comparable<AppVersion> {
 
   @override
   String toString() => '$major.$minor.$patch+$build';
+
+  /// ป้ายเวอร์ชันสำหรับแสดงผล (v0.3.0 · 4)
+  String get label => 'v$major.$minor.$patch ($build)';
 }
 
 /// State ของการเช็ค update

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/api/api_envelope.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../gen/l10n/app_localizations.dart';
-import '../../../shared/widgets/glass_card.dart';
-import '../../../shared/widgets/gradient_button.dart';
+import '../../../shared/ui/tp.dart';
 import '../providers/auth_controller.dart';
+import 'auth_backdrop.dart';
 
+/// ยืนยันตัวตนสองชั้น (รหัส 6 หลักจากแอป Authenticator)
 class Verify2FAScreen extends ConsumerStatefulWidget {
   const Verify2FAScreen({super.key, required this.challengeToken});
   final String challengeToken;
@@ -19,126 +18,102 @@ class Verify2FAScreen extends ConsumerStatefulWidget {
 
 class _Verify2FAScreenState extends ConsumerState<Verify2FAScreen> {
   final _ctrl = TextEditingController();
+  final _focus = FocusNode();
+  String? _error;
 
   @override
   void dispose() {
     _ctrl.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
   Future<void> _verify() async {
     final code = _ctrl.text.trim();
-    if (code.length < 6) return;
+    if (code.length < 6) {
+      setState(() => _error = 'กรอกรหัสให้ครบ 6 หลัก');
+      return;
+    }
+    setState(() => _error = null);
     try {
-      await ref
-          .read(authControllerProvider.notifier)
-          .verifyTwoFactor(widget.challengeToken, code);
-      // router จะ redirect ไป dashboard เมื่อ admin != null
-    } on ApiException catch (e) {
+      await ref.read(authControllerProvider.notifier).verifyTwoFactor(widget.challengeToken, code);
+      // สำเร็จ → router พาไปหน้าภาพรวม
+    } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message), backgroundColor: AppColors.error),
-      );
+      _ctrl.clear();
+      HapticFeedback.vibrate();
+      setState(() => _error = tpErrorText(e));
+      _focus.requestFocus();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppL10n.of(context);
-    final state = ref.watch(authControllerProvider);
-
+    final loading = ref.watch(authControllerProvider).loading;
     return Scaffold(
-      body: Stack(
-        children: [
-          const DecoratedBox(
-            decoration: BoxDecoration(gradient: AppColors.cosmicGradient),
-            child: SizedBox.expand(),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.maybePop(context),
-                  ),
-                  const SizedBox(height: 30),
-                  Container(
-                    width: 88,
-                    height: 88,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.16),
-                      border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3)),
-                    ),
-                    child: const Icon(Icons.verified_user,
-                        color: Colors.white, size: 40),
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    l10n.twoFactorTitle,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.twoFactorSubtitle,
-                    textAlign: TextAlign.center,
-                    style:
-                        const TextStyle(color: Color(0xCCFFFFFF), fontSize: 14),
-                  ),
-                  const SizedBox(height: 32),
-                  GlassCard(
-                    padding: const EdgeInsets.all(20),
-                    fillOpacity: 0.12,
-                    child: Column(
-                      children: [
-                        TextField(
-                          controller: _ctrl,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            LengthLimitingTextInputFormatter(8),
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          autofocus: true,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            letterSpacing: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: '••••••',
-                            hintStyle: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.4),
-                                letterSpacing: 12),
-                            fillColor: Colors.white.withValues(alpha: 0.10),
-                          ),
-                          onSubmitted: (_) => _verify(),
-                        ),
-                        const SizedBox(height: 18),
-                        GradientButton(
-                          onPressed: state.loading ? null : _verify,
-                          loading: state.loading,
-                          icon: Icons.check_circle_outline,
-                          label: l10n.twoFactorVerify,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+      backgroundColor: const Color(0xFF05070C),
+      body: AuthBackdrop(
+        dim: 0.85,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Material(
+                color: const Color(0x14FFFFFF),
+                shape: const CircleBorder(side: BorderSide(color: Color(0x24FFFFFF))),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.maybePop(context),
+                  child: const SizedBox(
+                      width: 42, height: 42, child: Icon(PhosphorIconsRegular.caretLeft, color: Colors.white, size: 20)),
+                ),
               ),
-            ),
+              const SizedBox(height: 40),
+              const Center(child: Tp3D(TpArt.shield, size: 110)),
+              const SizedBox(height: 18),
+              Center(child: TpFoilText('ยืนยันสองชั้น', style: TpType.title(26, Colors.white))),
+              const SizedBox(height: 6),
+              Center(
+                child: Text('กรอกรหัส 6 หลักจากแอป Authenticator\nรหัสเปลี่ยนทุก 30 วินาที',
+                    textAlign: TextAlign.center, style: TpType.body(13.5, const Color(0xA6FFFFFF))),
+              ),
+              const SizedBox(height: 26),
+              TextField(
+                controller: _ctrl,
+                focusNode: _focus,
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                maxLength: 6,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (v) {
+                  if (v.length == 6) _verify();
+                },
+                style: TpType.money(30, const Color(0xFFF0C96A), w: FontWeight.w700),
+                cursorColor: const Color(0xFFF0C96A),
+                decoration: const InputDecoration(
+                  counterText: '',
+                  filled: true,
+                  fillColor: Color(0x14FFFFFF),
+                  hintText: '••••••',
+                  hintStyle: TextStyle(color: Color(0x40FFFFFF), fontSize: 30),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(18)), borderSide: BorderSide(color: Color(0x24FFFFFF))),
+                  focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(18)),
+                      borderSide: BorderSide(color: Color(0xFFF0C96A), width: 1.4)),
+                ),
+              ),
+              SizedBox(
+                height: 34,
+                child: _error == null
+                    ? null
+                    : Center(child: Text(_error!, style: TpType.body(13, const Color(0xFFFF8A7A), w: FontWeight.w500))),
+              ),
+              TpButton('ยืนยัน', icon: PhosphorIconsBold.checkCircle, loading: loading, onPressed: _verify),
+            ]),
           ),
-        ],
+        ),
       ),
     );
   }

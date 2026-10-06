@@ -41,6 +41,13 @@ class ApiClient {
             options.headers['Accept-Language'] ?? 'th';
         handler.next(options);
       },
+      onResponse: (res, handler) {
+        // token ถูกเพิกถอน/หมดอายุ → ทุกคำขอ (รวมที่เรียก dio ตรง) พากลับหน้าเข้าสู่ระบบ
+        if (res.statusCode == 401 && !res.requestOptions.path.startsWith('/auth/')) {
+          onUnauthorized?.call();
+        }
+        handler.next(res);
+      },
       onError: (err, handler) {
         handler.next(err);
       },
@@ -60,6 +67,21 @@ class ApiClient {
   final Dio _dio;
 
   Dio get dio => _dio;
+
+  /// เรียกเมื่อเซิร์ฟเวอร์ตอบ 401 (token ถูกเพิกถอน/หมดอายุ) — AuthController ตั้งค่าไว้เพื่อพากลับหน้าเข้าสู่ระบบ
+  static void Function()? onUnauthorized;
+
+  /// PUT helper
+  Future<T> put<T>(String path, {Object? data, T Function(dynamic data)? parser}) async {
+    final res = await _dio.put<Map<String, dynamic>>(path, data: data);
+    return _unwrap<T>(res, parser);
+  }
+
+  /// DELETE helper
+  Future<T> delete<T>(String path, {Object? data, T Function(dynamic data)? parser}) async {
+    final res = await _dio.delete<Map<String, dynamic>>(path, data: data);
+    return _unwrap<T>(res, parser);
+  }
 
   /// GET helper ที่ unwrap envelope แล้ว
   Future<T> get<T>(
