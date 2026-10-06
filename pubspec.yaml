@@ -2,7 +2,7 @@ name: thaipromptadmin
 description: "ไทยพร้อม แอดมิน — ศูนย์ควบคุมหลังบ้าน main.thaiprompt.online บนมือถือ"
 publish_to: 'none'
 
-version: 0.2.0+3
+version: 0.3.0+4
 
 environment:
   sdk: ^3.5.0
