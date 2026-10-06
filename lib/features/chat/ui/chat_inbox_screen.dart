@@ -183,6 +183,11 @@ class _ConversationTile extends StatelessWidget {
                     dense: true)
               else if (c.stageLabel != null)
                 TpPill(c.stageLabel!, tone: TpTone.neutral, dense: true),
+              if (c.deferred.isNotEmpty)
+                TpPill('พักไว้ ${c.deferred.length}',
+                    tone: TpTone.gold,
+                    icon: PhosphorIconsFill.package,
+                    dense: true),
             ]),
           ]),
         ),

@@ -453,10 +453,11 @@ class WorkRepository {
     return _expectOk(res.data, res.statusCode);
   }
 
+  /// คืนเงิน — แอดมินยืนยันในแอปแล้วจึงส่ง `confirm: true` (เซิร์ฟเวอร์บังคับเมื่อบิลยังใช้บริการอยู่)
   Future<String?> refundBill(int readingId, {String? reason}) async {
     final res = await _api.dio.post<Map<String, dynamic>>(
         '/fortune/readings/$readingId/refund',
-        data: {if (reason != null) 'reason': reason});
+        data: {if (reason != null) 'reason': reason, 'confirm': true});
     return _expectOk(res.data, res.statusCode);
   }
 

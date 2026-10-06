@@ -189,7 +189,7 @@ class _BillSheetState extends ConsumerState<_BillSheet> {
       context,
       title: 'คืนเงินบิลนี้?',
       message:
-          'บิลจะเข้าคิวคืนเงิน ${TpFmt.baht(b.amount)} — ตรวจให้แน่ใจก่อนยืนยัน',
+          'บันทึกคืนเงิน ${TpFmt.baht(b.amount)} ทันที — ดึงค่าแนะนำคืน ปลด SMS ที่ผูกไว้ และปิดเซสชันของลูกค้า (ย้อนกลับไม่ได้)\nการโอนเงินคืนลูกค้าต้องทำเองในแอปธนาคาร',
       hint: 'เหตุผลการคืนเงิน',
       confirmLabel: 'คืนเงิน',
       danger: true,
@@ -200,7 +200,7 @@ class _BillSheetState extends ConsumerState<_BillSheet> {
       final msg = await ref
           .read(workRepositoryProvider)
           .refundBill(b.id, reason: reason);
-      if (mounted) _done(msg ?? 'ส่งเข้าคิวคืนเงินแล้ว');
+      if (mounted) _done(msg ?? 'บันทึกคืนเงินแล้ว');
     } catch (e) {
       if (mounted) {
         setState(() => _busy = false);

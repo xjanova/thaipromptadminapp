@@ -99,7 +99,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       final s = await _repo.takeover(widget.readingId, minutes: 30);
       if (!mounted) return;
       setState(() => _takeover = s);
-      tpToast(context, 'รับช่วงแล้ว · บอทหยุดตอบ 30 นาที',
+      tpToast(context, 'รับช่วงแล้ว · บอทเงียบ 30 นาที',
           kind: TpToastKind.success);
       ref.invalidate(opsSummaryProvider);
     } catch (e) {
@@ -124,25 +124,104 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   }
 
   Future<void> _resume() async {
-    final yes = await tpConfirm(
-      context,
-      title: 'คืนห้องนี้ให้บอท?',
-      message: 'บอทแม่หมอจะกลับมาตอบลูกค้าต่อทันที',
-      confirmLabel: 'คืนให้บอท',
-    );
-    if (!yes || !mounted) return;
+    final deferred = _takeover?.deferred ?? const <DeferredItem>[];
+    bool deliver = true;
+    if (deferred.isEmpty) {
+      final yes = await tpConfirm(
+        context,
+        title: 'คืนห้องนี้ให้บอท?',
+        message: 'บอทแม่หมอจะกลับมาตอบลูกค้าต่อทันที',
+        confirmLabel: 'คืนให้บอท',
+      );
+      if (!yes || !mounted) return;
+    } else {
+      // มีของที่ลูกค้าจ่ายแล้วถูกพักไว้ — ให้แอดมินเลือกว่าบอทต้องส่งต่อ หรือแอดมินจัดการเองแล้ว
+      final choice = await _askDeferred(deferred);
+      if (choice == null || !mounted) return;
+      deliver = choice;
+    }
     setState(() => _actionBusy = true);
     try {
-      final s = await _repo.resume(widget.readingId);
+      final s = await _repo.resume(widget.readingId, deliverDeferred: deliver);
       if (!mounted) return;
       setState(() => _takeover = s);
-      tpToast(context, 'บอทกลับมาตอบแล้ว', kind: TpToastKind.success);
+      tpToast(
+          context,
+          deferred.isEmpty
+              ? 'บอทกลับมาตอบแล้ว'
+              : (deliver
+                  ? 'บอทกลับมาแล้ว · กำลังส่งของที่พักไว้ ${deferred.length} รายการ'
+                  : 'บอทกลับมาแล้ว · ไม่ส่งของที่พักไว้'),
+          kind: TpToastKind.success);
       ref.invalidate(opsSummaryProvider);
     } catch (e) {
       if (mounted) tpToast(context, tpErrorText(e), kind: TpToastKind.error);
     } finally {
       if (mounted) setState(() => _actionBusy = false);
     }
+  }
+
+  /// แผ่นเลือกตอนคืนห้อง: true = ให้บอทส่งของที่พักไว้ · false = จัดการเองแล้ว · null = ยกเลิก
+  Future<bool?> _askDeferred(List<DeferredItem> items) {
+    return tpShowSheet<bool>(
+      context,
+      initial: 0.62,
+      min: 0.4,
+      builder: (context, scroll) {
+        final p = context.tp;
+        return ListView(
+          controller: scroll,
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          children: [
+            Text('คืนห้องนี้ให้บอท', style: TpType.title(20, p.textStrong)),
+            const SizedBox(height: 6),
+            Text(
+                'ระหว่างที่คุณคุยอยู่ บอทพักของที่ลูกค้าจ่ายแล้วไว้ ${items.length} รายการ',
+                style: TpType.body(13.5, p.muted)),
+            const SizedBox(height: 14),
+            for (final it in items)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: TpCard(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  child: Row(children: [
+                    Icon(PhosphorIconsFill.package,
+                        size: 20, color: p.goldText),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(it.label,
+                                style: TpType.body(13.5, p.textStrong,
+                                    w: FontWeight.w600)),
+                            Text(
+                                [it.billReference, TpFmt.ago(it.at)]
+                                    .whereType<String>()
+                                    .where((e) => e != '-')
+                                    .join(' · '),
+                                style: TpType.body(11.5, p.muted)),
+                          ]),
+                    ),
+                  ]),
+                ),
+              ),
+            const SizedBox(height: 10),
+            TpButton('ให้บอทส่งของที่พักไว้',
+                icon: PhosphorIconsBold.paperPlaneTilt,
+                onPressed: () => Navigator.of(context).pop(true)),
+            const SizedBox(height: 10),
+            TpButton.outline('จัดการเองแล้ว ไม่ต้องส่ง',
+                onPressed: () => Navigator.of(context).pop(false)),
+            const SizedBox(height: 6),
+            Center(
+              child: TpButton.ghost('ยกเลิก',
+                  onPressed: () => Navigator.of(context).pop()),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _send() async {
@@ -153,7 +232,8 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       final yes = await tpConfirm(
         context,
         title: 'รับช่วงจากบอทก่อนส่ง?',
-        message: 'ถ้าไม่หยุดบอท ลูกค้าอาจได้คำตอบจากบอทแทรกข้อความของคุณ',
+        message:
+            'บอทจะเงียบสนิทกับลูกค้าคนนี้ 30 นาที — ของที่ลูกค้าจ่ายแล้วจะถูกพักไว้ส่งตอนคืนห้อง',
         confirmLabel: 'รับช่วงและส่ง',
         cancelLabel: 'ยกเลิก',
       );
@@ -265,6 +345,14 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
             onExtend: _extend,
             onResume: _resume,
           ),
+          if ((_takeover?.active ?? false) &&
+              (_takeover?.deferred.isNotEmpty ?? false))
+            _Note(
+              icon: PhosphorIconsFill.package,
+              tone: TpTone.gold,
+              text:
+                  'บอทพักของที่ลูกค้าจ่ายแล้ว ${_takeover!.deferred.length} รายการ (${_takeover!.deferred.map((e) => e.label).join(', ')}) — เลือกได้ตอนคืนห้องว่าจะให้บอทส่งไหม',
+            ),
           if (b?.platform?.toLowerCase() == 'line')
             _Note(
               icon: PhosphorIconsRegular.warning,
@@ -388,7 +476,10 @@ class _TakeoverBanner extends StatelessWidget {
         Expanded(
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(s.active ? 'คุณกำลังคุยแทนบอท' : 'บอทแม่หมอกำลังตอบอยู่',
+            Text(
+                s.active
+                    ? 'คุณคุยอยู่ · บอทเงียบสนิท'
+                    : 'บอทแม่หมอกำลังตอบอยู่',
                 style: TpType.h(13.5, s.active ? p.goldText : p.textStrong)),
             Text(
                 s.active

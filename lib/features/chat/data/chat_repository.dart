@@ -20,6 +20,38 @@ enum ChatFilter {
   final String label;
 }
 
+/// ของที่ลูกค้าจ่ายแล้วแต่บอท "พักไว้" เพราะแอดมินเทคโอเวอร์อยู่ — ส่งตอนคืนงานให้บอท
+class DeferredItem {
+  const DeferredItem(
+      {required this.readingId,
+      required this.item,
+      required this.label,
+      this.billReference,
+      this.at});
+  final int readingId;
+
+  /// deep_reading | payfirst_birthdate | celtic_start | slip_result | celtic_resume | celtic_answers | celtic_summary | bubbles | voice_summary
+  final String item;
+  final String label;
+  final String? billReference;
+  final DateTime? at;
+
+  factory DeferredItem.fromJson(Map<String, dynamic> j) => DeferredItem(
+        readingId: TpFmt.toInt(j['reading_id']),
+        item: (j['item'] ?? '').toString(),
+        label: (j['label'] ?? j['item'] ?? 'ของที่พักไว้').toString(),
+        billReference: j['bill_reference']?.toString(),
+        at: TpFmt.parse(j['at']),
+      );
+
+  static List<DeferredItem> listFrom(dynamic v) => v is List
+      ? v
+          .whereType<Map>()
+          .map((e) => DeferredItem.fromJson(e.cast<String, dynamic>()))
+          .toList()
+      : const [];
+}
+
 class Conversation {
   const Conversation({
     required this.readingId,
@@ -40,6 +72,7 @@ class Conversation {
     this.lastAt,
     this.unread = false,
     this.updatedAt,
+    this.deferred = const [],
   });
 
   final int readingId;
@@ -60,6 +93,9 @@ class Conversation {
   final DateTime? lastAt;
   final bool unread;
   final DateTime? updatedAt;
+
+  /// ของที่จ่ายแล้วแต่บอทพักไว้ระหว่างเทคโอเวอร์
+  final List<DeferredItem> deferred;
 
   factory Conversation.fromJson(Map<String, dynamic> j) {
     final last = _m(j['last_message']);
@@ -83,6 +119,7 @@ class Conversation {
       lastAt: TpFmt.parse(last['at']),
       unread: j['unread'] == true,
       updatedAt: TpFmt.parse(j['updated_at']),
+      deferred: DeferredItem.listFrom(j['deferred']),
     );
   }
 }
@@ -149,15 +186,22 @@ class TakeoverStats {
 
 class TakeoverState {
   const TakeoverState(
-      {required this.active, this.until, this.remainingMinutes = 0});
+      {required this.active,
+      this.until,
+      this.remainingMinutes = 0,
+      this.deferred = const []});
   final bool active;
   final DateTime? until;
   final int remainingMinutes;
 
+  /// ของที่พักไว้ (มีค่าเฉพาะตอนเทคโอเวอร์อยู่ · ตอบจาก resume = รายการ ณ ตอนกดคืนงาน)
+  final List<DeferredItem> deferred;
+
   factory TakeoverState.fromJson(Map<String, dynamic> j) => TakeoverState(
         active: j['is_takeover'] == true,
-        until: TpFmt.parse(j['until']),
+        until: TpFmt.parse(j['until'] ?? j['takeover_until']),
         remainingMinutes: TpFmt.toInt(j['remaining_minutes']),
+        deferred: DeferredItem.listFrom(j['deferred']),
       );
 }
 
@@ -211,8 +255,10 @@ class ChatRepository {
   Future<TakeoverState> extend(int readingId, int minutes) =>
       _action('/chat/extend', {'reading_id': readingId, 'minutes': minutes});
 
-  Future<TakeoverState> resume(int readingId) =>
-      _action('/chat/resume', {'reading_id': readingId});
+  /// คืนงานให้บอท · [deliverDeferred] = false → "จัดการเองแล้ว" บอทไม่ส่งของที่พักไว้
+  Future<TakeoverState> resume(int readingId, {bool deliverDeferred = true}) =>
+      _action('/chat/resume',
+          {'reading_id': readingId, 'deliver_deferred': deliverDeferred});
 
   /// ส่งข้อความหาลูกค้า — ล้ม = throw ข้อความไทย (เช่น LINE โควตาหมด / FB เกิน 24 ชม.)
   Future<void> send(int readingId, String text) async {
@@ -251,12 +297,7 @@ class ChatRepository {
           ? 'ไม่พบบทสนทนานี้'
           : 'ทำรายการไม่สำเร็จ ลองใหม่อีกครั้ง');
     }
-    final d = _m(b['data']);
-    return TakeoverState(
-      active: d['is_takeover'] == true,
-      until: TpFmt.parse(d['until']),
-      remainingMinutes: TpFmt.toInt(d['remaining_minutes']),
-    );
+    return TakeoverState.fromJson(_m(b['data']));
   }
 }
 
