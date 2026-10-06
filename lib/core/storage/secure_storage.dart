@@ -45,6 +45,7 @@ class SecureStorage {
   static Future<void> deletePin() async {
     await _storage.delete(key: _kPinHash);
     await _storage.delete(key: _kPinSalt);
+    await resetPinFails();
   }
 
   // ── Biometric ──
@@ -53,9 +54,45 @@ class SecureStorage {
     return v == 'true';
   }
 
-  static Future<void> writeBiometricEnabled(bool enabled) =>
-      _storage.write(key: _kBiometricEnabled, value: enabled ? 'true' : 'false');
+  static Future<void> writeBiometricEnabled(bool enabled) => _storage.write(
+      key: _kBiometricEnabled, value: enabled ? 'true' : 'false');
+
+  // ── ข้อมูลแอดมินล่าสุด (ชื่อ/สิทธิ์) ไว้เปิดแอปตอนออฟไลน์ ──
+  static const _kAdminCache = 'admin_profile_cache';
+  static Future<String?> readAdminCache() => _storage.read(key: _kAdminCache);
+  static Future<void> writeAdminCache(String json) =>
+      _storage.write(key: _kAdminCache, value: json);
+  static Future<void> deleteAdminCache() => _storage.delete(key: _kAdminCache);
+
+  // ── ตัวนับ PIN ผิด (เก็บถาวร — ปิดแอปเปิดใหม่ตัวนับไม่รีเซ็ต กันเดา PIN ไม่จำกัด) ──
+  static const _kPinFails = 'pin_fail_count';
+  static const _kPinLockUntil = 'pin_lock_until_ms';
+
+  static Future<int> readPinFails() async =>
+      int.tryParse(await _storage.read(key: _kPinFails) ?? '') ?? 0;
+
+  static Future<DateTime?> readPinLockUntil() async {
+    final ms = int.tryParse(await _storage.read(key: _kPinLockUntil) ?? '');
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  static Future<void> writePinFails(int count, {DateTime? lockUntil}) async {
+    await _storage.write(key: _kPinFails, value: '$count');
+    if (lockUntil != null) {
+      await _storage.write(
+          key: _kPinLockUntil, value: '${lockUntil.millisecondsSinceEpoch}');
+    }
+  }
+
+  static Future<void> resetPinFails() async {
+    await _storage.delete(key: _kPinFails);
+    await _storage.delete(key: _kPinLockUntil);
+  }
 }
+
+/// token ปัจจุบัน (ใช้แนบหัว Authorization ให้รูปที่ต้องยืนยันตัวตน เช่น สลิป)
+final authTokenProvider =
+    FutureProvider<String?>((ref) => SecureStorage.readToken());
 
 final secureStorageProvider =
     Provider<SecureStorage>((ref) => SecureStorage._());

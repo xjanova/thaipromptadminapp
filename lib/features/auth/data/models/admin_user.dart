@@ -32,7 +32,7 @@ class AdminUser {
     final rank = (json['rank'] as Map?)?.cast<String, dynamic>() ?? const {};
     final perms = (json['permissions'] as List?) ?? const [];
     return AdminUser(
-      id: json['id'] as int,
+      id: (json['id'] as num).toInt(),
       name: (json['name'] as String?) ?? '',
       email: (json['email'] as String?) ?? '',
       phone: json['phone'] as String?,
@@ -44,6 +44,24 @@ class AdminUser {
       rankName: rank['name'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'avatar_url': avatarUrl,
+        'role': role,
+        'is_super_admin': isSuperAdmin,
+        'permissions': permissions,
+        'two_factor': {'enabled': twoFactorEnabled},
+        if (rankName != null) 'rank': {'name': rankName},
+      };
+
+  /// ชื่อบทบาทภาษาไทย
+  String get roleLabel => isSuperAdmin
+      ? 'ผู้ดูแลสูงสุด'
+      : (role == 'admin' ? 'ผู้ดูแลระบบ' : (role ?? 'ผู้ดูแล'));
 
   /// สิทธิ์ "*" หมายถึง super admin (ทำได้ทุกอย่าง)
   bool can(String permission) =>

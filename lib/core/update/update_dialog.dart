@@ -1,344 +1,217 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../shared/widgets/glass_card.dart';
-import '../../shared/widgets/gradient_button.dart';
-import '../theme/app_colors.dart';
+import '../../shared/ui/tp.dart';
 import 'auto_updater.dart';
 import 'update_checker.dart';
 import 'update_models.dart';
 
-/// Dialog แจ้งว่ามีเวอร์ชันใหม่ + ปุ่มอัปเดท
-///
-/// บน Android: ดาวน์โหลด APK + ติดตั้งใน-app ผ่าน `ota_update` plugin
-///   (อ้างอิง pattern จาก
-///   [[Session 2026-05-09 — POS Thaiprompt Flutter Android arm (M1 + auto-update)]])
-/// บน iOS: เปิด GitHub release page (ไปต่อ App Store / TestFlight)
+/// แผ่นแจ้งอัปเดต — ดาวน์โหลด APK จาก GitHub Releases แล้วติดตั้งทับในแอป
+/// (แอปแอดมินใช้คนเดียว เจ้าของอนุญาตให้อัปเดตผ่าน GitHub ได้ — 2026-10-06)
 Future<void> showUpdateAvailableDialog(
-  BuildContext context,
-  UpdateCheckResult result,
-) async {
+    BuildContext context, UpdateCheckResult result) async {
   final release = result.release;
   if (release == null) return;
-
-  await showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (ctx) => _UpdateDialog(result: result),
+  await tpShowSheet<void>(
+    context,
+    initial: 0.72,
+    min: 0.45,
+    builder: (ctx, scroll) => _UpdateSheet(result: result, scroll: scroll),
   );
 }
 
-class _UpdateDialog extends StatefulWidget {
-  const _UpdateDialog({required this.result});
-  final UpdateCheckResult result;
-
-  @override
-  State<_UpdateDialog> createState() => _UpdateDialogState();
+/// เลือก APK ให้ตรงสถาปัตยกรรมเครื่อง (arm64 / armv7 / x86_64) — ไม่เจอค่อยใช้ universal
+Future<GitHubAsset?> pickApkForDevice(GitHubRelease release) async {
+  final apks = release.assets
+      .where((a) => a.name.toLowerCase().endsWith('.apk'))
+      .toList();
+  if (apks.isEmpty) return null;
+  if (Platform.isAndroid) {
+    try {
+      final abis = (await DeviceInfoPlugin().androidInfo).supportedAbis;
+      for (final abi in abis) {
+        final hit = apks
+            .where((a) => a.name.toLowerCase().contains(abi.toLowerCase()))
+            .firstOrNull;
+        if (hit != null) return hit;
+      }
+    } catch (_) {}
+  }
+  return apks
+          .where((a) => a.name.toLowerCase().contains('universal'))
+          .firstOrNull ??
+      apks.first;
 }
 
-class _UpdateDialogState extends State<_UpdateDialog> {
-  OtaUpdateState? _otaState;
-  bool _downloading = false;
-  StreamSubscription<OtaUpdateState>? _otaSub;
+class _UpdateSheet extends ConsumerStatefulWidget {
+  const _UpdateSheet({required this.result, required this.scroll});
+  final UpdateCheckResult result;
+  final ScrollController scroll;
+
+  @override
+  ConsumerState<_UpdateSheet> createState() => _UpdateSheetState();
+}
+
+class _UpdateSheetState extends ConsumerState<_UpdateSheet> {
+  StreamSubscription<OtaUpdateState>? _sub;
+  OtaUpdateState? _state;
+  GitHubAsset? _apk;
+
+  @override
+  void initState() {
+    super.initState();
+    pickApkForDevice(widget.result.release!).then((a) {
+      if (mounted) setState(() => _apk = a);
+    });
+  }
 
   @override
   void dispose() {
-    _otaSub?.cancel(); // ยกเลิก download ถ้า user ปิด dialog ระหว่างดาวน์โหลด
+    _sub?.cancel();
     super.dispose();
+  }
+
+  void _start() {
+    final apk = _apk;
+    if (apk == null) {
+      _openPage();
+      return;
+    }
+    _sub?.cancel();
+    setState(() => _state = OtaUpdateState.downloading(0));
+    _sub = ref
+        .read(autoUpdaterProvider)
+        .downloadAndInstall(apk.browserDownloadUrl,
+            destinationFilename:
+                'thaipromptadmin-${widget.result.release!.tagName}.apk')
+        .listen((s) {
+      if (mounted) setState(() => _state = s);
+    }, onError: (_) {
+      if (mounted) {
+        setState(() => _state =
+            OtaUpdateState.error('ดาวน์โหลดไม่สำเร็จ ลองใหม่อีกครั้ง'));
+      }
+    });
+  }
+
+  Future<void> _openPage() async {
+    final url = Uri.tryParse(widget.result.release!.htmlUrl);
+    if (url != null) await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
   @override
   Widget build(BuildContext context) {
-    final result = widget.result;
-    final release = result.release!;
-    final apk = release.findAndroidApk();
+    final p = context.tp;
+    final r = widget.result.release!;
+    final s = _state;
+    final busy = s != null && !s.isError;
+    final notes = r.body.trim().isEmpty
+        ? 'ปรับปรุงประสิทธิภาพและแก้ไขข้อผิดพลาด'
+        : _cleanNotes(r.body);
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      child: GlassCard(
-        fillOpacity: 0.10,
-        borderOpacity: 0.25,
-        borderRadius: 28,
-        padding: const EdgeInsets.all(22),
-        tint: AppColors.purpleStart,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.purplePinkGradient,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(Icons.system_update,
-                      color: Colors.white, size: 26),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'มีเวอร์ชันใหม่!',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${result.current} → ${result.latest}',
-                        style: const TextStyle(
-                            color: Color(0xCCFFFFFF), fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-
-            // Release notes
-            if (release.body.isNotEmpty && !_downloading) ...[
-              const Text(
-                'มีอะไรใหม่',
-                style: TextStyle(
-                    color: Color(0xE6FFFFFF),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                constraints: const BoxConstraints(maxHeight: 200),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: SingleChildScrollView(
-                  child: Text(
-                    release.body,
-                    style: const TextStyle(
-                        color: Color(0xE6FFFFFF), fontSize: 13, height: 1.5),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Size hint
-            if (apk != null && !_downloading) ...[
-              Row(
-                children: [
-                  const Icon(Icons.download,
-                      size: 14, color: Color(0xCCFFFFFF)),
-                  const SizedBox(width: 6),
-                  Text(
-                    'ขนาด ${apk.sizeMb} MB',
-                    style: const TextStyle(
-                        color: Color(0xCCFFFFFF), fontSize: 11),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // Download progress
-            if (_downloading && _otaState != null) _progressView(),
-
-            if (!_downloading) ...[
-              GradientButton(
-                onPressed: () => _startDownload(release),
-                icon: Icons.download_for_offline_outlined,
-                label: 'อัปเดทตอนนี้',
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () async {
-                        await UpdateChecker.skipVersion(release.tagName);
-                        if (!context.mounted) return;
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text(
-                        'ข้ามเวอร์ชันนี้',
-                        style: TextStyle(color: Color(0xCCFFFFFF)),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text(
-                        'ภายหลัง',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _progressView() {
-    final state = _otaState!;
-    if (state.isError) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListView(
+        controller: widget.scroll,
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.error.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(14),
-              border:
-                  Border.all(color: AppColors.error.withValues(alpha: 0.4)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.error_outline,
-                    color: AppColors.error, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    state.error ?? 'ดาวน์โหลดล้มเหลว',
-                    style: const TextStyle(
-                      color: AppColors.error,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          const Center(child: Tp3D(TpArt.settings, size: 96)),
+          const SizedBox(height: 10),
+          Center(
+              child: Text('มีเวอร์ชันใหม่',
+                  style: TpType.title(22, p.textStrong))),
+          const SizedBox(height: 4),
+          Center(
+            child: Text(
+                '${widget.result.current.label} → ${widget.result.latest?.label ?? r.tagName}',
+                style: TpType.money(15, p.goldText, w: FontWeight.w600)),
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('ปิด',
-                      style: TextStyle(color: Color(0xCCFFFFFF))),
-                ),
-              ),
-              Expanded(
-                child: TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _downloading = false;
-                      _otaState = null;
-                    });
-                  },
-                  child: const Text(
-                    'ลองใหม่',
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-            ],
+          if (r.publishedAt != null)
+            Center(
+                child: Text(
+                    'ออกเมื่อ ${TpFmt.dateTime(r.publishedAt!.toLocal())}',
+                    style: TpType.body(12.5, p.muted))),
+          const SizedBox(height: 16),
+          TpCard(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('มีอะไรใหม่', style: TpType.h(14.5, p.textStrong)),
+              const SizedBox(height: 6),
+              Text(notes, style: TpType.body(13.5, p.text, height: 1.55)),
+            ]),
           ),
-        ],
-      );
-    }
-    final progress = state.progress / 100.0;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Icon(
-              state.isInstalling
-                  ? Icons.install_mobile
-                  : Icons.cloud_download,
-              color: AppColors.purpleStart,
-              size: 18,
+          const SizedBox(height: 16),
+          if (s != null && !s.isError) ...[
+            Row(children: [
+              Text(s.isInstalling ? 'กำลังเปิดตัวติดตั้ง…' : 'กำลังดาวน์โหลด',
+                  style: TpType.body(13, p.muted)),
+              const Spacer(),
+              Text('${s.progress}%', style: TpType.money(13, p.goldText)),
+            ]),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                  value: s.progress / 100,
+                  minHeight: 8,
+                  backgroundColor: p.inset),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                state.isInstalling
-                    ? 'กำลังเปิด installer ของ Android...'
-                    : 'กำลังดาวน์โหลด APK · ${state.progress}%',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+            const SizedBox(height: 16),
           ],
-        ),
-        const SizedBox(height: 10),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: state.isInstalling ? null : progress,
-            minHeight: 8,
-            backgroundColor: Colors.white.withValues(alpha: 0.1),
-            valueColor:
-                const AlwaysStoppedAnimation(AppColors.purpleStart),
+          if (s != null && s.isError) ...[
+            Text(s.error ?? 'เกิดข้อผิดพลาด',
+                style: TpType.body(13, p.danger, w: FontWeight.w500)),
+            const SizedBox(height: 12),
+          ],
+          TpButton(
+            busy
+                ? 'กำลังอัปเดต…'
+                : (s?.isError == true ? 'ลองอีกครั้ง' : 'อัปเดตเดี๋ยวนี้'),
+            icon: PhosphorIconsBold.downloadSimple,
+            loading: busy,
+            onPressed: busy ? null : _start,
           ),
-        ),
-        const SizedBox(height: 12),
-        if (state.isInstalling)
-          const Text(
-            'กดติดตั้งใน dialog ของระบบเพื่อยืนยัน',
-            style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 11),
-          )
-        else
-          const Text(
-            'หลังดาวน์โหลดเสร็จ Android จะถามขออนุญาตติดตั้ง',
-            style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 11),
-          ),
-      ],
-    );
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: TpButton.ghost('ข้ามเวอร์ชันนี้',
+                  onPressed: busy
+                      ? null
+                      : () async {
+                          await UpdateChecker.skipVersion(r.tagName);
+                          if (context.mounted) Navigator.pop(context);
+                        }),
+            ),
+            Expanded(
+                child: TpButton.ghost('ไว้ทีหลัง',
+                    onPressed: busy ? null : () => Navigator.pop(context))),
+          ]),
+          if (_apk != null)
+            Center(
+                child: Text('${_apk!.name} · ${_apk!.sizeMb} MB',
+                    style: TpType.body(11.5, p.faint))),
+        ]);
   }
 
-  void _startDownload(GitHubRelease release) {
-    if (Platform.isAndroid) {
-      final apk = release.findAndroidApk();
-      if (apk == null) {
-        _openHtmlUrl(release.htmlUrl);
-        return;
-      }
-      setState(() => _downloading = true);
-      _otaSub?.cancel();
-      _otaSub = AutoUpdater().downloadAndInstall(apk.browserDownloadUrl).listen(
-        (state) {
-          if (!mounted) return;
-          setState(() => _otaState = state);
-        },
-      );
-    } else {
-      // iOS / others: open release page
-      _openHtmlUrl(release.htmlUrl);
-      Navigator.of(context).pop();
-    }
-  }
-}
-
-Future<void> _openHtmlUrl(String url) async {
-  final uri = Uri.parse(url);
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  /// ตัดหัวข้อ markdown/ลิงก์ยาวของ GitHub ออก ให้อ่านง่ายบนมือถือ
+  String _cleanNotes(String body) {
+    final lines = body
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) =>
+            l.isNotEmpty &&
+            !l.startsWith('**Full Changelog') &&
+            !l.startsWith('<!--'))
+        .map((l) => l
+            .replaceAll(RegExp(r'^#+\s*'), '')
+            .replaceAll('**', '')
+            .replaceAll(RegExp(r'https?://\S+'), ''))
+        .take(14)
+        .toList();
+    return lines.join('\n');
   }
 }

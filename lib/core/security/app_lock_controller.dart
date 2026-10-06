@@ -42,7 +42,8 @@ class AppLockState {
 class AppLockController extends StateNotifier<AppLockState>
     with WidgetsBindingObserver {
   AppLockController(this._pin)
-      : super(AppLockState(hasPin: true, unlocked: false, bootstrapped: false)) {
+      : super(
+            AppLockState(hasPin: true, unlocked: false, bootstrapped: false)) {
     WidgetsBinding.instance.addObserver(this);
     _bootstrap();
   }

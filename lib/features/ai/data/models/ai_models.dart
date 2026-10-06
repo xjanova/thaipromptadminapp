@@ -1,164 +1,349 @@
-/// AI Dashboard summary — from /api/admin/ai/dashboard
-class AiDashboardData {
-  AiDashboardData({
-    required this.totalTokens,
-    required this.totalCostThb,
-    required this.cacheHitPct,
-    required this.providersSummary,
+import '../../../../shared/ui/tp_format.dart';
+
+Map<String, dynamic> _m(dynamic v) =>
+    v is Map ? v.cast<String, dynamic>() : const {};
+
+final _emoji = RegExp(
+  r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{2300}-\u{23FF}\u{FE0E}\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]',
+  unicode: true,
+);
+
+/// ตัดอีโมจิออกจากข้อความที่มาจากเซิร์ฟเวอร์ (แอปห้ามใช้อีโมจิเป็นไอคอน) + ยุบช่องว่างซ้ำ
+String aiClean(String? s) =>
+    (s ?? '').replaceAll(_emoji, '').replaceAll(RegExp(r'\s{2,}'), ' ').trim();
+
+String? _str(dynamic v) {
+  final s = aiClean(v?.toString());
+  return s.isEmpty ? null : s;
+}
+
+/// สรุปจาก `GET ai/dashboard?period=month`
+///
+/// ⚠️ ตัวเลขการใช้งานทั้งหมดอ่านจาก `ai_api_key_usage_logs` = คีย์ใน **AI Pool ของบอทดูดวง**
+/// ส่วน `bots_summary` มาจากตาราง `ai_bot_profiles` (ระบบบอท AI ทั่วไป)
+class AiOverview {
+  const AiOverview({
+    required this.tokensMonth,
+    required this.costThb,
     required this.botsTotal,
     required this.botsActive,
+    required this.botsRentable,
     required this.p95LatencyMs,
     required this.requestsPerMin,
     required this.errorsPct,
+    this.generatedAt,
   });
 
-  final int totalTokens;
-  final double totalCostThb;
-  final double cacheHitPct;
-  final List<AiProviderBrief> providersSummary;
+  /// โทเคนรวมตั้งแต่วันที่ 1 ของเดือน
+  final int tokensMonth;
+
+  /// ค่าใช้จ่าย — backend ยังไม่คำนวณ (ส่ง 0 เสมอ) แสดงเฉพาะเมื่อ > 0
+  final double costThb;
   final int botsTotal;
   final int botsActive;
+  final int botsRentable;
+
+  /// ค่าเหล่านี้คิดจาก 15 นาทีล่าสุด
   final int p95LatencyMs;
   final int requestsPerMin;
   final double errorsPct;
+  final DateTime? generatedAt;
 
-  factory AiDashboardData.fromJson(Map<String, dynamic> json) {
-    final hero = (json['hero'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final bots = (json['bots_summary'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final inference = (json['inference'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final providersRaw = (json['providers_summary'] as List?) ?? const [];
-
-    return AiDashboardData(
-      totalTokens: ((hero['total_tokens'] as num?) ?? 0).toInt(),
-      totalCostThb: ((hero['total_cost_thb'] as num?) ?? 0).toDouble(),
-      cacheHitPct: ((hero['cache_hit_pct'] as num?) ?? 0).toDouble(),
-      providersSummary: providersRaw
-          .whereType<Map>()
-          .map((m) => AiProviderBrief.fromJson(m.cast<String, dynamic>()))
-          .toList(),
-      botsTotal: ((bots['total'] as num?) ?? 0).toInt(),
-      botsActive: ((bots['active'] as num?) ?? 0).toInt(),
-      p95LatencyMs: ((inference['p95_latency_ms'] as num?) ?? 0).toInt(),
-      requestsPerMin: ((inference['requests_per_min'] as num?) ?? 0).toInt(),
-      errorsPct: ((inference['errors_pct'] as num?) ?? 0).toDouble(),
+  factory AiOverview.fromJson(Map<String, dynamic> j) {
+    final hero = _m(j['hero']);
+    final bots = _m(j['bots_summary']);
+    final inf = _m(j['inference']);
+    return AiOverview(
+      tokensMonth: TpFmt.toInt(hero['total_tokens']),
+      costThb: TpFmt.toDouble(hero['total_cost_thb']),
+      botsTotal: TpFmt.toInt(bots['total']),
+      botsActive: TpFmt.toInt(bots['active']),
+      botsRentable: TpFmt.toInt(bots['rentable']),
+      p95LatencyMs: TpFmt.toInt(inf['p95_latency_ms']),
+      requestsPerMin: TpFmt.toInt(inf['requests_per_min']),
+      errorsPct: TpFmt.toDouble(inf['errors_pct']),
+      generatedAt: TpFmt.parse(j['generated_at']),
     );
   }
 }
 
-class AiProviderBrief {
-  AiProviderBrief({
-    required this.id,
-    required this.name,
-    required this.type,
-    required this.isAvailable,
-    required this.quotaPct,
-    required this.costThb,
-  });
-
-  final int id;
-  final String name;
-  final String type;
-  final bool isAvailable;
-  final double quotaPct;
-  final double costThb;
-
-  factory AiProviderBrief.fromJson(Map<String, dynamic> json) => AiProviderBrief(
-        id: ((json['id'] as num?) ?? 0).toInt(),
-        name: (json['name'] as String?) ?? '',
-        type: (json['type'] as String?) ?? '',
-        isAvailable: (json['is_available'] as bool?) ?? false,
-        quotaPct: ((json['quota_pct'] as num?) ?? 0).toDouble(),
-        costThb: ((json['cost_thb'] as num?) ?? 0).toDouble(),
-      );
+/// หนึ่งชั่วโมงในกราฟการใช้งาน
+class AiHourPoint {
+  const AiHourPoint(
+      {required this.hour, required this.requests, required this.avgLatencyMs});
+  final DateTime hour;
+  final int requests;
+  final int avgLatencyMs;
 }
 
-/// Full AI Provider — from /api/admin/ai/providers
-class AiProvider {
-  AiProvider({
+/// การใช้งานรายชั่วโมงย้อนหลัง (`GET ai/dashboard/timeseries?hours=24`) — เติมชั่วโมงที่ไม่มีข้อมูลเป็น 0
+class AiUsageSeries {
+  const AiUsageSeries({required this.points, required this.fetchedAt});
+
+  /// เรียงเก่า → ใหม่ ตัวสุดท้าย = ชั่วโมงปัจจุบัน
+  final List<AiHourPoint> points;
+  final DateTime fetchedAt;
+
+  int get totalRequests => points.fold(0, (a, b) => a + b.requests);
+
+  /// เวลาตอบเฉลี่ยถ่วงน้ำหนักตามจำนวนคำขอ (0 = ไม่มีข้อมูล)
+  int get avgLatencyMs {
+    var w = 0, sum = 0;
+    for (final p in points) {
+      if (p.requests <= 0 || p.avgLatencyMs <= 0) continue;
+      w += p.requests;
+      sum += p.requests * p.avgLatencyMs;
+    }
+    return w == 0 ? 0 : (sum / w).round();
+  }
+
+  /// ชั่วโมงที่คำขอมากสุด
+  AiHourPoint? get peak {
+    AiHourPoint? best;
+    for (final p in points) {
+      if (p.requests > 0 && (best == null || p.requests > best.requests)) {
+        best = p;
+      }
+    }
+    return best;
+  }
+
+  factory AiUsageSeries.fromJson(Map<String, dynamic> j, {int hours = 24}) {
+    final byHour = <String, Map<String, dynamic>>{};
+    final raw = j['series'];
+    if (raw is List) {
+      for (final e in raw.whereType<Map>()) {
+        final t = (e['time'] ?? '').toString();
+        if (t.length >= 13) {
+          byHour[t.substring(0, 13)] = e.cast<String, dynamic>();
+        }
+      }
+    }
+    final now = DateTime.now();
+    final cur = DateTime(now.year, now.month, now.day, now.hour);
+    String key(DateTime d) =>
+        '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')} '
+        '${d.hour.toString().padLeft(2, '0')}';
+    return AiUsageSeries(
+      fetchedAt: now,
+      points: [
+        for (var i = hours - 1; i >= 0; i--)
+          () {
+            final h = DateTime(cur.year, cur.month, cur.day, cur.hour - i);
+            final row = byHour[key(h)];
+            return AiHourPoint(
+              hour: h,
+              requests: TpFmt.toInt(row?['requests']),
+              avgLatencyMs: TpFmt.toInt(row?['avg_latency_ms']),
+            );
+          }(),
+      ],
+    );
+  }
+}
+
+/// การใช้งานแยกตามผู้ให้บริการ (`GET ai/usage/per-provider`) — จัดกลุ่มตาม `ai_api_keys.provider`
+class AiProviderUsage {
+  const AiProviderUsage({
+    required this.name,
+    required this.displayName,
+    this.color,
+    required this.isActive,
+    required this.totalKeys,
+    required this.activeKeys,
+    required this.requests,
+    required this.tokens,
+    required this.tokensToday,
+    required this.tokensMonth,
+    required this.avgLatencyMs,
+    required this.p95LatencyMs,
+    required this.errorRatePct,
+  });
+
+  final String name;
+  final String displayName;
+
+  /// สีจากเซิร์ฟเวอร์ ("#10b981" หรือ "hsl(120, 70%, 55%)")
+  final String? color;
+  final bool isActive;
+  final int totalKeys;
+  final int activeKeys;
+  final int requests;
+  final int tokens;
+  final int tokensToday;
+  final int tokensMonth;
+  final int avgLatencyMs;
+  final int p95LatencyMs;
+  final double errorRatePct;
+
+  factory AiProviderUsage.fromJson(Map<String, dynamic> j) {
+    final name = (j['name'] ?? '').toString();
+    return AiProviderUsage(
+      name: name,
+      displayName: _str(j['display_name']) ?? (name.isEmpty ? 'ไม่ระบุ' : name),
+      color: j['color']?.toString(),
+      isActive: j['is_active'] == true,
+      totalKeys: TpFmt.toInt(j['total_keys']),
+      activeKeys: TpFmt.toInt(j['active_keys']),
+      requests: TpFmt.toInt(j['requests']),
+      tokens: TpFmt.toInt(j['tokens']),
+      tokensToday: TpFmt.toInt(j['tokens_today']),
+      tokensMonth: TpFmt.toInt(j['tokens_month']),
+      avgLatencyMs: TpFmt.toInt(j['avg_latency_ms']),
+      p95LatencyMs: TpFmt.toInt(j['p95_latency_ms']),
+      errorRatePct: TpFmt.toDouble(j['error_rate_pct']),
+    );
+  }
+}
+
+/// ผู้ให้บริการ AI ของระบบบอท (ตาราง `ai_providers`) — คนละชุดกับคีย์ AI Pool ของบอทดูดวง
+class AiProviderItem {
+  const AiProviderItem({
     required this.id,
     required this.name,
     required this.displayName,
-    required this.type,
+    this.type,
     required this.isActive,
     required this.isAvailable,
-    this.apiEndpoint,
+    this.endpoint,
+    this.apiVersion,
+    this.createdAt,
   });
 
   final int id;
   final String name;
   final String displayName;
-  final String type;
+  final String? type;
   final bool isActive;
   final bool isAvailable;
-  final String? apiEndpoint;
+  final String? endpoint;
+  final String? apiVersion;
+  final DateTime? createdAt;
 
-  factory AiProvider.fromJson(Map<String, dynamic> json) => AiProvider(
-        id: ((json['id'] as num?) ?? 0).toInt(),
-        name: (json['name'] as String?) ?? '',
-        displayName: (json['display_name'] as String?) ?? (json['name'] as String?) ?? '',
-        type: (json['type'] as String?) ?? '',
-        isActive: (json['is_active'] as bool?) ?? false,
-        isAvailable: (json['is_available'] as bool?) ?? false,
-        apiEndpoint: json['api_endpoint'] as String?,
+  /// ชนิดผู้ให้บริการ (enum ใน DB: cloud / self-hosted / gateway)
+  String get typeLabel => switch ((type ?? '').toLowerCase()) {
+        'cloud' => 'คลาวด์',
+        'self-hosted' => 'ติดตั้งเอง',
+        'gateway' => 'เกตเวย์',
+        '' => 'ไม่ระบุชนิด',
+        _ => type!,
+      };
+
+  /// โดเมนของ endpoint (ตัด https:// และ path ออก)
+  String? get host {
+    final e = endpoint;
+    if (e == null || e.isEmpty) return null;
+    final u = Uri.tryParse(e);
+    return (u != null && u.host.isNotEmpty) ? u.host : e;
+  }
+
+  AiProviderItem copyWith({bool? isActive}) => AiProviderItem(
+        id: id,
+        name: name,
+        displayName: displayName,
+        type: type,
+        isActive: isActive ?? this.isActive,
+        isAvailable: isAvailable,
+        endpoint: endpoint,
+        apiVersion: apiVersion,
+        createdAt: createdAt,
       );
 
-  /// Brand color hint per provider type (สำหรับ UI)
-  /// อ้างอิง design handoff
-  int get brandColorHex {
-    final t = type.toLowerCase();
-    if (t.contains('openai')) return 0xFF10A37F;
-    if (t.contains('anthropic') || t.contains('claude')) return 0xFFD97706;
-    if (t.contains('google') || t.contains('gemini')) return 0xFF4285F4;
-    if (t.contains('llama') || t.contains('local')) return 0xFF7C3AED;
-    if (t.contains('huggingface') || t.contains('hf')) return 0xFFFFD21E;
-    return 0xFF6366F1; // default indigo
+  factory AiProviderItem.fromJson(Map<String, dynamic> j) {
+    final name = (j['name'] ?? '').toString();
+    return AiProviderItem(
+      id: TpFmt.toInt(j['id']),
+      name: name,
+      displayName:
+          _str(j['display_name']) ?? _str(name) ?? 'ผู้ให้บริการ #${j['id']}',
+      type: j['type']?.toString(),
+      isActive: j['is_active'] == true,
+      isAvailable: j['is_available'] == true,
+      endpoint: _str(j['api_endpoint']),
+      apiVersion: _str(j['api_version']),
+      createdAt: TpFmt.parse(j['created_at']),
+    );
   }
 }
 
-/// AI Bot — from /api/admin/ai/bots
-class AiBot {
-  AiBot({
+/// โปรไฟล์บอท AI (ตาราง `ai_bot_profiles`)
+class AiBotItem {
+  const AiBotItem({
     required this.id,
     required this.name,
     required this.displayName,
     this.description,
-    this.avatarUrl,
-    required this.providerName,
+    this.providerName,
     this.modelName,
     required this.isActive,
     required this.isPublic,
     required this.isRentable,
     required this.lineConnected,
+    required this.rentalPerMonth,
+    required this.rentalPerMessage,
+    this.ownerId,
+    this.createdAt,
   });
 
   final int id;
   final String name;
   final String displayName;
   final String? description;
-  final String? avatarUrl;
-  final String providerName;
+  final String? providerName;
   final String? modelName;
   final bool isActive;
   final bool isPublic;
   final bool isRentable;
   final bool lineConnected;
+  final double rentalPerMonth;
+  final double rentalPerMessage;
+  final int? ownerId;
+  final DateTime? createdAt;
 
-  factory AiBot.fromJson(Map<String, dynamic> json) {
-    final provider = (json['provider'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final model = (json['model'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final lineOa = (json['line_oa'] as Map?)?.cast<String, dynamic>() ?? const {};
-    return AiBot(
-      id: ((json['id'] as num?) ?? 0).toInt(),
-      name: (json['name'] as String?) ?? '',
-      displayName: (json['display_name'] as String?) ?? (json['name'] as String?) ?? '',
-      description: json['description'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
-      providerName: (provider['name'] as String?) ?? 'Unknown',
-      modelName: model['name'] as String?,
-      isActive: (json['is_active'] as bool?) ?? false,
-      isPublic: (json['is_public'] as bool?) ?? false,
-      isRentable: (json['is_rentable'] as bool?) ?? false,
-      lineConnected: (lineOa['is_connected'] as bool?) ?? false,
+  factory AiBotItem.fromJson(Map<String, dynamic> j) {
+    final provider = _m(j['provider']);
+    final model = _m(j['model']);
+    final rental = _m(j['rental']);
+    final line = _m(j['line_oa']);
+    final name = (j['name'] ?? '').toString();
+    return AiBotItem(
+      id: TpFmt.toInt(j['id']),
+      name: name,
+      displayName: _str(j['display_name']) ?? _str(name) ?? 'บอท #${j['id']}',
+      description: _str(j['description']),
+      providerName: _str(provider['name']),
+      modelName: _str(model['name']),
+      isActive: j['is_active'] == true,
+      isPublic: j['is_public'] == true,
+      isRentable: j['is_rentable'] == true,
+      lineConnected: line['is_connected'] == true,
+      rentalPerMonth: TpFmt.toDouble(rental['price_per_month']),
+      rentalPerMessage: TpFmt.toDouble(rental['price_per_message']),
+      ownerId: j['owner_id'] == null ? null : TpFmt.toInt(j['owner_id']),
+      createdAt: TpFmt.parse(j['created_at']),
+    );
+  }
+}
+
+/// ผล `POST ai/providers/{id}/test-connection`
+///
+/// ⚠️ ปัจจุบัน backend ยังไม่ทดสอบจริง — คืน `reachable` = ค่า `is_available` ที่บันทึกไว้
+/// พร้อมข้อความ "Connection test feature in progress" → แอปบอกตรง ๆ ว่ายังไม่ใช่ผลทดสอบจริง
+class AiConnectionTest {
+  const AiConnectionTest(
+      {required this.reachable, required this.isStub, required this.at});
+  final bool reachable;
+  final bool isStub;
+  final DateTime at;
+
+  factory AiConnectionTest.fromJson(Map<String, dynamic> j) {
+    final msg = (j['message'] ?? '').toString().toLowerCase();
+    return AiConnectionTest(
+      reachable: j['reachable'] == true,
+      isStub: msg.contains('in progress') ||
+          msg.contains('stub') ||
+          msg.contains('mock'),
+      at: TpFmt.parse(j['test_at']) ?? DateTime.now(),
     );
   }
 }

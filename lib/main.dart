@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/push/push_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/security/app_lock_controller.dart';
-import 'core/theme/app_theme.dart';
+import 'core/theme/tp_palette.dart';
+import 'core/theme/tp_theme.dart';
 import 'core/update/update_checker.dart';
 import 'core/update/update_dialog.dart';
 import 'features/auth/providers/auth_controller.dart';
@@ -21,14 +25,26 @@ class _BootSplash extends StatelessWidget {
   const _BootSplash();
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: Color(0xFF0A0A0F),
-      child: Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: Color(0xFFA855F7),
+    // ใช้พื้นหลังลายกนกเดียวกับหน้าปลดล็อก — เปลี่ยนหน้าแล้วไม่กระพริบ
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Color(0xFF05070C),
+        image: DecorationImage(
+          image: AssetImage('assets/images/brand/login_bg.webp'),
+          fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
         ),
       ),
+      child: Stack(children: [
+        Positioned(
+          top: MediaQuery.sizeOf(context).height * 0.267 - 38,
+          left: 0,
+          right: 0,
+          child: Center(
+              child:
+                  Image.asset('assets/images/brand/tp-mark.webp', width: 76)),
+        ),
+      ]),
     );
   }
 }
@@ -48,15 +64,41 @@ class ThaipromptAdminApp extends ConsumerStatefulWidget {
 }
 
 class _ThaipromptAdminAppState extends ConsumerState<ThaipromptAdminApp> {
+  StreamSubscription<String>? _pushRoutes;
+
   @override
   void initState() {
     super.initState();
+    final push = ref.read(pushServiceProvider);
+    AuthController.beforeLogout = push.stop;
+    // แตะแจ้งเตือน → เปิดหน้าตาม route (แท็บหลักใช้ go, หน้าย่อยใช้ push)
+    _pushRoutes = push.routes.listen((route) {
+      final router = ref.read(routerProvider);
+      const tabs = ['/home', '/work', '/chat', '/modules', '/me'];
+      if (tabs.any((t) => route == t || route.startsWith('$t?'))) {
+        router.go(route);
+      } else {
+        router.push(route);
+      }
+    });
+    // เข้าสู่ระบบสำเร็จ → เปิดรับแจ้งเตือน
+    ref.listenManual<AuthState>(authControllerProvider, (prev, next) {
+      if (next.isAuthenticated && !(prev?.isAuthenticated ?? false)) {
+        push.start();
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // 1. ลอง resume session ถ้ามี token
       await ref.read(authControllerProvider.notifier).bootstrap();
       // 2. เช็ค update เงียบๆ (ใช้ throttle ภายใน — เช็คซ้ำไม่บ่อยกว่า 6 ชม.)
       _silentCheckForUpdate();
     });
+  }
+
+  @override
+  void dispose() {
+    _pushRoutes?.cancel();
+    super.dispose();
   }
 
   Future<void> _silentCheckForUpdate() async {
@@ -78,11 +120,13 @@ class _ThaipromptAdminAppState extends ConsumerState<ThaipromptAdminApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
+    final look = ref.watch(tpLookProvider);
 
     return MaterialApp.router(
-      title: 'Thaiprompt Admin',
+      title: 'ไทยพร้อม แอดมิน',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
+      theme: buildTpTheme(TpPalette.of(look)),
+      themeAnimationDuration: const Duration(milliseconds: 320),
       routerConfig: router,
       // PIN gate overlay — ถ้า user ตั้ง PIN และยังไม่ปลด → block หน้าจอทั้งแอพ
       builder: (context, child) {

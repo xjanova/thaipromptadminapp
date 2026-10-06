@@ -2,19 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/api/api_envelope.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../gen/l10n/app_localizations.dart';
-import '../../../shared/widgets/starfield.dart';
+import '../../../shared/ui/tp.dart';
 import '../providers/auth_controller.dart';
 
-/// หน้าสแกน QR สำหรับ pair กับเว็บ
+/// หน้าสแกน QR จับคู่เครื่องกับเว็บแอดมิน (`/admin/mobile-pair`)
 ///
-/// QR ที่สแกนได้จะเป็น "thaipromptadmin://pair/<8-char-code>" หรือ string 8 ตัว
+/// QR = "thaipromptadmin://pair/<รหัส 8 ตัว>" หรือรหัส 8 ตัวตรง ๆ
+/// เมื่อสแกนติด รหัสจะ "พิมพ์" ออกมาทีละตัว (แบบ Tping) ก่อนส่งให้เซิร์ฟเวอร์
 class QrScannerScreen extends ConsumerStatefulWidget {
   const QrScannerScreen({super.key});
 
@@ -23,23 +21,17 @@ class QrScannerScreen extends ConsumerStatefulWidget {
 }
 
 class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
-  final _scannerController = MobileScannerController(
-    detectionSpeed: DetectionSpeed.normal,
-    facing: CameraFacing.back,
-    torchEnabled: false,
-  );
+  final _scanner = MobileScannerController(
+      detectionSpeed: DetectionSpeed.normal, facing: CameraFacing.back);
   bool _processing = false;
-  bool _torchOn = false;
-
-  /// แต่ละตัวอักษรของ code ที่ "พิมพ์" ออกมา (animation แบบ Tping)
-  String _typedCode = '';
-  bool _showSuccess = false;
-  Timer? _typeTimer;
+  bool _torch = false;
+  String _typed = '';
+  bool _success = false;
+  String? _error;
 
   @override
   void dispose() {
-    _scannerController.dispose();
-    _typeTimer?.cancel();
+    _scanner.dispose();
     super.dispose();
   }
 
@@ -48,360 +40,318 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
     final raw = capture.barcodes.firstOrNull?.rawValue?.trim() ?? '';
     final code = _extractPairCode(raw);
     if (code == null) return;
+    await _pair(code);
+  }
 
-    setState(() => _processing = true);
-    await _scannerController.stop();
+  Future<void> _pair(String code) async {
+    setState(() {
+      _processing = true;
+      _error = null;
+    });
+    await _scanner.stop();
     HapticFeedback.mediumImpact();
-
-    // ── Tping-style typing animation: พิมพ์ code ทีละตัว ──
     await _typeAnimation(code);
+    if (!mounted) return;
 
     try {
-      final result =
-          await ref.read(authControllerProvider.notifier).claimPair(code);
+      final notifier = ref.read(authControllerProvider.notifier);
+      final result = await notifier.claimPair(code);
       if (!mounted) return;
       if (result.requiresTwoFactor) {
-        // ขอ 2FA — ขออีกครั้งพร้อม code
-        final code2fa = await _ask2faCode();
-        if (code2fa == null || !mounted) {
-          setState(() {
-            _processing = false;
-            _typedCode = '';
-          });
-          await _scannerController.start();
+        final otp = await tpPrompt(
+          context,
+          title: 'ยืนยันรหัส 2FA',
+          message:
+              'บัญชีนี้เปิดยืนยันสองชั้น กรอกรหัส 6 หลักจากแอป Authenticator',
+          hint: '123456',
+          maxLines: 1,
+        );
+        if (!mounted) return;
+        if (otp == null) {
+          await _reset();
           return;
         }
-        await ref
-            .read(authControllerProvider.notifier)
-            .claimPair(code, twoFactorCode: code2fa);
+        await notifier.claimPair(code, twoFactorCode: otp);
         if (!mounted) return;
       }
-      // success — flash green checkmark
       HapticFeedback.heavyImpact();
-      setState(() => _showSuccess = true);
-      await Future.delayed(const Duration(milliseconds: 850));
-      // router จะ redirect ไป dashboard เพราะ auth state เปลี่ยน
-    } on ApiException catch (e) {
-      _showError(e.message);
-      setState(() {
-        _processing = false;
-        _typedCode = '';
-      });
-      await _scannerController.start();
+      setState(() => _success = true);
+      // router พาไปหน้าภาพรวมเองเมื่อสถานะเข้าสู่ระบบเปลี่ยน
     } catch (e) {
-      _showError(e.toString());
-      setState(() {
-        _processing = false;
-        _typedCode = '';
-      });
-      await _scannerController.start();
+      if (!mounted) return;
+      _reset(error: tpErrorText(e));
     }
   }
 
-  /// Type code char-by-char (Tping-style auto-typing UX)
+  Future<void> _reset({String? error}) async {
+    setState(() {
+      _processing = false;
+      _typed = '';
+      _error = error;
+    });
+    try {
+      await _scanner.start();
+    } catch (_) {}
+  }
+
   Future<void> _typeAnimation(String code) async {
-    setState(() => _typedCode = '');
+    setState(() => _typed = '');
     for (var i = 0; i < code.length; i++) {
       await Future.delayed(const Duration(milliseconds: 75));
       if (!mounted) return;
       HapticFeedback.selectionClick();
-      setState(() => _typedCode = code.substring(0, i + 1));
+      setState(() => _typed = code.substring(0, i + 1));
     }
-    await Future.delayed(const Duration(milliseconds: 200));
+    await Future.delayed(const Duration(milliseconds: 220));
   }
 
-  Future<String?> _ask2faCode() async {
-    final ctrl = TextEditingController();
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgPanel,
-        title:
-            const Text('ยืนยันรหัส 2FA', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: ctrl,
-          keyboardType: TextInputType.number,
-          autofocus: true,
-          maxLength: 8,
-          style: const TextStyle(
-              color: Colors.white, letterSpacing: 6, fontSize: 20),
-          decoration: const InputDecoration(
-            hintText: '123456',
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-              child: const Text('ยืนยัน')),
-        ],
-      ),
-    );
-    return result;
-  }
-
-  /// แปลง raw QR เป็น pair_code 8 ตัว
   String? _extractPairCode(String raw) {
     if (raw.isEmpty) return null;
-
-    // 1. ถ้าเป็น deep link "thaipromptadmin://pair/XXX"
     final uri = Uri.tryParse(raw);
     if (uri != null && uri.scheme == 'thaipromptadmin' && uri.host == 'pair') {
-      final code = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : '';
-      if (_isValidCode(code)) return code.toUpperCase();
+      final c = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : '';
+      if (_valid(c)) return c.toUpperCase();
     }
-
-    // 2. ถ้าเป็น string 8 ตัวตรงๆ
-    if (_isValidCode(raw)) return raw.toUpperCase();
-
+    if (_valid(raw)) return raw.toUpperCase();
     return null;
   }
 
-  bool _isValidCode(String s) {
-    if (s.length != 8) return false;
-    return RegExp(r'^[A-Z0-9]{8}$').hasMatch(s.toUpperCase());
-  }
+  bool _valid(String s) => RegExp(r'^[A-Z0-9]{8}$').hasMatch(s.toUpperCase());
 
   Future<void> _enterManually() async {
-    final ctrl = TextEditingController();
-    final code = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgPanel,
-        title:
-            const Text('กรอกรหัสจับคู่', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: ctrl,
-          textCapitalization: TextCapitalization.characters,
-          autofocus: true,
-          maxLength: 8,
-          style: const TextStyle(
-              color: Colors.white, letterSpacing: 8, fontSize: 22),
-          decoration: const InputDecoration(hintText: 'ABCD2345'),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim().toUpperCase()),
-            child: const Text('ยืนยัน'),
-          ),
-        ],
-      ),
+    final code = await tpPrompt(
+      context,
+      title: 'กรอกรหัสจับคู่',
+      message: 'รหัส 8 ตัวที่แสดงใต้ QR บนหน้าเว็บ',
+      hint: 'ABCD2345',
+      maxLines: 1,
     );
-    if (code != null && _isValidCode(code)) {
-      await _onDetect(BarcodeCapture(barcodes: [
-        Barcode(rawValue: code),
-      ]));
-    } else if (code != null) {
-      _showError('รหัสต้องเป็น 8 ตัว A-Z 0-9');
+    if (code == null || !mounted) return;
+    if (!_valid(code)) {
+      setState(() => _error = 'รหัสต้องเป็นตัวอักษร A-Z หรือตัวเลข 8 ตัว');
+      return;
     }
+    await _pair(code.toUpperCase());
   }
 
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text(msg),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.error),
+  @override
+  Widget build(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    final box = w * 0.68;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(children: [
+          Positioned.fill(
+            child: MobileScanner(
+              controller: _scanner,
+              onDetect: _onDetect,
+              errorBuilder: (context, error, _) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(
+                    error.errorCode == MobileScannerErrorCode.permissionDenied
+                        ? 'ไม่ได้รับอนุญาตให้ใช้กล้อง\nเปิดสิทธิ์กล้องในการตั้งค่าเครื่อง หรือกรอกรหัสด้วยมือ'
+                        : 'เปิดกล้องไม่ได้ · กรอกรหัสด้วยมือแทน',
+                    textAlign: TextAlign.center,
+                    style: TpType.body(14, Colors.white70),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // ม่านมืดรอบกรอบสแกน
+          Positioned.fill(
+              child: CustomPaint(painter: _ScanMaskPainter(box: box))),
+          SafeArea(
+            child: Column(children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+                child: Row(children: [
+                  _RoundBtn(
+                      icon: PhosphorIconsRegular.caretLeft,
+                      onTap: () => Navigator.maybePop(context)),
+                  const Spacer(),
+                  _RoundBtn(
+                    icon: _torch
+                        ? PhosphorIconsFill.flashlight
+                        : PhosphorIconsRegular.flashlight,
+                    gold: _torch,
+                    onTap: () {
+                      _scanner.toggleTorch();
+                      setState(() => _torch = !_torch);
+                    },
+                  ),
+                ]),
+              ),
+              const SizedBox(height: 18),
+              Text('จับคู่เครื่องนี้', style: TpType.title(24, Colors.white)),
+              const SizedBox(height: 4),
+              Text('สแกน QR จากหน้า /admin/mobile-pair บนเว็บ',
+                  style: TpType.body(13.5, const Color(0xB3FFFFFF))),
+              const Spacer(),
+              if (_error != null)
+                Container(
+                  margin: const EdgeInsets.fromLTRB(24, 0, 24, 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0x33FF7A6B),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0x66FF7A6B)),
+                  ),
+                  child: Row(children: [
+                    const Icon(PhosphorIconsFill.warningCircle,
+                        color: Color(0xFFFF8A7A), size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                        child: Text(_error!,
+                            style: TpType.body(13, Colors.white))),
+                  ]),
+                ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: TpButton.outline('กรอกรหัสด้วยมือ',
+                    icon: PhosphorIconsRegular.keyboard,
+                    onPressed: _processing ? null : _enterManually),
+              ),
+            ]),
+          ),
+          if (_processing) Positioned.fill(child: _typingOverlay()),
+        ]),
+      ),
     );
   }
 
   Widget _typingOverlay() {
     return Container(
-      color: Colors.black.withValues(alpha: 0.88),
-      child: Stack(
-        children: [
-          const Positioned.fill(child: Starfield(starCount: 40, seed: 99)),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Tping-style typed code with caret
-                _showSuccess
-                    ? _successCheck()
-                    : _typedCodeView(),
-                const SizedBox(height: 22),
-                Text(
-                  _showSuccess
-                      ? '✨ จับคู่อุปกรณ์สำเร็จ'
-                      : 'กำลังจับคู่กับเซิร์ฟเวอร์...',
-                  style: TextStyle(
-                    color: _showSuccess ? AppColors.success : Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
+      color: const Color(0xEB05070C),
+      alignment: Alignment.center,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 280),
+          child: _success
+              ? const Tp3D(TpArt.emptyDone, size: 120, key: ValueKey('ok'))
+              : Container(
+                  key: const ValueKey('code'),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0x66F0C96A)),
+                    color: const Color(0x14F0C96A),
                   ),
-                ).animate(key: ValueKey(_showSuccess)).fadeIn(
-                    duration: const Duration(milliseconds: 300)),
-                if (!_showSuccess) ...[
-                  const SizedBox(height: 8),
-                  const Text(
-                    'รหัสถูกส่งให้ระบบแล้ว',
-                    style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 12),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(_typed.padRight(8, '·'),
+                        style: TpType.money(30, const Color(0xFFF0C96A),
+                            w: FontWeight.w700)),
+                    const _Caret(),
+                  ]),
+                ),
+        ),
+        const SizedBox(height: 20),
+        Text(_success ? 'จับคู่สำเร็จ' : 'กำลังจับคู่กับเซิร์ฟเวอร์…',
+            style: TpType.h(
+                16, _success ? const Color(0xFF3DDC84) : Colors.white)),
+      ]),
     );
   }
+}
 
-  Widget _typedCodeView() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.purpleStart, AppColors.pinkStart],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.pinkStart.withValues(alpha: 0.5),
-            blurRadius: 22,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            _typedCode,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 6,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
-          ),
-          // Blinking caret
-          Container(
-            width: 3,
-            height: 32,
-            margin: const EdgeInsets.only(left: 4),
-            color: Colors.white,
-          ).animate(
-            onPlay: (c) => c.repeat(reverse: true),
-          ).fadeIn(duration: const Duration(milliseconds: 380)),
-        ],
-      ),
-    );
-  }
+class _Caret extends StatefulWidget {
+  const _Caret();
+  @override
+  State<_Caret> createState() => _CaretState();
+}
 
-  Widget _successCheck() {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.success, Color(0xFF15803D)],
-        ),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.success.withValues(alpha: 0.6),
-            blurRadius: 26,
-            spreadRadius: 4,
-          ),
-        ],
-      ),
-      child: const Icon(Icons.check, color: Colors.white, size: 56),
-    ).animate().scale(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.elasticOut,
-          begin: const Offset(0.5, 0.5),
-          end: const Offset(1, 1),
-        );
+class _CaretState extends State<_Caret> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 520))
+    ..repeat(reverse: true);
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = AppL10n.of(context);
+  Widget build(BuildContext context) => FadeTransition(
+        opacity: _c,
+        child: Container(
+            width: 2.5,
+            height: 30,
+            margin: const EdgeInsets.only(left: 4),
+            color: const Color(0xFFF0C96A)),
+      );
+}
 
-    return Scaffold(
-      backgroundColor: AppColors.bgRoot,
-      appBar: AppBar(
-        title: Text(l10n.qrScannerTitle),
-        actions: [
-          IconButton(
-            icon: Icon(_torchOn ? Icons.flash_on : Icons.flash_off),
-            onPressed: () async {
-              await _scannerController.toggleTorch();
-              setState(() => _torchOn = !_torchOn);
-            },
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          MobileScanner(
-            controller: _scannerController,
-            onDetect: _onDetect,
-          ),
+class _RoundBtn extends StatelessWidget {
+  const _RoundBtn({required this.icon, required this.onTap, this.gold = false});
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool gold;
 
-          // Overlay frame
-          Center(
-            child: Container(
-              width: 280,
-              height: 280,
-              decoration: BoxDecoration(
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.7), width: 3),
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.purpleStart.withValues(alpha: 0.4),
-                    blurRadius: 24,
-                  ),
-                ],
-              ),
-            ),
-          ),
+  @override
+  Widget build(BuildContext context) => Material(
+        color: gold ? const Color(0x33F0C96A) : const Color(0x26000000),
+        shape: CircleBorder(
+            side: BorderSide(
+                color:
+                    gold ? const Color(0x99F0C96A) : const Color(0x33FFFFFF))),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Icon(icon,
+                  color: gold ? const Color(0xFFF0C96A) : Colors.white,
+                  size: 21)),
+        ),
+      );
+}
 
-          if (_processing) _typingOverlay(),
+/// ม่านมืดรอบกรอบสแกน + มุมทอง 4 มุม
+class _ScanMaskPainter extends CustomPainter {
+  _ScanMaskPainter({required this.box});
+  final double box;
 
-          // Bottom panel
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      l10n.qrScannerHint,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
-                    ),
-                    const SizedBox(height: 14),
-                    OutlinedButton.icon(
-                      onPressed: _enterManually,
-                      icon: const Icon(Icons.keyboard, color: Colors.white),
-                      label: Text(l10n.qrScannerEnterManually,
-                          style: const TextStyle(color: Colors.white)),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.5)),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromCenter(
+        center: Offset(size.width / 2, size.height * 0.47),
+        width: box,
+        height: box);
+    final rr = RRect.fromRectAndRadius(rect, const Radius.circular(26));
+    final path = Path()
+      ..addRect(Offset.zero & size)
+      ..addRRect(rr)
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(path, Paint()..color = const Color(0xB305070C));
+
+    final p = Paint()
+      ..color = const Color(0xFFF0C96A)
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    const l = 34.0, r = 26.0;
+    void corner(Offset o, double dx, double dy) {
+      final path = Path()
+        ..moveTo(o.dx, o.dy + dy * l)
+        ..lineTo(o.dx, o.dy + dy * r)
+        ..arcToPoint(Offset(o.dx + dx * r, o.dy),
+            radius: const Radius.circular(r), clockwise: dx * dy > 0)
+        ..lineTo(o.dx + dx * l, o.dy);
+      canvas.drawPath(path, p);
+    }
+
+    corner(rect.topLeft, 1, 1);
+    corner(rect.topRight, -1, 1);
+    corner(rect.bottomLeft, 1, -1);
+    corner(rect.bottomRight, -1, -1);
   }
+
+  @override
+  bool shouldRepaint(covariant _ScanMaskPainter old) => old.box != box;
 }

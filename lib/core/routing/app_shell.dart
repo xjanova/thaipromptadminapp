@@ -1,52 +1,86 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../shared/widgets/bottom_tab_bar.dart';
+import '../../features/chat/data/chat_repository.dart';
+import '../../features/home/data/ops_repository.dart';
+import '../../shared/ui/tp.dart';
 
-/// Shell ที่ครอบหน้า main tabs (Home/Modules/Reports/Profile) พร้อม bottom nav
-class AppShell extends StatelessWidget {
-  const AppShell({super.key, required this.child, required this.location});
-  final Widget child;
-  final String location;
+/// โครงหลัก 5 แท็บ + รีเฟรชสรุปงานทุก 30 วินาทีขณะแอปอยู่หน้าจอ (badge บนแท็บจึงสดเสมอ)
+class AppShell extends ConsumerStatefulWidget {
+  const AppShell({super.key, required this.shell});
+  final StatefulNavigationShell shell;
+
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell>
+    with WidgetsBindingObserver {
+  Timer? _poll;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _startPolling();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _poll?.cancel();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _poll?.cancel();
+    _poll = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted) return;
+      ref.invalidate(opsSummaryProvider);
+      ref.invalidate(liveConversationsProvider);
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(opsSummaryProvider);
+      ref.invalidate(liveConversationsProvider);
+      _startPolling();
+    } else if (state == AppLifecycleState.paused) {
+      _poll?.cancel();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final active = _resolveActive(location);
+    final s = ref.watch(opsSummaryProvider).valueOrNull;
     return Scaffold(
-      body: child,
       extendBody: true,
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: AppBottomTabBar(
-          active: active,
-          onTap: (key) {
-            switch (key) {
-              case 'home':
-                context.go('/dashboard');
-              case 'modules':
-                context.go('/modules');
-              case 'analytics':
-                context.go('/analytics');
-              case 'profile':
-                context.go('/settings');
-            }
-          },
-          onPlus: () {
-            // Quick action: ไปหน้า Finance (default action)
-            context.go('/finance');
-          },
-        ),
+      body: widget.shell,
+      bottomNavigationBar: TpTabBar(
+        index: widget.shell.currentIndex,
+        onTap: (i) => widget.shell
+            .goBranch(i, initialLocation: i == widget.shell.currentIndex),
+        items: [
+          const TpTabItem(
+              'ภาพรวม', PhosphorIconsRegular.house, PhosphorIconsFill.house),
+          TpTabItem(
+              'งานรอทำ', PhosphorIconsRegular.tray, PhosphorIconsFill.tray,
+              badge: s?.workBadge ?? 0),
+          TpTabItem('แชท', PhosphorIconsRegular.chatsCircle,
+              PhosphorIconsFill.chatsCircle,
+              badge: s?.customerRequests.count ?? 0),
+          const TpTabItem('โมดูล', PhosphorIconsRegular.squaresFour,
+              PhosphorIconsFill.squaresFour),
+          const TpTabItem('บัญชี', PhosphorIconsRegular.userCircle,
+              PhosphorIconsFill.userCircle),
+        ],
       ),
     );
-  }
-
-  String _resolveActive(String loc) {
-    if (loc.startsWith('/dashboard')) return 'home';
-    if (loc.startsWith('/modules')) return 'modules';
-    if (loc.startsWith('/analytics')) return 'analytics';
-    if (loc.startsWith('/settings') || loc.startsWith('/profile')) {
-      return 'profile';
-    }
-    return 'home';
   }
 }

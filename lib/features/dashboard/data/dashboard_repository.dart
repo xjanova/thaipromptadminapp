@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
-import '../../../core/mock/mock_config.dart';
-import '../../../core/mock/mock_data.dart';
 
 /// Dashboard data class — mirror ของ /api/admin/dashboard response
 class DashboardData {
@@ -94,6 +92,5 @@ final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
 });
 
 final dashboardDataProvider = FutureProvider<DashboardData>((ref) async {
-  if (kMockMode) return mockDelay(Mock.dashboard());
   return ref.watch(dashboardRepositoryProvider).fetch();
 });

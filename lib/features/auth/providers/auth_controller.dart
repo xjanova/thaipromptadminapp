@@ -1,10 +1,14 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../../core/api/api_client.dart';
+import '../../../core/api/api_envelope.dart';
 import '../../../core/storage/secure_storage.dart';
+import '../../../shared/ui/tp_feedback.dart' show tpErrorText;
 import '../data/auth_repository.dart';
 import '../data/models/admin_user.dart';
 
@@ -31,7 +35,14 @@ class AuthState {
 }
 
 class AuthController extends StateNotifier<AuthState> {
-  AuthController(this._repo) : super(AuthState());
+  AuthController(this._repo) : super(AuthState()) {
+    // token ถูกเพิกถอนกลางทาง → ล้างแล้วกลับหน้าเข้าสู่ระบบ (ไม่ให้แอปค้างในสถานะ 401 วนไป)
+    ApiClient.onUnauthorized = () {
+      if (!state.isAuthenticated) return;
+      SecureStorage.deleteToken();
+      state = AuthState(error: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+    };
+  }
   final AuthRepository _repo;
 
   /// เรียกตอนเปิดแอป — ถ้ามี token แล้ว ลอง /me เพื่อ resume session
@@ -42,12 +53,33 @@ class AuthController extends StateNotifier<AuthState> {
     state = state.copyWith(loading: true);
     try {
       final admin = await _repo.me();
+      await SecureStorage.writeAdminCache(jsonEncode(admin.toJson()));
       state = state.copyWith(admin: admin, loading: false, clearError: true);
+    } on ApiException catch (e) {
+      if (e.isUnauthorized) {
+        // token หมดอายุ/ถูกเพิกถอนจริง → ลบทิ้งแล้วกลับหน้าเข้าสู่ระบบ
+        await SecureStorage.deleteToken();
+        state = AuthState();
+      } else {
+        await _resumeFromCache();
+      }
     } catch (_) {
-      // token หมดอายุ → ลบทิ้ง
-      await SecureStorage.deleteToken();
-      state = AuthState();
+      // เน็ตหลุด/เซิร์ฟเวอร์ล่ม ≠ token เสีย — ห้ามลบ token (เดิมลบทิ้งทำให้ต้องล็อกอินใหม่ทุกครั้งที่เน็ตไม่ดี)
+      await _resumeFromCache();
     }
+  }
+
+  /// ใช้ข้อมูลแอดมินที่จำไว้ล่าสุดเมื่อติดต่อเซิร์ฟเวอร์ไม่ได้ (หน้าจอจะแสดงสถานะออฟไลน์เอง)
+  Future<void> _resumeFromCache() async {
+    final cached = await SecureStorage.readAdminCache();
+    AdminUser? admin;
+    if (cached != null) {
+      try {
+        admin = AdminUser.fromJson(
+            (jsonDecode(cached) as Map).cast<String, dynamic>());
+      } catch (_) {}
+    }
+    state = AuthState(admin: admin);
   }
 
   /// Login ด้วย email + password
@@ -68,13 +100,14 @@ class AuthController extends StateNotifier<AuthState> {
           result.token != null &&
           result.admin != null) {
         await SecureStorage.writeToken(result.token!);
+        await SecureStorage.writeAdminCache(jsonEncode(result.admin!.toJson()));
         state = state.copyWith(admin: result.admin, loading: false);
       } else {
         state = state.copyWith(loading: false);
       }
       return result;
     } catch (e) {
-      state = state.copyWith(loading: false, error: e.toString());
+      state = state.copyWith(loading: false, error: tpErrorText(e));
       rethrow;
     }
   }
@@ -88,10 +121,11 @@ class AuthController extends StateNotifier<AuthState> {
       );
       if (result.token != null && result.admin != null) {
         await SecureStorage.writeToken(result.token!);
+        await SecureStorage.writeAdminCache(jsonEncode(result.admin!.toJson()));
         state = state.copyWith(admin: result.admin, loading: false);
       }
     } catch (e) {
-      state = state.copyWith(loading: false, error: e.toString());
+      state = state.copyWith(loading: false, error: tpErrorText(e));
       rethrow;
     }
   }
@@ -109,25 +143,42 @@ class AuthController extends StateNotifier<AuthState> {
       );
       if (result.token != null && result.admin != null) {
         await SecureStorage.writeToken(result.token!);
+        await SecureStorage.writeAdminCache(jsonEncode(result.admin!.toJson()));
         state = state.copyWith(admin: result.admin, loading: false);
       } else {
         state = state.copyWith(loading: false);
       }
       return result;
     } catch (e) {
-      state = state.copyWith(loading: false, error: e.toString());
+      state = state.copyWith(loading: false, error: tpErrorText(e));
       rethrow;
     }
   }
 
+  /// งานที่ต้องทำก่อนลบ token (เช่น ถอนโทเคนแจ้งเตือนจากเซิร์ฟเวอร์) — main.dart ตั้งค่าไว้
+  static Future<void> Function()? beforeLogout;
+
   Future<void> logout() async {
+    try {
+      await beforeLogout?.call();
+    } catch (_) {}
     try {
       await _repo.logout();
     } catch (_) {
       // ignore — เรา clear local เสมอ
     }
     await SecureStorage.deleteToken();
+    await SecureStorage.deleteAdminCache();
     state = AuthState();
+  }
+
+  /// อ่านข้อมูลแอดมินล่าสุดจากเซิร์ฟเวอร์ (หลังเปลี่ยนสิทธิ์/รูปโปรไฟล์)
+  Future<void> refreshMe() async {
+    try {
+      final admin = await _repo.me();
+      await SecureStorage.writeAdminCache(jsonEncode(admin.toJson()));
+      state = state.copyWith(admin: admin);
+    } catch (_) {}
   }
 
   /// อ่าน device id (persist) + device name

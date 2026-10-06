@@ -2,6 +2,8 @@
     <!-- ── Permissions ── -->
     <!-- Network (admin API + GitHub release check) -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+ ต้องขอสิทธิ์แสดงแจ้งเตือน -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!-- Camera (mobile_scanner สำหรับ QR pairing) -->
@@ -20,10 +22,14 @@
     <!-- Optional: เปิด URL ไป browser (url_launcher) — ไม่ต้องประกาศ permission แต่ต้องประกาศ queries -->
 
     <application
-        android:label="Thaiprompt Admin"
+        android:label="ไทยพร้อม แอดมิน"
         android:usesCleartextTraffic="false"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- แจ้งเตือน FCM ตอนแอปอยู่เบื้องหลัง: ช่อง/ไอคอน/สีทอง -->
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="admin_ops_alerts" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_tp" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/tp_gold" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
