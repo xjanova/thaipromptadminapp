@@ -5,7 +5,10 @@ import '../../../shared/ui/tp_format.dart';
 
 /// งานหนึ่งประเภทในคิว "ต้องจัดการตอนนี้"
 class QueueItem {
-  const QueueItem({this.count = 0, this.amount = 0, this.oldestMinutes, this.preview});
+  const QueueItem({this.count = 0, this.amount = 0, this.oldestMinutes, this.preview, this.unavailable = false});
+
+  /// backend อ่านส่วนนี้ไม่สำเร็จ (ส่ง null มา) — ต้องแสดงว่า "ไม่ทราบ" ห้ามตีเป็น 0 งาน
+  final bool unavailable;
   final int count;
   final double amount;
   final int? oldestMinutes;
@@ -13,7 +16,7 @@ class QueueItem {
 
   factory QueueItem.fromJson(dynamic j) {
     if (j is num) return QueueItem(count: j.toInt());
-    if (j is! Map) return const QueueItem();
+    if (j is! Map) return const QueueItem(unavailable: true);
     final m = j.cast<String, dynamic>();
     // preview เป็นรายการย่อ (เก่าสุดก่อน) — ทำเป็นข้อความบรรทัดเดียวจากรายการแรก
     String? preview;
@@ -60,6 +63,7 @@ class OpsSummary {
     this.revenueYesterdaySameTime,
     this.latencyMs,
     this.fetchedAt,
+    this.degraded = const [],
   });
 
   final QueueItem customerRequests;
@@ -84,6 +88,13 @@ class OpsSummary {
   final double? revenueYesterdaySameTime;
   final int? latencyMs;
   final DateTime? fetchedAt;
+
+  /// ส่วนที่ backend อ่านไม่สำเร็จรอบนี้ (เช่น ["bills_awaiting"])
+  final List<String> degraded;
+
+  bool get anyUnavailable =>
+      degraded.isNotEmpty ||
+      [customerRequests, billsAwaiting, withdrawalsPending, smsUnmatched, stuckReadings].any((q) => q.unavailable);
 
   int get totalTasks =>
       customerRequests.count + billsAwaiting.count + withdrawalsPending.count + smsUnmatched.count + stuckReadings.count;
@@ -119,6 +130,7 @@ class OpsSummary {
         revenueYesterdaySameTime: revenueYesterdaySameTime,
         latencyMs: ms,
         fetchedAt: DateTime.now(),
+        degraded: degraded,
       );
 
   factory OpsSummary.fromJson(Map<String, dynamic> j) {
@@ -164,6 +176,7 @@ class OpsSummary {
       hourly: hourly,
       revenueYesterdaySameTime:
           j['revenue_yesterday_same_time'] == null ? null : TpFmt.toDouble(j['revenue_yesterday_same_time']),
+      degraded: (j['degraded'] as List?)?.map((e) => e.toString()).toList() ?? const [],
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../features/chat/data/chat_repository.dart';
 import '../../features/home/data/ops_repository.dart';
 import '../../shared/ui/tp.dart';
 
@@ -37,7 +38,9 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   void _startPolling() {
     _poll?.cancel();
     _poll = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) ref.invalidate(opsSummaryProvider);
+      if (!mounted) return;
+      ref.invalidate(opsSummaryProvider);
+      ref.invalidate(liveConversationsProvider);
     });
   }
 
@@ -45,6 +48,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.invalidate(opsSummaryProvider);
+      ref.invalidate(liveConversationsProvider);
       _startPolling();
     } else if (state == AppLifecycleState.paused) {
       _poll?.cancel();

@@ -88,6 +88,14 @@ void main() {
       expect(s.growthPct, closeTo((1234 - 900) / 900 * 100, 0.01));
     });
 
+    test('ส่วนที่ backend อ่านไม่สำเร็จ (null + degraded) ต้องเป็น "ไม่ทราบ" ไม่ใช่ 0 งาน', () {
+      final q = Map<String, dynamic>.from(json['queue'] as Map)..['bills_awaiting'] = null;
+      final s = OpsSummary.fromJson({...json, 'queue': q, 'degraded': ['bills_awaiting']});
+      expect(s.billsAwaiting.unavailable, isTrue);
+      expect(s.anyUnavailable, isTrue);
+      expect(s.degraded, ['bills_awaiting']);
+    });
+
     test('line_push = null (ยังไม่เคยดึงโควตาได้) ไม่ล้ม', () {
       final s = OpsSummary.fromJson({
         ...json,

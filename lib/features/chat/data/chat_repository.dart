@@ -149,10 +149,11 @@ class ChatRepository {
   ChatRepository(this._api);
   final ApiClient _api;
 
-  Future<Paged<Conversation>> conversations(ChatFilter f, {int page = 1, String? search}) async {
+  Future<Paged<Conversation>> conversations(ChatFilter f, {int page = 1, String? search, int? perPage}) async {
     final data = await _api.get<dynamic>('/takeover/conversations', query: {
       'status': f.key,
       'page': page,
+      if (perPage != null) 'per_page': perPage,
       if (search != null && search.isNotEmpty) 'search': search,
     });
     return Paged.parse(data, Conversation.fromJson);
@@ -224,3 +225,11 @@ class ChatRepository {
 final chatRepositoryProvider = Provider<ChatRepository>((ref) => ChatRepository(ref.watch(apiClientProvider)));
 
 final takeoverStatsProvider = FutureProvider.autoDispose<TakeoverStats>((ref) => ref.watch(chatRepositoryProvider).stats());
+
+/// ห้องที่กำลังคุยอยู่ตอนนี้ (หน้าภาพรวม) — เรียงล่าสุดก่อน ไว้กดรับช่วงจากบอทได้ทันที
+final liveConversationsProvider = FutureProvider.autoDispose<List<Conversation>>((ref) async {
+  final page = await ref.watch(chatRepositoryProvider).conversations(ChatFilter.active, perPage: 6);
+  final items = [...page.items]
+    ..sort((a, b) => (b.lastAt ?? b.updatedAt ?? DateTime(2000)).compareTo(a.lastAt ?? a.updatedAt ?? DateTime(2000)));
+  return items;
+});
