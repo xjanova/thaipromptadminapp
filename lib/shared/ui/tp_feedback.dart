@@ -464,12 +464,19 @@ class _TpSlideToConfirmState extends State<TpSlideToConfirm>
   double _dx = 0;
   bool _busy = false;
   bool _done = false;
-  late final AnimationController _back = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 260));
+  // สร้างใน initState — ถ้าเป็น lazy แล้วถูกสร้างครั้งแรกตอน dispose จะ throw (แผ่นที่ปิดโดยไม่ได้ลาก)
+  late final AnimationController _back;
   Animation<double>? _backAnim;
 
   static const _knob = 50.0;
   static const _pad = 5.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _back = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 260));
+  }
 
   @override
   void dispose() {

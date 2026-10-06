@@ -4,6 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/ai/ui/ai_screen.dart';
 import '../../features/analytics/ui/analytics_screen.dart';
+import '../../features/approvals/ui/approvals_hub_screen.dart';
+import '../../features/approvals/ui/ekyc_review_screen.dart';
+import '../../features/approvals/ui/mlm_commissions_screen.dart';
+import '../../features/approvals/ui/rider_applications_screen.dart';
+import '../../features/approvals/ui/rider_jobs_screen.dart';
+import '../../features/approvals/ui/seller_applications_screen.dart';
+import '../../features/approvals/ui/tickets_screen.dart';
 import '../../features/auth/providers/auth_controller.dart';
 import '../../features/auth/ui/login_screen.dart';
 import '../../features/auth/ui/qr_scanner_screen.dart';
@@ -114,6 +121,37 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/ai', builder: (_, __) => const AiScreen()),
       GoRoute(
           path: '/moderation', builder: (_, __) => const ModerationScreen()),
+
+      // ── คิวอนุมัติ (เต็มจอบน root navigator) ──
+      GoRoute(
+          path: '/approvals', builder: (_, __) => const ApprovalsHubScreen()),
+      GoRoute(
+          path: '/approvals/ekyc',
+          builder: (_, __) => const EkycReviewScreen()),
+      GoRoute(
+          path: '/approvals/sellers',
+          builder: (_, __) => const SellerApplicationsScreen()),
+      GoRoute(
+        path: '/approvals/riders',
+        builder: (_, state) => RiderApplicationsScreen(
+            initialStatus: state.uri.queryParameters['status']),
+      ),
+      GoRoute(
+        path: '/approvals/rider-jobs',
+        builder: (_, state) =>
+            RiderJobsScreen(initialFilter: state.uri.queryParameters['filter']),
+      ),
+      GoRoute(
+          path: '/approvals/tickets',
+          builder: (_, __) => const TicketsScreen()),
+      GoRoute(
+        path: '/approvals/tickets/:id',
+        builder: (_, state) => TicketThreadScreen(
+            ticketId: int.tryParse(state.pathParameters['id'] ?? '') ?? 0),
+      ),
+      GoRoute(
+          path: '/approvals/mlm',
+          builder: (_, __) => const MlmCommissionsScreen()),
     ],
   );
 });

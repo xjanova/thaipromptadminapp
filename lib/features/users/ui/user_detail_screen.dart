@@ -5,13 +5,16 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../shared/ui/tp.dart';
+import '../../approvals/data/approvals_repository.dart';
+import '../../approvals/ui/approval_widgets.dart' show askReason;
+import '../../auth/providers/auth_controller.dart';
 import '../../finance/data/finance_repository.dart';
 import '../../finance/ui/wallets_screen.dart' show showWalletSheet;
 import '../data/users_repository.dart';
 
-/// หน้ารายละเอียดสมาชิก (`/users/:id`) — โปรไฟล์ · ติดต่อ · กระเป๋าเงิน · สถานะ · ประวัติดูดวง
+/// หน้ารายละเอียดสมาชิก (`/users/:id`) — โปรไฟล์ · ติดต่อ · กระเป๋าเงิน · สถานะ · จัดการบัญชี · ประวัติดูดวง
 ///
-/// อ่านอย่างเดียว (backend ไม่มีปุ่มระงับ/แก้ไขสมาชิกในแอป) — ยกเว้นกระเป๋าเงินที่เปิดแผ่นจัดการได้
+/// แก้ไขข้อมูลสมาชิกไม่ได้ — ทำได้เฉพาะ: จัดการกระเป๋าเงิน (แผ่นจัดการ) · ระงับ/ยกเลิกระงับ · รีเซ็ต PIN กระเป๋า (super admin)
 class UserDetailScreen extends ConsumerWidget {
   const UserDetailScreen({super.key, this.userId = 0});
   final int userId;
@@ -179,10 +182,190 @@ class _UserBody extends ConsumerWidget {
           ),
         ]),
       ),
+      const TpSection('จัดการบัญชี'),
+      _AccountActions(user: u),
     ]);
   }
 
   static String _when(DateTime d) => '${TpFmt.shortDate(d)} ${TpFmt.time(d)}';
+}
+
+/// ระงับ / ยกเลิกระงับ / รีเซ็ต PIN กระเป๋า (`POST users/{id}/suspend|unsuspend|reset-wallet-pin`)
+///
+/// ปุ่มที่ทำไม่ได้ (ระงับตัวเอง / ระงับ super admin / ไม่ใช่ super admin / เซิร์ฟเวอร์ตอบ 403)
+/// เปลี่ยนเป็นแถวอธิบายเหตุผลแทน — ไม่ปล่อยให้กดแล้วเจอ error
+class _AccountActions extends ConsumerStatefulWidget {
+  const _AccountActions({required this.user});
+  final AdminListUser user;
+
+  @override
+  ConsumerState<_AccountActions> createState() => _AccountActionsState();
+}
+
+class _AccountActionsState extends ConsumerState<_AccountActions> {
+  /// ปุ่มที่กำลังทำงาน ('suspend' / 'unsuspend' / 'pin') — null = ว่าง
+  String? _running;
+
+  /// เซิร์ฟเวอร์ตอบ 403 → ซ่อนปุ่มนั้นแล้วบอกเหตุผล
+  bool _suspendForbidden = false;
+  bool _pinForbidden = false;
+
+  Future<void> _run(String key, Future<ApprovalResult> Function() call) async {
+    if (_running != null) return;
+    setState(() => _running = key);
+    try {
+      final r = await call();
+      if (!mounted) return;
+      tpToast(context, r.message,
+          kind: r.already ? TpToastKind.info : TpToastKind.success);
+      ref.invalidate(userDetailProvider(widget.user.id));
+    } catch (e) {
+      if (!mounted) return;
+      if (e is ApprovalError && e.forbidden) {
+        setState(() {
+          if (key == 'pin') {
+            _pinForbidden = true;
+          } else {
+            _suspendForbidden = true;
+          }
+        });
+      }
+      tpToast(context, tpErrorText(e), kind: TpToastKind.error);
+    } finally {
+      if (mounted) setState(() => _running = null);
+    }
+  }
+
+  Future<void> _suspend() async {
+    final u = widget.user;
+    final reason = await askReason(
+      context,
+      title: 'ระงับ ${u.displayName}?',
+      message:
+          'สมาชิกจะถูกออกจากระบบแอปทุกเครื่องทันที และงานไรเดอร์ที่ค้างจะถูกปล่อยคืน — ยกเลิกการระงับได้ภายหลัง',
+      hint: 'เหตุผลการระงับ',
+      confirmLabel: 'ระงับสมาชิก',
+      max: 500,
+    );
+    if (reason == null || !mounted) return;
+    await _run(
+        'suspend',
+        () => ref
+            .read(approvalsRepositoryProvider)
+            .suspendUser(u.id, reason: reason));
+  }
+
+  Future<void> _unsuspend() async {
+    final u = widget.user;
+    final yes = await tpConfirm(
+      context,
+      title: 'ยกเลิกการระงับ?',
+      message: '${u.displayName} จะกลับมาเข้าสู่ระบบและใช้งานได้ตามปกติ',
+      confirmLabel: 'ยกเลิกการระงับ',
+    );
+    if (!yes || !mounted) return;
+    await _run('unsuspend',
+        () => ref.read(approvalsRepositoryProvider).unsuspendUser(u.id));
+  }
+
+  Future<void> _resetPin() async {
+    final u = widget.user;
+    final yes = await tpConfirm(
+      context,
+      title: 'รีเซ็ต PIN กระเป๋าเงิน?',
+      message:
+          'ล้าง PIN ของ ${u.displayName} และปลดล็อกการกรอกผิด — สมาชิกต้องตั้ง PIN ใหม่ก่อนใช้กระเป๋า (ระบบบันทึกเป็นเหตุการณ์ความปลอดภัย)',
+      confirmLabel: 'รีเซ็ต PIN',
+      danger: true,
+    );
+    if (!yes || !mounted) return;
+    await _run('pin',
+        () => ref.read(approvalsRepositoryProvider).resetWalletPin(u.id));
+  }
+
+  Widget _spinner() => const SizedBox(
+      width: 20,
+      height: 20,
+      child: CircularProgressIndicator(strokeWidth: 2.2));
+
+  Widget _lockedPill(String label) => TpPill(label,
+      tone: TpTone.neutral, icon: PhosphorIconsBold.lock, dense: true);
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.tp;
+    final u = widget.user;
+    final me = ref.watch(authControllerProvider).admin;
+    final self = me != null && me.id == u.id;
+    final pinNotAllowed = _pinForbidden || (me != null && !me.isSuperAdmin);
+    final locked = _running != null;
+
+    final String? suspendBlock = self
+        ? 'ระงับบัญชีตัวเองไม่ได้'
+        : u.isSuperAdmin
+            ? 'ระงับผู้ดูแลสูงสุดไม่ได้'
+            : _suspendForbidden
+                ? 'บัญชีแอดมินนี้ไม่มีสิทธิ์ระงับสมาชิก'
+                : null;
+
+    return TpGroup(children: [
+      if (u.isBlocked)
+        _suspendForbidden
+            ? TpRow(
+                icon: PhosphorIconsRegular.lockOpen,
+                iconTone: TpTone.neutral,
+                title: 'ยกเลิกการระงับ',
+                subtitle: 'บัญชีแอดมินนี้ไม่มีสิทธิ์ยกเลิกการระงับ',
+                chevron: false,
+                trailing: _lockedPill('ไม่มีสิทธิ์'),
+              )
+            : TpRow(
+                icon: PhosphorIconsRegular.lockOpen,
+                iconTone: TpTone.success,
+                title: 'ยกเลิกการระงับ',
+                subtitle: 'ให้สมาชิกกลับมาใช้งานได้ตามปกติ',
+                trailing: _running == 'unsuspend' ? _spinner() : null,
+                onTap: locked ? null : _unsuspend,
+              )
+      else if (suspendBlock != null)
+        TpRow(
+          icon: PhosphorIconsRegular.prohibit,
+          iconTone: TpTone.neutral,
+          title: 'ระงับสมาชิก',
+          subtitle: suspendBlock,
+          chevron: false,
+          trailing: _lockedPill(_suspendForbidden ? 'ไม่มีสิทธิ์' : 'ทำไม่ได้'),
+        )
+      else
+        TpRow(
+          icon: PhosphorIconsRegular.prohibit,
+          iconTone: TpTone.danger,
+          title: 'ระงับสมาชิก',
+          titleStyle: TpType.h(14.5, p.danger, w: FontWeight.w600),
+          subtitle: 'ออกจากระบบทุกเครื่องทันที · ต้องใส่เหตุผล',
+          trailing: _running == 'suspend' ? _spinner() : null,
+          onTap: locked ? null : _suspend,
+        ),
+      if (u.hasWallet)
+        pinNotAllowed
+            ? TpRow(
+                icon: PhosphorIconsRegular.key,
+                iconTone: TpTone.neutral,
+                title: 'รีเซ็ต PIN กระเป๋า',
+                subtitle: 'ทำได้เฉพาะผู้ดูแลสูงสุด (super admin)',
+                chevron: false,
+                trailing: _lockedPill('ไม่มีสิทธิ์'),
+              )
+            : TpRow(
+                icon: PhosphorIconsRegular.key,
+                iconTone: TpTone.warning,
+                title: 'รีเซ็ต PIN กระเป๋า',
+                subtitle: 'ล้าง PIN และปลดล็อกการกรอกผิด',
+                trailing: _running == 'pin' ? _spinner() : null,
+                onTap: locked ? null : _resetPin,
+              ),
+    ]);
+  }
 }
 
 class _VerifyPill extends StatelessWidget {

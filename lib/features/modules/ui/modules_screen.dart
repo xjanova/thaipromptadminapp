@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/ui/tp.dart';
+import '../../approvals/data/approvals_repository.dart';
 import '../../dashboard/data/dashboard_repository.dart';
 import '../../home/data/ops_repository.dart';
 
@@ -14,6 +15,7 @@ class ModulesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(opsSummaryProvider).valueOrNull;
     final d = ref.watch(dashboardDataProvider).valueOrNull;
+    final ap = ref.watch(approvalsSummaryProvider).valueOrNull;
 
     final daily = <_Mod>[
       _Mod(TpArt.tarot, 'ดูดวง', '/fortune',
@@ -29,6 +31,13 @@ class ModulesScreen extends ConsumerWidget {
           badge: s?.withdrawalsPending.count, tone: TpTone.info),
       _Mod(TpArt.sms, 'SMS ธนาคาร', '/work?tab=sms',
           badge: s?.smsUnmatched.count, tone: TpTone.warning),
+      // คิวอนุมัติ: eKYC · ร้าน · ไรเดอร์ · ตั๋ว · ค่าคอม (ตัวเลขจาก approvals/summary)
+      _Mod(TpArt.shield, 'งานอนุมัติ', '/approvals',
+          badge: ap?.total,
+          tone: TpTone.danger,
+          sub: ap == null
+              ? 'eKYC · ร้าน · ไรเดอร์'
+              : (ap.anyUnknown ? 'บางคิวไม่ทราบ' : 'ไม่มีงานค้าง')),
     ];
     final business = <_Mod>[
       _Mod(TpArt.members, 'สมาชิก', '/users',
@@ -57,6 +66,7 @@ class ModulesScreen extends ConsumerWidget {
       showMark: true,
       onRefresh: () async {
         ref.invalidate(dashboardDataProvider);
+        ref.invalidate(approvalsSummaryProvider);
         try {
           ref.invalidate(opsSummaryProvider);
           await ref.read(opsSummaryProvider.future);

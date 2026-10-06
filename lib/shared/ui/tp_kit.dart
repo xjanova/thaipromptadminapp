@@ -244,9 +244,15 @@ class TpPill extends StatelessWidget {
           Icon(icon, size: dense ? 11 : 13, color: fg),
           const SizedBox(width: 4)
         ],
-        Text(label,
-            style: TpType.body(dense ? 11 : 12, fg,
-                w: FontWeight.w600, height: 1.1)),
+        // ข้อความยาวตัดด้วย … แทนล้นกรอบ (จอแคบ 320dp)
+        Flexible(
+          child: Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: TpType.body(dense ? 11 : 12, fg,
+                  w: FontWeight.w600, height: 1.1)),
+        ),
       ]),
     );
   }

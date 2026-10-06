@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../shared/ui/tp.dart';
+import '../../approvals/data/approvals_repository.dart';
 import '../../auth/providers/auth_controller.dart';
 import '../../chat/data/chat_repository.dart';
 import '../../dashboard/data/dashboard_repository.dart';
@@ -19,10 +20,14 @@ class HomeScreen extends ConsumerWidget {
     final admin = ref.watch(authControllerProvider).admin;
     final now = DateTime.now();
     final offline = ops.hasError && tpIsOffline(ops.error);
+    // งานอนุมัติรวมเข้ากับงานด่วน — หัวข้อ/กระดิ่งต้องไม่บอก "เรียบร้อย" ทั้งที่ยังมีคิวอนุมัติ
+    final approvals =
+        ref.watch(approvalsSummaryProvider).valueOrNull?.total ?? 0;
 
     Future<void> refresh() async {
       ref.invalidate(dashboardDataProvider);
       ref.invalidate(liveConversationsProvider);
+      ref.invalidate(approvalsSummaryProvider);
       try {
         ref.invalidate(opsSummaryProvider);
         await ref.read(opsSummaryProvider.future);
@@ -45,7 +50,7 @@ class HomeScreen extends ConsumerWidget {
         TpGlassButton(
           icon: PhosphorIconsRegular.bell,
           tooltip: 'งานรอทำ',
-          dot: (ops.valueOrNull?.totalTasks ?? 0) > 0,
+          dot: (ops.valueOrNull?.totalTasks ?? 0) + approvals > 0,
           onTap: () => context.go('/work'),
         ),
       ],
@@ -82,8 +87,9 @@ class HomeScreen extends ConsumerWidget {
                   _RevenueHero(s: s),
                   TpSection(
                     'ต้องจัดการตอนนี้',
-                    trailing: s.totalTasks > 0
-                        ? TpPill('${s.totalTasks} งาน', tone: TpTone.danger)
+                    trailing: s.totalTasks + approvals > 0
+                        ? TpPill('${s.totalTasks + approvals} งาน',
+                            tone: TpTone.danger)
                         : s.anyUnavailable
                             ? const TpPill('ข้อมูลไม่ครบ',
                                 tone: TpTone.warning,
@@ -335,13 +341,16 @@ List<Widget> _unavailableRows(BuildContext context, OpsSummary s) {
 }
 
 /// คิวงานที่ต้องจัดการตอนนี้
-class _QueueCard extends StatelessWidget {
+class _QueueCard extends ConsumerWidget {
   const _QueueCard({required this.s});
   final OpsSummary s;
 
   @override
-  Widget build(BuildContext context) {
-    if (s.totalTasks == 0 && !s.anyUnavailable) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // งานอนุมัติ (eKYC/ร้าน/ไรเดอร์/ตั๋ว/ค่าคอม) — แสดงเมื่อมีงานเท่านั้น
+    final ap = ref.watch(approvalsSummaryProvider).valueOrNull;
+    final approvals = ap?.total ?? 0;
+    if (s.totalTasks == 0 && !s.anyUnavailable && approvals == 0) {
       return const TpCard(
         padding: EdgeInsets.zero,
         child: TpEmpty(
@@ -408,6 +417,16 @@ class _QueueCard extends StatelessWidget {
           subtitle: s.stuckReadings.preview ?? 'ตรวจคิวงานบอทดูดวง',
           trailing: TpCount(s.stuckReadings.count, tone: TpTone.warning),
           onTap: () => context.go('/work?tab=stuck'),
+        ),
+      if (approvals > 0)
+        TpRow(
+          art: TpArt.shield,
+          title: 'งานอนุมัติ',
+          subtitle: ap!.oldestMinutes == null
+              ? 'eKYC · ร้าน · ไรเดอร์ · ตั๋ว · ค่าคอม'
+              : 'eKYC · ร้าน · ไรเดอร์ · ตั๋ว · ค่าคอม · รอนานสุด ${TpFmt.duration(ap.oldestMinutes!)}',
+          trailing: TpCount(approvals, tone: TpTone.info),
+          onTap: () => context.push('/approvals'),
         ),
     ];
     return TpGroup(children: rows);
