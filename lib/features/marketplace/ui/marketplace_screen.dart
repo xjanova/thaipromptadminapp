@@ -105,13 +105,16 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
       onRefresh: _refresh,
       actions: [
         TpGlassButton(
-          icon: _searchOpen ? PhosphorIconsRegular.x : PhosphorIconsRegular.magnifyingGlass,
+          icon: _searchOpen
+              ? PhosphorIconsRegular.x
+              : PhosphorIconsRegular.magnifyingGlass,
           gold: _searchOpen,
           tooltip: _searchOpen ? 'ปิดการค้นหา' : 'ค้นหาออเดอร์',
           onTap: _toggleSearch,
         ),
       ],
-      headerBottom: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      headerBottom:
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         if (_searchOpen) ...[
           _HeaderSearchField(
             controller: _search,
@@ -136,7 +139,8 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
           }),
           items: [
             TpChipItem('', 'ทั้งหมด', count: counts?['']),
-            for (final s in MarketOrderStatus.values) TpChipItem(s.key, s.label, count: counts?[s.key]),
+            for (final s in MarketOrderStatus.values)
+              TpChipItem(s.key, s.label, count: counts?[s.key]),
           ],
         ),
       ]),
@@ -147,29 +151,37 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
             curve: Curves.easeOut,
             alignment: Alignment.topCenter,
             child: _query.isEmpty
-                ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    _MarketHero(
-                      dash: d,
-                      loading: dash.isLoading,
-                      error: d == null && dash.hasError ? dash.error : null,
-                      period: _period,
-                      onPeriod: (p) => setState(() => _period = p),
-                      onRetry: () => ref.invalidate(marketplaceDashboardProvider(_period)),
-                    ),
-                    if (d != null && d.platforms.isNotEmpty) _Platforms(platforms: d.platforms),
-                  ])
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                        _MarketHero(
+                          dash: d,
+                          loading: dash.isLoading,
+                          error: d == null && dash.hasError ? dash.error : null,
+                          period: _period,
+                          onPeriod: (p) => setState(() => _period = p),
+                          onRetry: () => ref.invalidate(
+                              marketplaceDashboardProvider(_period)),
+                        ),
+                        if (d != null && d.platforms.isNotEmpty)
+                          _Platforms(platforms: d.platforms),
+                      ])
                 : const SizedBox(width: double.infinity),
           ),
         ),
         SliverToBoxAdapter(
           child: TpSection(
             _query.isNotEmpty ? 'ผลการค้นหา' : 'ออเดอร์ล่าสุด',
-            trailing: _found == null ? null : TpPill('${TpFmt.count(_found)} รายการ', dense: true),
+            trailing: _found == null
+                ? null
+                : TpPill('${TpFmt.count(_found)} รายการ', dense: true),
           ),
         ),
         TpPagedSliver<MarketplaceOrder>(
           reloadKey: '$_status-$_query-$_reload',
-          fetch: (page) => ref.read(marketplaceRepositoryProvider).orders(page: page, status: _status, search: _query),
+          fetch: (page) => ref
+              .read(marketplaceRepositoryProvider)
+              .orders(page: page, status: _status, search: _query),
           onLoaded: (Paged<MarketplaceOrder> p) {
             if (mounted) setState(() => _found = p.total);
           },
@@ -177,13 +189,18 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
             art: TpArt.store,
             title: _query.isNotEmpty
                 ? 'ไม่พบออเดอร์ที่ตรงกับคำค้น'
-                : (_status.isEmpty ? 'ยังไม่มีออเดอร์' : 'ไม่มีออเดอร์ในสถานะนี้'),
+                : (_status.isEmpty
+                    ? 'ยังไม่มีออเดอร์'
+                    : 'ไม่มีออเดอร์ในสถานะนี้'),
             message: _query.isNotEmpty
                 ? 'ลองค้นด้วยเลขออเดอร์บางส่วน หรือชื่อลูกค้า'
-                : (_status.isEmpty ? 'ออเดอร์จะซิงก์เข้ามาเองเมื่อมีคนซื้อผ่านลิงก์พันธมิตร' : null),
+                : (_status.isEmpty
+                    ? 'ออเดอร์จะซิงก์เข้ามาเองเมื่อมีคนซื้อผ่านลิงก์พันธมิตร'
+                    : null),
             compact: true,
           ),
-          itemBuilder: (context, o, _) => _OrderTile(o: o, onTap: () => _showOrderSheet(context, o)),
+          itemBuilder: (context, o, _) =>
+              _OrderTile(o: o, onTap: () => _showOrderSheet(context, o)),
         ),
       ],
     );
@@ -195,8 +212,12 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
 TpTone _statusTone(MarketOrderStatus? s) => switch (s) {
       MarketOrderStatus.pending => TpTone.warning,
       MarketOrderStatus.processing || MarketOrderStatus.shipped => TpTone.info,
-      MarketOrderStatus.delivered || MarketOrderStatus.completed => TpTone.success,
-      MarketOrderStatus.cancelled || MarketOrderStatus.refunded => TpTone.danger,
+      MarketOrderStatus.delivered ||
+      MarketOrderStatus.completed =>
+        TpTone.success,
+      MarketOrderStatus.cancelled ||
+      MarketOrderStatus.refunded =>
+        TpTone.danger,
       null => TpTone.neutral,
     };
 
@@ -222,7 +243,8 @@ class _PlatformMark extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) => TpIconTile(PhosphorIconsFill.storefront, tone: _platformTone(code), size: size);
+  Widget build(BuildContext context) => TpIconTile(PhosphorIconsFill.storefront,
+      tone: _platformTone(code), size: size);
 }
 
 // ═════════════════════ การ์ดสรุป ═════════════════════
@@ -258,13 +280,15 @@ class _MarketHero extends StatelessWidget {
             child: Text('ยอดขายที่ชำระแล้ว · ${period.label}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TpType.body(13.5, TpPalette.heroMuted, w: FontWeight.w500)),
+                style:
+                    TpType.body(13.5, TpPalette.heroMuted, w: FontWeight.w500)),
           ),
           if (loading && d != null)
             const SizedBox(
               width: 14,
               height: 14,
-              child: CircularProgressIndicator(strokeWidth: 1.8, color: TpPalette.heroGold),
+              child: CircularProgressIndicator(
+                  strokeWidth: 1.8, color: TpPalette.heroGold),
             ),
         ]),
         const SizedBox(height: 2),
@@ -272,15 +296,20 @@ class _MarketHero extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(children: [
-              const Icon(PhosphorIconsRegular.warningCircle, size: 18, color: Color(0xFFFF8A7A)),
+              const Icon(PhosphorIconsRegular.warningCircle,
+                  size: 18, color: Color(0xFFFF8A7A)),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(tpErrorText(error),
-                    maxLines: 2, overflow: TextOverflow.ellipsis, style: TpType.body(13, TpPalette.heroText)),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TpType.body(13, TpPalette.heroText)),
               ),
               TextButton(
                 onPressed: onRetry,
-                child: Text('ลองใหม่', style: TpType.body(13, TpPalette.heroGold, w: FontWeight.w600)),
+                child: Text('ลองใหม่',
+                    style: TpType.body(13, TpPalette.heroGold,
+                        w: FontWeight.w600)),
               ),
             ]),
           )
@@ -293,30 +322,40 @@ class _MarketHero extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: TpFoilText(TpFmt.baht(d.totalRevenue), style: TpType.money(38, Colors.white)),
+            child: TpFoilText(TpFmt.baht(d.totalRevenue),
+                style: TpType.money(38, Colors.white)),
           ),
         const SizedBox(height: 12),
         Container(height: 1, color: _line),
         const SizedBox(height: 11),
         Row(children: [
-          _HeroSplit(label: 'ออเดอร์', value: d == null ? '-' : TpFmt.count(d.ordersCount)),
+          _HeroSplit(
+              label: 'ออเดอร์',
+              value: d == null ? '-' : TpFmt.count(d.ordersCount)),
           _HeroSplit(
             label: 'คอมรอจ่าย',
             value: d == null ? '-' : TpFmt.bahtCompact(d.pendingCommissions),
-            color: d != null && d.pendingCommissions > 0 ? TpPalette.heroGold : null,
+            color: d != null && d.pendingCommissions > 0
+                ? TpPalette.heroGold
+                : null,
             divider: true,
           ),
-          _HeroSplit(label: 'สินค้าที่ขาย', value: d == null ? '-' : TpFmt.count(d.productsCount), divider: true),
+          _HeroSplit(
+              label: 'สินค้าที่ขาย',
+              value: d == null ? '-' : TpFmt.count(d.productsCount),
+              divider: true),
         ]),
         if (d?.generatedAt != null) ...[
           const SizedBox(height: 10),
-          Text('อัปเดต ${TpFmt.time(d!.generatedAt!)} · คอมรอจ่ายและสินค้านับทั้งระบบ',
-              maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(10.5, const Color(0x61FFFFFF))),
+          Text(
+              'อัปเดต ${TpFmt.time(d!.generatedAt!)} · คอมรอจ่ายและสินค้านับทั้งระบบ',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TpType.body(10.5, const Color(0x61FFFFFF))),
         ],
       ]),
     );
   }
-
 }
 
 /// ตัวเลือกช่วงเวลาแบบแคปซูลบนการ์ดฮีโร่ (มืดเสมอ)
@@ -351,13 +390,17 @@ class _PeriodSwitch extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: p == value
                       ? const LinearGradient(
-                          begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFFF3DC9B), Color(0xFFD9B25C)])
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0xFFF3DC9B), Color(0xFFD9B25C)])
                       : null,
                   borderRadius: BorderRadius.circular(9),
                 ),
                 child: Text(p.label,
                     maxLines: 1,
-                    style: TpType.body(12.5, p == value ? TpPalette.onGold : const Color(0x8CFFFFFF), w: FontWeight.w600, height: 1.1)),
+                    style: TpType.body(12.5,
+                        p == value ? TpPalette.onGold : const Color(0x8CFFFFFF),
+                        w: FontWeight.w600, height: 1.1)),
               ),
             ),
           ),
@@ -367,7 +410,11 @@ class _PeriodSwitch extends StatelessWidget {
 }
 
 class _HeroSplit extends StatelessWidget {
-  const _HeroSplit({required this.label, required this.value, this.color, this.divider = false});
+  const _HeroSplit(
+      {required this.label,
+      required this.value,
+      this.color,
+      this.divider = false});
   final String label;
   final String value;
   final Color? color;
@@ -377,17 +424,23 @@ class _HeroSplit extends StatelessWidget {
   Widget build(BuildContext context) => Expanded(
         child: Container(
           padding: EdgeInsets.only(left: divider ? 12 : 0, right: 6),
-          decoration: divider ? const BoxDecoration(border: Border(left: BorderSide(color: Color(0x14FFFFFF)))) : null,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          decoration: divider
+              ? const BoxDecoration(
+                  border: Border(left: BorderSide(color: Color(0x14FFFFFF))))
+              : null,
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TpType.body(11.5, const Color(0x8CFFFFFF), w: FontWeight.w500)),
+                style: TpType.body(11.5, const Color(0x8CFFFFFF),
+                    w: FontWeight.w500)),
             const SizedBox(height: 1),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Text(value, style: TpType.money(16, color ?? TpPalette.heroText)),
+              child: Text(value,
+                  style: TpType.money(16, color ?? TpPalette.heroText)),
             ),
           ]),
         ),
@@ -416,12 +469,20 @@ class _Platforms extends StatelessWidget {
             title: pl.name,
             subtitle: [
               marketPlatformLabel(pl.platform),
-              pl.lastSyncAt == null ? 'ยังไม่เคยซิงก์' : 'ซิงก์ล่าสุด ${TpFmt.ago(pl.lastSyncAt)}',
+              pl.lastSyncAt == null
+                  ? 'ยังไม่เคยซิงก์'
+                  : 'ซิงก์ล่าสุด ${TpFmt.ago(pl.lastSyncAt)}',
             ].join(' · '),
             chevron: false,
             trailing: pl.syncStale
-                ? const TpPill('ซิงก์ค้าง', tone: TpTone.warning, icon: PhosphorIconsBold.warning, dense: true)
-                : const TpPill('ปกติ', tone: TpTone.success, icon: PhosphorIconsBold.check, dense: true),
+                ? const TpPill('ซิงก์ค้าง',
+                    tone: TpTone.warning,
+                    icon: PhosphorIconsBold.warning,
+                    dense: true)
+                : const TpPill('ปกติ',
+                    tone: TpTone.success,
+                    icon: PhosphorIconsBold.check,
+                    dense: true),
           ),
       ]),
     ]);
@@ -454,38 +515,53 @@ class _OrderTile extends StatelessWidget {
         _PlatformMark(code: o.platform),
         const SizedBox(width: 11),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(
                 child: Text(o.orderNumber,
-                    maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.money(14.5, p.textStrong, w: FontWeight.w600)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        TpType.money(14.5, p.textStrong, w: FontWeight.w600)),
               ),
               const SizedBox(width: 6),
               Text(TpFmt.ago(o.orderedAt), style: TpType.body(11.5, p.faint)),
             ]),
-            Text('${o.customerName ?? 'ไม่ระบุชื่อลูกค้า'} · ${marketPlatformLabel(o.platform)}',
-                maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12.5, p.muted)),
+            Text(
+                '${o.customerName ?? 'ไม่ระบุชื่อลูกค้า'} · ${marketPlatformLabel(o.platform)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TpType.body(12.5, p.muted)),
             const SizedBox(height: 7),
             Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Expanded(
                 child: Wrap(spacing: 6, runSpacing: 5, children: [
                   TpPill(o.statusLabel, tone: tone, dense: true),
-                  if (pay != null) TpPill(pay, tone: _paymentTone(o.paymentStatus), dense: true),
+                  if (pay != null)
+                    TpPill(pay,
+                        tone: _paymentTone(o.paymentStatus), dense: true),
                 ]),
               ),
               const SizedBox(width: 8),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 120),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerRight,
-                    child: Text(TpFmt.baht(o.totalAmount), style: TpType.money(16, p.goldText)),
-                  ),
-                  if (o.commissionAmount > 0)
-                    Text('คอม ${TpFmt.baht(o.commissionAmount)}',
-                        maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(11.5, p.success, w: FontWeight.w600)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(TpFmt.baht(o.totalAmount),
+                            style: TpType.money(16, p.goldText)),
+                      ),
+                      if (o.commissionAmount > 0)
+                        Text('คอม ${TpFmt.baht(o.commissionAmount)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TpType.body(11.5, p.success,
+                                w: FontWeight.w600)),
+                    ]),
               ),
             ]),
           ]),
@@ -495,7 +571,8 @@ class _OrderTile extends StatelessWidget {
   }
 }
 
-Future<void> _showOrderSheet(BuildContext context, MarketplaceOrder o) => tpShowSheet<void>(
+Future<void> _showOrderSheet(BuildContext context, MarketplaceOrder o) =>
+    tpShowSheet<void>(
       context,
       initial: 0.74,
       min: 0.4,
@@ -514,63 +591,86 @@ class _OrderSheet extends StatelessWidget {
     final pay = marketPaymentLabel(o.paymentStatus);
     final ful = marketFulfillmentLabel(o.fulfillmentStatus);
     final at = o.orderedAt;
-    return ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(18, 6, 18, 28), children: [
-      Row(children: [
-        _PlatformMark(code: o.platform, size: 48),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(o.orderNumber, maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.money(16, p.textStrong)),
-            Text(marketPlatformLabel(o.platform), style: TpType.body(12.5, p.muted)),
+    return ListView(
+        controller: scroll,
+        padding: const EdgeInsets.fromLTRB(18, 6, 18, 28),
+        children: [
+          Row(children: [
+            _PlatformMark(code: o.platform, size: 48),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(o.orderNumber,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TpType.money(16, p.textStrong)),
+                    Text(marketPlatformLabel(o.platform),
+                        style: TpType.body(12.5, p.muted)),
+                  ]),
+            ),
+            const SizedBox(width: 8),
+            TpPill(o.statusLabel, tone: _statusTone(st)),
           ]),
-        ),
-        const SizedBox(width: 8),
-        TpPill(o.statusLabel, tone: _statusTone(st)),
-      ]),
-      const SizedBox(height: 20),
-      Center(child: Text('ยอดออเดอร์', style: TpType.body(12.5, p.muted))),
-      Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(TpFmt.baht(o.totalAmount, decimals: true), style: TpType.money(36, p.goldText)),
-        ),
-      ),
-      if (o.commissionAmount > 0)
-        Center(
-          child: Text('คอมมิชชัน ${TpFmt.baht(o.commissionAmount, decimals: true)}',
-              style: TpType.body(13, p.success, w: FontWeight.w600)),
-        ),
-      const SizedBox(height: 18),
-      TpCard(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: Column(children: [
-          _CopyRow(label: 'เลขออเดอร์', value: o.orderNumber),
-          if (o.externalOrderId != null) _CopyRow(label: 'เลขจากแพลตฟอร์ม', value: o.externalOrderId!),
-          TpKv('ลูกค้า', o.customerName ?? 'ไม่ระบุชื่อ'),
-          TpKv('แพลตฟอร์ม', marketPlatformLabel(o.platform)),
-          TpKv('สั่งเมื่อ', at == null ? '-' : '${TpFmt.shortDate(at)} ${TpFmt.time(at)}'),
-        ]),
-      ),
-      const SizedBox(height: 12),
-      TpCard(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: Column(children: [
-          TpKv('สถานะออเดอร์', o.statusLabel, valueColor: p.fg(_statusTone(st))),
-          TpKv('การชำระเงิน', pay ?? 'ไม่มีข้อมูล', valueColor: pay == null ? p.faint : p.fg(_paymentTone(o.paymentStatus))),
-          TpKv('การจัดส่ง', ful ?? 'ไม่มีข้อมูล', valueColor: ful == null ? p.faint : null),
-          if (st == null && o.orderStatus.isNotEmpty) TpKv('รหัสสถานะจากแพลตฟอร์ม', o.orderStatus, mono: true),
-        ]),
-      ),
-      const SizedBox(height: 14),
-      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(PhosphorIconsRegular.info, size: 15, color: p.faint),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text('ข้อมูลซิงก์มาจากแพลตฟอร์มอัตโนมัติ — ในแอปดูได้อย่างเดียว แก้สถานะได้ที่หน้าเว็บแอดมิน',
-              style: TpType.body(12, p.faint)),
-        ),
-      ]),
-    ]);
+          const SizedBox(height: 20),
+          Center(child: Text('ยอดออเดอร์', style: TpType.body(12.5, p.muted))),
+          Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(TpFmt.baht(o.totalAmount, decimals: true),
+                  style: TpType.money(36, p.goldText)),
+            ),
+          ),
+          if (o.commissionAmount > 0)
+            Center(
+              child: Text(
+                  'คอมมิชชัน ${TpFmt.baht(o.commissionAmount, decimals: true)}',
+                  style: TpType.body(13, p.success, w: FontWeight.w600)),
+            ),
+          const SizedBox(height: 18),
+          TpCard(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Column(children: [
+              _CopyRow(label: 'เลขออเดอร์', value: o.orderNumber),
+              if (o.externalOrderId != null)
+                _CopyRow(label: 'เลขจากแพลตฟอร์ม', value: o.externalOrderId!),
+              TpKv('ลูกค้า', o.customerName ?? 'ไม่ระบุชื่อ'),
+              TpKv('แพลตฟอร์ม', marketPlatformLabel(o.platform)),
+              TpKv(
+                  'สั่งเมื่อ',
+                  at == null
+                      ? '-'
+                      : '${TpFmt.shortDate(at)} ${TpFmt.time(at)}'),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          TpCard(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Column(children: [
+              TpKv('สถานะออเดอร์', o.statusLabel,
+                  valueColor: p.fg(_statusTone(st))),
+              TpKv('การชำระเงิน', pay ?? 'ไม่มีข้อมูล',
+                  valueColor: pay == null
+                      ? p.faint
+                      : p.fg(_paymentTone(o.paymentStatus))),
+              TpKv('การจัดส่ง', ful ?? 'ไม่มีข้อมูล',
+                  valueColor: ful == null ? p.faint : null),
+              if (st == null && o.orderStatus.isNotEmpty)
+                TpKv('รหัสสถานะจากแพลตฟอร์ม', o.orderStatus, mono: true),
+            ]),
+          ),
+          const SizedBox(height: 14),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(PhosphorIconsRegular.info, size: 15, color: p.faint),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                  'ข้อมูลซิงก์มาจากแพลตฟอร์มอัตโนมัติ — ในแอปดูได้อย่างเดียว แก้สถานะได้ที่หน้าเว็บแอดมิน',
+                  style: TpType.body(12, p.faint)),
+            ),
+          ]),
+        ]);
   }
 }
 
@@ -613,7 +713,9 @@ class _CopyRowState extends State<_CopyRow> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 7),
         child: Row(children: [
-          SizedBox(width: 108, child: Text(widget.label, style: TpType.body(13, p.muted))),
+          SizedBox(
+              width: 108,
+              child: Text(widget.label, style: TpType.body(13, p.muted))),
           Expanded(
             child: Text(widget.value,
                 textAlign: TextAlign.right,
@@ -625,8 +727,10 @@ class _CopyRowState extends State<_CopyRow> {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 160),
             child: _copied
-                ? Icon(PhosphorIconsBold.check, key: const ValueKey(1), size: 16, color: p.success)
-                : Icon(PhosphorIconsRegular.copy, key: const ValueKey(0), size: 16, color: p.goldText),
+                ? Icon(PhosphorIconsBold.check,
+                    key: const ValueKey(1), size: 16, color: p.success)
+                : Icon(PhosphorIconsRegular.copy,
+                    key: const ValueKey(0), size: 16, color: p.goldText),
           ),
         ]),
       ),
@@ -656,8 +760,9 @@ class _HeaderSearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.tp;
-    OutlineInputBorder border(Color c) =>
-        OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: c));
+    OutlineInputBorder border(Color c) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: c));
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
       builder: (context, v, _) => TextField(
@@ -674,13 +779,16 @@ class _HeaderSearchField extends StatelessWidget {
           fillColor: p.glass,
           hintText: hint,
           hintStyle: TpType.body(14, p.onHeaderMuted),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass, size: 19, color: p.onHeaderMuted),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass,
+              size: 19, color: p.onHeaderMuted),
           suffixIcon: v.text.isEmpty
               ? null
               : IconButton(
                   tooltip: 'ล้างคำค้น',
-                  icon: Icon(PhosphorIconsRegular.xCircle, size: 19, color: p.onHeaderMuted),
+                  icon: Icon(PhosphorIconsRegular.xCircle,
+                      size: 19, color: p.onHeaderMuted),
                   onPressed: onClear,
                 ),
           border: border(p.glassBorder),

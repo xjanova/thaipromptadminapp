@@ -6,7 +6,8 @@ import '../../../core/api/paged.dart';
 import '../../../shared/ui/tp_format.dart';
 import '../../work/data/work_repository.dart';
 
-Map<String, dynamic> _m(dynamic v) => v is Map ? v.cast<String, dynamic>() : const {};
+Map<String, dynamic> _m(dynamic v) =>
+    v is Map ? v.cast<String, dynamic>() : const {};
 
 /// ตัวกรองกล่องแชท (ตรงกับ `takeover/conversations?status=`)
 enum ChatFilter {
@@ -87,7 +88,13 @@ class Conversation {
 }
 
 class ChatMsg {
-  const ChatMsg({required this.id, required this.sender, required this.text, this.at, this.adminName, this.imageUrl});
+  const ChatMsg(
+      {required this.id,
+      required this.sender,
+      required this.text,
+      this.at,
+      this.adminName,
+      this.imageUrl});
   final int id;
 
   /// customer | bot | admin | system
@@ -108,7 +115,13 @@ class ChatMsg {
 }
 
 class TakeoverStats {
-  const TakeoverStats({this.takenOver = 0, this.requested = 0, this.active = 0, this.today = 0, this.defaultMinutes = 30, this.enabled = true});
+  const TakeoverStats(
+      {this.takenOver = 0,
+      this.requested = 0,
+      this.active = 0,
+      this.today = 0,
+      this.defaultMinutes = 30,
+      this.enabled = true});
   final int takenOver;
   final int requested;
   final int active;
@@ -127,13 +140,16 @@ class TakeoverStats {
         requested: TpFmt.toInt(j['requested']),
         active: TpFmt.toInt(j['active_conversations']),
         today: TpFmt.toInt(j['takeovers_today']),
-        defaultMinutes: TpFmt.toInt(j['default_minutes']) > 0 ? TpFmt.toInt(j['default_minutes']) : 30,
+        defaultMinutes: TpFmt.toInt(j['default_minutes']) > 0
+            ? TpFmt.toInt(j['default_minutes'])
+            : 30,
         enabled: j['takeover_enabled'] != false,
       );
 }
 
 class TakeoverState {
-  const TakeoverState({required this.active, this.until, this.remainingMinutes = 0});
+  const TakeoverState(
+      {required this.active, this.until, this.remainingMinutes = 0});
   final bool active;
   final DateTime? until;
   final int remainingMinutes;
@@ -149,7 +165,8 @@ class ChatRepository {
   ChatRepository(this._api);
   final ApiClient _api;
 
-  Future<Paged<Conversation>> conversations(ChatFilter f, {int page = 1, String? search, int? perPage}) async {
+  Future<Paged<Conversation>> conversations(ChatFilter f,
+      {int page = 1, String? search, int? perPage}) async {
     final data = await _api.get<dynamic>('/takeover/conversations', query: {
       'status': f.key,
       'page': page,
@@ -159,24 +176,34 @@ class ChatRepository {
     return Paged.parse(data, Conversation.fromJson);
   }
 
-  Future<TakeoverStats> stats() async =>
-      TakeoverStats.fromJson(await _api.get<Map<String, dynamic>>('/takeover/stats', parser: (d) => _m(d)));
+  Future<TakeoverStats> stats() async => TakeoverStats.fromJson(await _api
+      .get<Map<String, dynamic>>('/takeover/stats', parser: (d) => _m(d)));
 
   Future<List<ChatMsg>> messages(int readingId) async {
-    final data = await _api.get<Map<String, dynamic>>('/takeover/$readingId/messages', parser: (d) => _m(d));
+    final data = await _api.get<Map<String, dynamic>>(
+        '/takeover/$readingId/messages',
+        parser: (d) => _m(d));
     final list = (data['messages'] as List?) ?? const [];
-    return list.whereType<Map>().map((e) => ChatMsg.fromJson(e.cast<String, dynamic>())).toList();
+    return list
+        .whereType<Map>()
+        .map((e) => ChatMsg.fromJson(e.cast<String, dynamic>()))
+        .toList();
   }
 
   /// ข้อมูลหัวห้องแชท (ชื่อลูกค้า/แพลตฟอร์ม/แพคเกจ) — ค้นบิลด้วย `#id`
   Future<FortuneBill?> header(int readingId) async {
-    final data = await _api.get<dynamic>('/fortune/bills', query: {'status': 'all', 'search': '#$readingId', 'per_page': 1});
+    final data = await _api.get<dynamic>('/fortune/bills',
+        query: {'status': 'all', 'search': '#$readingId', 'per_page': 1});
     final items = Paged.parse(data, FortuneBill.fromJson).items;
-    return items.where((b) => b.id == readingId).firstOrNull ?? items.firstOrNull;
+    return items.where((b) => b.id == readingId).firstOrNull ??
+        items.firstOrNull;
   }
 
-  Future<TakeoverState> takeoverStatus(int readingId) async => TakeoverState.fromJson(
-      await _api.get<Map<String, dynamic>>('/chat/takeover-status', query: {'reading_id': readingId}, parser: (d) => _m(d)));
+  Future<TakeoverState> takeoverStatus(int readingId) async =>
+      TakeoverState.fromJson(await _api.get<Map<String, dynamic>>(
+          '/chat/takeover-status',
+          query: {'reading_id': readingId},
+          parser: (d) => _m(d)));
 
   Future<TakeoverState> takeover(int readingId, {int minutes = 30}) =>
       _action('/chat/takeover', {'reading_id': readingId, 'minutes': minutes});
@@ -184,25 +211,34 @@ class ChatRepository {
   Future<TakeoverState> extend(int readingId, int minutes) =>
       _action('/chat/extend', {'reading_id': readingId, 'minutes': minutes});
 
-  Future<TakeoverState> resume(int readingId) => _action('/chat/resume', {'reading_id': readingId});
+  Future<TakeoverState> resume(int readingId) =>
+      _action('/chat/resume', {'reading_id': readingId});
 
   /// ส่งข้อความหาลูกค้า — ล้ม = throw ข้อความไทย (เช่น LINE โควตาหมด / FB เกิน 24 ชม.)
   Future<void> send(int readingId, String text) async {
-    final res = await _api.dio.post<Map<String, dynamic>>('/chat/send', data: {'reading_id': readingId, 'text': text});
+    final res = await _api.dio.post<Map<String, dynamic>>('/chat/send',
+        data: {'reading_id': readingId, 'text': text});
     final b = res.data ?? const {};
     if (b['success'] == true) return;
     final code = res.statusCode ?? 0;
     final raw = (b['message'] ?? '').toString();
     if (raw.contains('platform service rejected') || code == 502) {
-      throw ActionError('แพลตฟอร์มไม่รับข้อความ — LINE อาจหมดโควตา push หรือ Messenger เกิน 24 ชม.หลังลูกค้าทักล่าสุด');
+      throw ActionError(
+          'แพลตฟอร์มไม่รับข้อความ — LINE อาจหมดโควตา push หรือ Messenger เกิน 24 ชม.หลังลูกค้าทักล่าสุด');
     }
-    throw ActionError(raw.isEmpty ? 'ส่งข้อความไม่สำเร็จ ($code)' : 'ส่งข้อความไม่สำเร็จ');
+    throw ActionError(
+        raw.isEmpty ? 'ส่งข้อความไม่สำเร็จ ($code)' : 'ส่งข้อความไม่สำเร็จ');
   }
 
   /// ให้ AI ร่างคำตอบจากบทสนทนาล่าสุด
-  Future<String> suggest(int readingId, String context, {String? customerName}) async {
+  Future<String> suggest(int readingId, String context,
+      {String? customerName}) async {
     final data = await _api.post<Map<String, dynamic>>('/chat/suggest',
-        data: {'reading_id': readingId, 'context_text': context, if (customerName != null) 'customer_name': customerName},
+        data: {
+          'reading_id': readingId,
+          'context_text': context,
+          if (customerName != null) 'customer_name': customerName
+        },
         parser: (d) => _m(d));
     return (data['suggestion'] ?? '').toString().trim();
   }
@@ -211,7 +247,9 @@ class ChatRepository {
     final res = await _api.dio.post<Map<String, dynamic>>(path, data: body);
     final b = res.data ?? const {};
     if (b['success'] != true) {
-      throw ActionError((res.statusCode ?? 0) == 404 ? 'ไม่พบบทสนทนานี้' : 'ทำรายการไม่สำเร็จ ลองใหม่อีกครั้ง');
+      throw ActionError((res.statusCode ?? 0) == 404
+          ? 'ไม่พบบทสนทนานี้'
+          : 'ทำรายการไม่สำเร็จ ลองใหม่อีกครั้ง');
     }
     final d = _m(b['data']);
     return TakeoverState(
@@ -222,14 +260,20 @@ class ChatRepository {
   }
 }
 
-final chatRepositoryProvider = Provider<ChatRepository>((ref) => ChatRepository(ref.watch(apiClientProvider)));
+final chatRepositoryProvider = Provider<ChatRepository>(
+    (ref) => ChatRepository(ref.watch(apiClientProvider)));
 
-final takeoverStatsProvider = FutureProvider.autoDispose<TakeoverStats>((ref) => ref.watch(chatRepositoryProvider).stats());
+final takeoverStatsProvider = FutureProvider.autoDispose<TakeoverStats>(
+    (ref) => ref.watch(chatRepositoryProvider).stats());
 
 /// ห้องที่กำลังคุยอยู่ตอนนี้ (หน้าภาพรวม) — เรียงล่าสุดก่อน ไว้กดรับช่วงจากบอทได้ทันที
-final liveConversationsProvider = FutureProvider.autoDispose<List<Conversation>>((ref) async {
-  final page = await ref.watch(chatRepositoryProvider).conversations(ChatFilter.active, perPage: 6);
-  final items = [...page.items]
-    ..sort((a, b) => (b.lastAt ?? b.updatedAt ?? DateTime(2000)).compareTo(a.lastAt ?? a.updatedAt ?? DateTime(2000)));
+final liveConversationsProvider =
+    FutureProvider.autoDispose<List<Conversation>>((ref) async {
+  final page = await ref
+      .watch(chatRepositoryProvider)
+      .conversations(ChatFilter.active, perPage: 6);
+  final items = [...page.items]..sort((a, b) =>
+      (b.lastAt ?? b.updatedAt ?? DateTime(2000))
+          .compareTo(a.lastAt ?? a.updatedAt ?? DateTime(2000)));
   return items;
 });

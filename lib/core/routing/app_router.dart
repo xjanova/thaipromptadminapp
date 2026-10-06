@@ -49,14 +49,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/auth/qr', builder: (_, __) => const QrScannerScreen()),
       GoRoute(
         path: '/auth/2fa',
-        builder: (_, state) => Verify2FAScreen(challengeToken: (state.extra as String?) ?? ''),
+        builder: (_, state) =>
+            Verify2FAScreen(challengeToken: (state.extra as String?) ?? ''),
       ),
 
       // ── 5 แท็บหลัก ──
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(shell: shell),
         branches: [
-          StatefulShellBranch(routes: [GoRoute(path: '/home', builder: (_, __) => const HomeScreen())]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/home', builder: (_, __) => const HomeScreen())
+          ]),
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/work',
@@ -66,32 +69,51 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ),
           ]),
-          StatefulShellBranch(routes: [GoRoute(path: '/chat', builder: (_, __) => const ChatInboxScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/modules', builder: (_, __) => const ModulesScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/me', builder: (_, __) => const AccountScreen())]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/chat', builder: (_, __) => const ChatInboxScreen())
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/modules', builder: (_, __) => const ModulesScreen())
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/me', builder: (_, __) => const AccountScreen())
+          ]),
         ],
       ),
 
       // ── หน้าย่อยเต็มจอ ──
       GoRoute(
         path: '/chat/:readingId',
-        builder: (_, state) => ChatThreadScreen(readingId: int.tryParse(state.pathParameters['readingId'] ?? '') ?? 0),
+        builder: (_, state) => ChatThreadScreen(
+            readingId:
+                int.tryParse(state.pathParameters['readingId'] ?? '') ?? 0),
       ),
       GoRoute(path: '/fortune', builder: (_, __) => const FortuneHubScreen()),
-      GoRoute(path: '/fortune/ai-pool', builder: (_, __) => const AiPoolScreen()),
-      GoRoute(path: '/fortune/services', builder: (_, __) => const FortuneServicesScreen()),
-      GoRoute(path: '/fortune/live', builder: (_, __) => const LiveReadingsScreen()),
-      GoRoute(path: '/fortune/bills', builder: (_, __) => const BillsSearchScreen()),
-      GoRoute(path: '/finance/wallets', builder: (_, __) => const WalletsScreen()),
+      GoRoute(
+          path: '/fortune/ai-pool', builder: (_, __) => const AiPoolScreen()),
+      GoRoute(
+          path: '/fortune/services',
+          builder: (_, __) => const FortuneServicesScreen()),
+      GoRoute(
+          path: '/fortune/live',
+          builder: (_, __) => const LiveReadingsScreen()),
+      GoRoute(
+          path: '/fortune/bills',
+          builder: (_, __) => const BillsSearchScreen()),
+      GoRoute(
+          path: '/finance/wallets', builder: (_, __) => const WalletsScreen()),
       GoRoute(path: '/users', builder: (_, __) => const UsersScreen()),
       GoRoute(
         path: '/users/:id',
-        builder: (_, state) => UserDetailScreen(userId: int.tryParse(state.pathParameters['id'] ?? '') ?? 0),
+        builder: (_, state) => UserDetailScreen(
+            userId: int.tryParse(state.pathParameters['id'] ?? '') ?? 0),
       ),
-      GoRoute(path: '/marketplace', builder: (_, __) => const MarketplaceScreen()),
+      GoRoute(
+          path: '/marketplace', builder: (_, __) => const MarketplaceScreen()),
       GoRoute(path: '/analytics', builder: (_, __) => const AnalyticsScreen()),
       GoRoute(path: '/ai', builder: (_, __) => const AiScreen()),
-      GoRoute(path: '/moderation', builder: (_, __) => const ModerationScreen()),
+      GoRoute(
+          path: '/moderation', builder: (_, __) => const ModerationScreen()),
     ],
   );
 });

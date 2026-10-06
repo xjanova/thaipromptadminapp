@@ -83,16 +83,21 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   Widget build(BuildContext context) {
     final stats = ref.watch(usersStatsProvider);
     final s = stats.valueOrNull;
-    final ranks = ref.watch(ranksListProvider).valueOrNull ?? const <AdminRank>[];
-    final filtered = _query.isNotEmpty || _filter != UserFilter.all || _rankId != null;
+    final ranks =
+        ref.watch(ranksListProvider).valueOrNull ?? const <AdminRank>[];
+    final filtered =
+        _query.isNotEmpty || _filter != UserFilter.all || _rankId != null;
 
     return TpPage(
       title: 'สมาชิก',
-      subtitle: s == null ? 'ค้นหาและดูข้อมูลสมาชิกทั้งระบบ' : 'ทั้งหมด ${TpFmt.count(s.total)} คน',
+      subtitle: s == null
+          ? 'ค้นหาและดูข้อมูลสมาชิกทั้งระบบ'
+          : 'ทั้งหมด ${TpFmt.count(s.total)} คน',
       back: true,
       bottomSpace: 32,
       onRefresh: _refresh,
-      headerBottom: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      headerBottom:
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         _HeaderSearchField(
           controller: _search,
           hint: 'ชื่อ อีเมล เบอร์โทร หรือรหัสแนะนำ',
@@ -112,7 +117,10 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             _filter = f;
             _found = null;
           }),
-          items: [for (final f in UserFilter.values) TpChipItem(f, f.label, count: s == null ? null : _countOf(s, f))],
+          items: [
+            for (final f in UserFilter.values)
+              TpChipItem(f, f.label, count: s == null ? null : _countOf(s, f))
+          ],
         ),
       ]),
       slivers: [
@@ -125,7 +133,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             child: _query.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.only(bottom: 14),
-                    child: _UsersHero(value: stats, onRetry: () => ref.invalidate(usersStatsProvider)),
+                    child: _UsersHero(
+                        value: stats,
+                        onRetry: () => ref.invalidate(usersStatsProvider)),
                   )
                 : const SizedBox(width: double.infinity),
           ),
@@ -149,25 +159,33 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             ),
           ),
         SliverToBoxAdapter(
-          child: _ResultLine(found: _found, query: _query, filtered: filtered, onClear: _clearAll),
+          child: _ResultLine(
+              found: _found,
+              query: _query,
+              filtered: filtered,
+              onClear: _clearAll),
         ),
         TpPagedSliver<AdminListUser>(
           reloadKey: '${_filter.name}-${_rankId ?? 0}-$_query-$_reload',
-          fetch: (page) => ref
-              .read(usersRepositoryProvider)
-              .users(page: page, search: _query, filter: _filter, rankId: _rankId),
+          fetch: (page) => ref.read(usersRepositoryProvider).users(
+              page: page, search: _query, filter: _filter, rankId: _rankId),
           onLoaded: (Paged<AdminListUser> p) {
             if (mounted) setState(() => _found = p.total);
           },
           empty: TpEmpty(
             art: TpArt.members,
-            title: _query.isNotEmpty ? 'ไม่พบสมาชิกที่ตรงกับคำค้น' : 'ไม่มีสมาชิกในกลุ่มนี้',
-            message: _query.isNotEmpty ? 'ลองค้นด้วยชื่อบางส่วน อีเมล เบอร์โทร หรือรหัสแนะนำ' : null,
+            title: _query.isNotEmpty
+                ? 'ไม่พบสมาชิกที่ตรงกับคำค้น'
+                : 'ไม่มีสมาชิกในกลุ่มนี้',
+            message: _query.isNotEmpty
+                ? 'ลองค้นด้วยชื่อบางส่วน อีเมล เบอร์โทร หรือรหัสแนะนำ'
+                : null,
             actionLabel: filtered ? 'ล้างตัวกรอง' : null,
             onAction: filtered ? _clearAll : null,
             compact: true,
           ),
-          itemBuilder: (context, u, _) => _UserTile(user: u, onTap: () => context.push('/users/${u.id}')),
+          itemBuilder: (context, u, _) =>
+              _UserTile(user: u, onTap: () => context.push('/users/${u.id}')),
         ),
       ],
     );
@@ -188,7 +206,9 @@ class _UsersHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!value.hasValue) {
-      if (value.hasError) return _HeroError(error: value.error, onRetry: onRetry);
+      if (value.hasError) {
+        return _HeroError(error: value.error, onRetry: onRetry);
+      }
       return const _HeroSkeleton();
     }
     final s = value.requireValue;
@@ -202,20 +222,31 @@ class _UsersHero extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Expanded(
-            child: Text('สมาชิกทั้งหมด', style: TpType.body(13.5, TpPalette.heroMuted, w: FontWeight.w500)),
+            child: Text('สมาชิกทั้งหมด',
+                style:
+                    TpType.body(13.5, TpPalette.heroMuted, w: FontWeight.w500)),
           ),
           if (s.newToday > 0)
-            _HeroChip(icon: PhosphorIconsBold.trendUp, label: '+${TpFmt.count(s.newToday)} วันนี้', color: _green),
+            _HeroChip(
+                icon: PhosphorIconsBold.trendUp,
+                label: '+${TpFmt.count(s.newToday)} วันนี้',
+                color: _green),
         ]),
         const SizedBox(height: 2),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-            TpFoilText(TpFmt.count(s.total), style: TpType.money(38, Colors.white)),
-            const SizedBox(width: 6),
-            Text('คน', style: TpType.body(15, TpPalette.heroMuted, w: FontWeight.w500)),
-          ]),
+          child: Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                TpFoilText(TpFmt.count(s.total),
+                    style: TpType.money(38, Colors.white)),
+                const SizedBox(width: 6),
+                Text('คน',
+                    style: TpType.body(15, TpPalette.heroMuted,
+                        w: FontWeight.w500)),
+              ]),
         ),
         const SizedBox(height: 10),
         // สัดส่วนใช้งานปกติ / ถูกระงับ
@@ -224,9 +255,12 @@ class _UsersHero extends StatelessWidget {
           child: SizedBox(
             height: 5,
             child: Row(children: [
-              if (af > 0) Expanded(flex: af, child: const ColoredBox(color: _green)),
-              if (bf > 0) Expanded(flex: bf, child: const ColoredBox(color: _red)),
-              if (rest > 0) Expanded(flex: rest, child: const ColoredBox(color: _line)),
+              if (af > 0)
+                Expanded(flex: af, child: const ColoredBox(color: _green)),
+              if (bf > 0)
+                Expanded(flex: bf, child: const ColoredBox(color: _red)),
+              if (rest > 0)
+                Expanded(flex: rest, child: const ColoredBox(color: _line)),
             ]),
           ),
         ),
@@ -239,14 +273,25 @@ class _UsersHero extends StatelessWidget {
         Container(height: 1, color: _line),
         const SizedBox(height: 11),
         Row(children: [
-          _HeroSplit(label: 'สมัครวันนี้', value: '+${TpFmt.count(s.newToday)}', color: s.newToday > 0 ? _green : null),
+          _HeroSplit(
+              label: 'สมัครวันนี้',
+              value: '+${TpFmt.count(s.newToday)}',
+              color: s.newToday > 0 ? _green : null),
           month != null
-              ? _HeroSplit(label: 'เดือนนี้', value: '+${TpFmt.count(month)}', divider: true)
-              : _HeroSplit(label: 'สัปดาห์นี้', value: '+${TpFmt.count(s.newThisWeek)}', divider: true),
+              ? _HeroSplit(
+                  label: 'เดือนนี้',
+                  value: '+${TpFmt.count(month)}',
+                  divider: true)
+              : _HeroSplit(
+                  label: 'สัปดาห์นี้',
+                  value: '+${TpFmt.count(s.newThisWeek)}',
+                  divider: true),
           _HeroSplit(
             label: 'แอดมิน',
             value: TpFmt.count(s.admins),
-            sub: s.superAdmins > 0 ? 'สูงสุด ${TpFmt.count(s.superAdmins)}' : null,
+            sub: s.superAdmins > 0
+                ? 'สูงสุด ${TpFmt.count(s.superAdmins)}'
+                : null,
             divider: true,
           ),
         ]),
@@ -261,15 +306,23 @@ class _Legend extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 7, height: 7, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+  Widget build(BuildContext context) =>
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+                color: color, borderRadius: BorderRadius.circular(2))),
         const SizedBox(width: 5),
-        Text(label, style: TpType.body(11.5, const Color(0x8CFFFFFF), w: FontWeight.w500)),
+        Text(label,
+            style:
+                TpType.body(11.5, const Color(0x8CFFFFFF), w: FontWeight.w500)),
       ]);
 }
 
 class _HeroChip extends StatelessWidget {
-  const _HeroChip({required this.icon, required this.label, required this.color});
+  const _HeroChip(
+      {required this.icon, required this.label, required this.color});
   final IconData icon;
   final String label;
   final Color color;
@@ -278,17 +331,25 @@ class _HeroChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         height: 24,
         padding: const EdgeInsets.symmetric(horizontal: 9),
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(99)),
+        decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(99)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 13, color: color),
           const SizedBox(width: 4),
-          Text(label, style: TpType.body(12, color, w: FontWeight.w600, height: 1.1)),
+          Text(label,
+              style: TpType.body(12, color, w: FontWeight.w600, height: 1.1)),
         ]),
       );
 }
 
 class _HeroSplit extends StatelessWidget {
-  const _HeroSplit({required this.label, required this.value, this.sub, this.color, this.divider = false});
+  const _HeroSplit(
+      {required this.label,
+      required this.value,
+      this.sub,
+      this.color,
+      this.divider = false});
   final String label;
   final String value;
   final String? sub;
@@ -299,23 +360,30 @@ class _HeroSplit extends StatelessWidget {
   Widget build(BuildContext context) => Expanded(
         child: Container(
           padding: EdgeInsets.only(left: divider ? 12 : 0, right: 6),
-          decoration: divider ? const BoxDecoration(border: Border(left: BorderSide(color: Color(0x14FFFFFF)))) : null,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          decoration: divider
+              ? const BoxDecoration(
+                  border: Border(left: BorderSide(color: Color(0x14FFFFFF))))
+              : null,
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TpType.body(11.5, const Color(0x8CFFFFFF), w: FontWeight.w500)),
+                style: TpType.body(11.5, const Color(0x8CFFFFFF),
+                    w: FontWeight.w500)),
             const SizedBox(height: 1),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Text(value, style: TpType.money(16, color ?? TpPalette.heroText)),
+              child: Text(value,
+                  style: TpType.money(16, color ?? TpPalette.heroText)),
             ),
             if (sub != null)
               Text(sub!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TpType.body(10.5, const Color(0x73FFFFFF), w: FontWeight.w500)),
+                  style: TpType.body(10.5, const Color(0x73FFFFFF),
+                      w: FontWeight.w500)),
           ]),
         ),
       );
@@ -354,9 +422,14 @@ class _HeroError extends StatelessWidget {
         Icon(PhosphorIconsRegular.warningCircle, size: 20, color: p.warning),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('โหลดสรุปสมาชิกไม่สำเร็จ', style: TpType.h(13.5, p.textStrong, w: FontWeight.w600)),
-            Text(tpErrorText(error), maxLines: 2, overflow: TextOverflow.ellipsis, style: TpType.body(12, p.muted)),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('โหลดสรุปสมาชิกไม่สำเร็จ',
+                style: TpType.h(13.5, p.textStrong, w: FontWeight.w600)),
+            Text(tpErrorText(error),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TpType.body(12, p.muted)),
           ]),
         ),
         TpButton.ghost('ลองใหม่', height: 38, onPressed: onRetry),
@@ -368,7 +441,11 @@ class _HeroError extends StatelessWidget {
 // ═════════════════════ รายการ ═════════════════════
 
 class _ResultLine extends StatelessWidget {
-  const _ResultLine({required this.found, required this.query, required this.filtered, required this.onClear});
+  const _ResultLine(
+      {required this.found,
+      required this.query,
+      required this.filtered,
+      required this.onClear});
   final int? found;
   final String query;
   final bool filtered;
@@ -386,7 +463,9 @@ class _ResultLine extends StatelessWidget {
                 ? 'กำลังค้นหา…'
                 : query.isNotEmpty
                     ? 'พบ ${TpFmt.count(found)} คน จาก “$query”'
-                    : (filtered ? 'พบ ${TpFmt.count(found)} คน' : 'สมาชิกล่าสุด · ${TpFmt.count(found)} คน'),
+                    : (filtered
+                        ? 'พบ ${TpFmt.count(found)} คน'
+                        : 'สมาชิกล่าสุด · ${TpFmt.count(found)} คน'),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TpType.h(13.5, p.muted, w: FontWeight.w600),
@@ -401,7 +480,8 @@ class _ResultLine extends StatelessWidget {
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(PhosphorIconsRegular.x, size: 13, color: p.goldText),
                 const SizedBox(width: 3),
-                Text('ล้างตัวกรอง', style: TpType.body(12.5, p.goldText, w: FontWeight.w600)),
+                Text('ล้างตัวกรอง',
+                    style: TpType.body(12.5, p.goldText, w: FontWeight.w600)),
               ]),
             ),
           ),
@@ -422,8 +502,14 @@ class _UserTile extends StatelessWidget {
     final role = u.roleLabel;
     final pills = <Widget>[
       if (u.rankName != null) _RankPill(name: u.rankName!, color: u.rankColor),
-      if (u.isBlocked) const TpPill('ถูกระงับ', tone: TpTone.danger, icon: PhosphorIconsBold.prohibit, dense: true),
-      if (role != null) TpPill(role, tone: TpTone.navy, icon: PhosphorIconsFill.shieldCheck, dense: true),
+      if (u.isBlocked)
+        const TpPill('ถูกระงับ',
+            tone: TpTone.danger, icon: PhosphorIconsBold.prohibit, dense: true),
+      if (role != null)
+        TpPill(role,
+            tone: TpTone.navy,
+            icon: PhosphorIconsFill.shieldCheck,
+            dense: true),
     ];
     return TpCard(
       onTap: onTap,
@@ -433,21 +519,27 @@ class _UserTile extends StatelessWidget {
         TpAvatar(name: u.displayName, size: 44, gold: u.isAdmin),
         const SizedBox(width: 11),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(
                 child: Text(u.displayName,
-                    maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
               ),
               const SizedBox(width: 6),
               Text(TpFmt.ago(u.createdAt), style: TpType.body(11.5, p.faint)),
             ]),
             Text(u.contactLine.isEmpty ? 'ไม่มีข้อมูลติดต่อ' : u.contactLine,
-                maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12.5, p.muted)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TpType.body(12.5, p.muted)),
             if (pills.isNotEmpty || u.hasWallet) ...[
               const SizedBox(height: 7),
               Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Expanded(child: Wrap(spacing: 6, runSpacing: 5, children: pills)),
+                Expanded(
+                    child: Wrap(spacing: 6, runSpacing: 5, children: pills)),
                 if (u.hasWallet) ...[
                   const SizedBox(width: 8),
                   ConstrainedBox(
@@ -456,7 +548,11 @@ class _UserTile extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerRight,
                       child: Text(TpFmt.baht(u.walletBalance),
-                          style: TpType.money(14.5, (u.walletBalance ?? 0) > 0 ? p.goldText : p.faint)),
+                          style: TpType.money(
+                              14.5,
+                              (u.walletBalance ?? 0) > 0
+                                  ? p.goldText
+                                  : p.faint)),
                     ),
                   ),
                 ],
@@ -490,12 +586,16 @@ class _RankPill extends StatelessWidget {
     return Container(
       height: 20,
       padding: const EdgeInsets.symmetric(horizontal: 7),
-      decoration: BoxDecoration(color: p.goldSoft, borderRadius: BorderRadius.circular(99)),
+      decoration: BoxDecoration(
+          color: p.goldSoft, borderRadius: BorderRadius.circular(99)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Container(
           width: 7,
           height: 7,
-          decoration: BoxDecoration(color: dot, shape: BoxShape.circle, border: Border.all(color: p.gold, width: 0.6)),
+          decoration: BoxDecoration(
+              color: dot,
+              shape: BoxShape.circle,
+              border: Border.all(color: p.gold, width: 0.6)),
         ),
         const SizedBox(width: 4),
         ConstrainedBox(
@@ -503,7 +603,8 @@ class _RankPill extends StatelessWidget {
           child: Text(name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TpType.body(11, p.goldText, w: FontWeight.w600, height: 1.1)),
+              style:
+                  TpType.body(11, p.goldText, w: FontWeight.w600, height: 1.1)),
         ),
       ]),
     );
@@ -531,8 +632,9 @@ class _HeaderSearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.tp;
-    OutlineInputBorder border(Color c) =>
-        OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: c));
+    OutlineInputBorder border(Color c) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: c));
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
       builder: (context, v, _) => TextField(
@@ -548,13 +650,16 @@ class _HeaderSearchField extends StatelessWidget {
           fillColor: p.glass,
           hintText: hint,
           hintStyle: TpType.body(14, p.onHeaderMuted),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass, size: 19, color: p.onHeaderMuted),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass,
+              size: 19, color: p.onHeaderMuted),
           suffixIcon: v.text.isEmpty
               ? null
               : IconButton(
                   tooltip: 'ล้างคำค้น',
-                  icon: Icon(PhosphorIconsRegular.xCircle, size: 19, color: p.onHeaderMuted),
+                  icon: Icon(PhosphorIconsRegular.xCircle,
+                      size: 19, color: p.onHeaderMuted),
                   onPressed: onClear,
                 ),
           border: border(p.glassBorder),

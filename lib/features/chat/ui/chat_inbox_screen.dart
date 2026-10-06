@@ -48,7 +48,10 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
       _autoPicked = true;
       if (stats.requested == 0) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _filter = stats.takenOver > 0 ? ChatFilter.takenOver : ChatFilter.active);
+          if (mounted) {
+            setState(() => _filter =
+                stats.takenOver > 0 ? ChatFilter.takenOver : ChatFilter.active);
+          }
         });
       }
     }
@@ -68,13 +71,18 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
         padding: EdgeInsets.zero,
         value: _filter,
         onChanged: (f) => setState(() => _filter = f),
-        items: [for (final f in ChatFilter.values) TpChipItem(f, f.label, count: stats?.count(f))],
+        items: [
+          for (final f in ChatFilter.values)
+            TpChipItem(f, f.label, count: stats?.count(f))
+        ],
       ),
       slivers: [
         TpPagedSliver<Conversation>(
           reloadKey: '${_filter.key}-$_reload',
           gap: 10,
-          fetch: (page) => ref.read(chatRepositoryProvider).conversations(_filter, page: page),
+          fetch: (page) => ref
+              .read(chatRepositoryProvider)
+              .conversations(_filter, page: page),
           empty: TpEmpty(
             art: TpArt.emptyDone,
             title: switch (_filter) {
@@ -82,7 +90,9 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
               ChatFilter.takenOver => 'บอทดูแลทุกห้องอยู่',
               ChatFilter.active => 'ยังไม่มีบทสนทนาที่เปิดอยู่',
             },
-            message: _filter == ChatFilter.requested ? 'เมื่อลูกค้าพิมพ์ขอคุยกับคน จะเด้งขึ้นที่นี่ทันที' : null,
+            message: _filter == ChatFilter.requested
+                ? 'เมื่อลูกค้าพิมพ์ขอคุยกับคน จะเด้งขึ้นที่นี่ทันที'
+                : null,
             compact: true,
           ),
           itemBuilder: (context, c, _) => _ConversationTile(
@@ -111,22 +121,30 @@ class _ConversationTile extends StatelessWidget {
       'bot' => 'บอท: ',
       _ => '',
     };
-    final preview = c.lastText == null ? (c.requestKeyword ?? c.stageLabel ?? '') : '$prefix${c.lastText}';
+    final preview = c.lastText == null
+        ? (c.requestKeyword ?? c.stageLabel ?? '')
+        : '$prefix${c.lastText}';
     return TpCard(
       onTap: onTap,
-      accent: c.requestedByCustomer && c.isTakenOver ? p.danger : (c.isTakenOver ? p.gold : null),
+      accent: c.requestedByCustomer && c.isTakenOver
+          ? p.danger
+          : (c.isTakenOver ? p.gold : null),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         TpAvatar(name: c.customerName, platform: c.platform, size: 46),
         const SizedBox(width: 11),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(
                 child: Text(c.customerName ?? 'ลูกค้า',
-                    maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.h(15, p.textStrong, w: FontWeight.w600)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TpType.h(15, p.textStrong, w: FontWeight.w600)),
               ),
-              Text(TpFmt.ago(c.lastAt ?? c.updatedAt), style: TpType.body(11.5, c.unread ? p.goldText : p.faint)),
+              Text(TpFmt.ago(c.lastAt ?? c.updatedAt),
+                  style: TpType.body(11.5, c.unread ? p.goldText : p.faint)),
             ]),
             const SizedBox(height: 2),
             Row(children: [
@@ -134,24 +152,35 @@ class _ConversationTile extends StatelessWidget {
                 child: Text(preview,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TpType.body(13, c.unread ? p.text : p.muted, w: c.unread ? FontWeight.w600 : FontWeight.w400)),
+                    style: TpType.body(13, c.unread ? p.text : p.muted,
+                        w: c.unread ? FontWeight.w600 : FontWeight.w400)),
               ),
               if (c.unread)
                 Container(
                   margin: const EdgeInsets.only(left: 8, top: 4),
                   width: 9,
                   height: 9,
-                  decoration: BoxDecoration(color: p.gold, shape: BoxShape.circle, boxShadow: [BoxShadow(color: p.gold, blurRadius: 8)]),
+                  decoration: BoxDecoration(
+                      color: p.gold,
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: p.gold, blurRadius: 8)]),
                 ),
             ]),
             const SizedBox(height: 8),
             Wrap(spacing: 6, runSpacing: 6, children: [
-              if (c.packageLabel != null) TpPill(c.packageLabel!, tone: TpTone.gold, dense: true),
+              if (c.packageLabel != null)
+                TpPill(c.packageLabel!, tone: TpTone.gold, dense: true),
               if (c.requestedByCustomer)
-                const TpPill('ขอคุยกับคน', tone: TpTone.danger, icon: PhosphorIconsFill.handWaving, dense: true),
+                const TpPill('ขอคุยกับคน',
+                    tone: TpTone.danger,
+                    icon: PhosphorIconsFill.handWaving,
+                    dense: true),
               if (c.isTakenOver)
                 TpPill('คุมอยู่ · เหลือ ${TpFmt.duration(c.remainingMinutes)}',
-                    tone: c.remainingMinutes <= 5 ? TpTone.warning : TpTone.navy, icon: PhosphorIconsFill.headset, dense: true)
+                    tone:
+                        c.remainingMinutes <= 5 ? TpTone.warning : TpTone.navy,
+                    icon: PhosphorIconsFill.headset,
+                    dense: true)
               else if (c.stageLabel != null)
                 TpPill(c.stageLabel!, tone: TpTone.neutral, dense: true),
             ]),

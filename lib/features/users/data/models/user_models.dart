@@ -1,6 +1,7 @@
 import '../../../../shared/ui/tp_format.dart';
 
-Map<String, dynamic> _m(dynamic v) => v is Map ? v.cast<String, dynamic>() : const {};
+Map<String, dynamic> _m(dynamic v) =>
+    v is Map ? v.cast<String, dynamic>() : const {};
 
 String? _s(dynamic v) {
   if (v == null) return null;
@@ -84,11 +85,14 @@ class AdminListUser {
   }
 
   /// อีเมล · เบอร์ (บรรทัดรองในรายการ)
-  String get contactLine => [email, phone].whereType<String>().where((e) => e.isNotEmpty).join(' · ');
+  String get contactLine =>
+      [email, phone].whereType<String>().where((e) => e.isNotEmpty).join(' · ');
 
   factory AdminListUser.fromJson(Map<String, dynamic> j) {
     // บาง endpoint ห่อ {data:{...}} มาอีกชั้น
-    if (!j.containsKey('id') && j['data'] is Map) return AdminListUser.fromJson(_m(j['data']));
+    if (!j.containsKey('id') && j['data'] is Map) {
+      return AdminListUser.fromJson(_m(j['data']));
+    }
     final wallet = j['wallet'];
     final w = _m(wallet);
     final rank = _m(j['rank']);
@@ -107,7 +111,9 @@ class AdminListUser {
       lineVerified: _b(j['line_verified']),
       facebookVerified: _b(j['facebook_verified']),
       hasWallet: wallet is Map && w['wallet_address'] != null,
-      walletBalance: wallet is Map && w.containsKey('balance') ? TpFmt.toDouble(w['balance']) : null,
+      walletBalance: wallet is Map && w.containsKey('balance')
+          ? TpFmt.toDouble(w['balance'])
+          : null,
       walletAddress: _s(w['wallet_address']),
       rankId: rank['id'] == null ? null : TpFmt.toInt(rank['id']),
       rankName: rankName,
@@ -154,7 +160,9 @@ class UsersStats {
         superAdmins: TpFmt.toInt(j['super_admins']),
         newToday: TpFmt.toInt(j['new_today']),
         newThisWeek: TpFmt.toInt(j['new_this_week']),
-        newThisMonth: j['new_this_month'] == null ? null : TpFmt.toInt(j['new_this_month']),
+        newThisMonth: j['new_this_month'] == null
+            ? null
+            : TpFmt.toInt(j['new_this_month']),
       );
 }
 
@@ -182,7 +190,8 @@ class AdminRank {
   final bool isActive;
   final bool isTopTier;
 
-  String get displayName => (nameTh != null && nameTh!.isNotEmpty) ? nameTh! : name;
+  String get displayName =>
+      (nameTh != null && nameTh!.isNotEmpty) ? nameTh! : name;
 
   factory AdminRank.fromJson(Map<String, dynamic> j) => AdminRank(
         id: TpFmt.toInt(j['id']),
@@ -240,7 +249,9 @@ class UserReading {
       questions: qs,
       aiModel: _s(j['ai_model']),
       isPaid: _b(j['is_paid']),
-      pricePaid: j['price_paid_thb'] == null ? null : TpFmt.toDouble(j['price_paid_thb']),
+      pricePaid: j['price_paid_thb'] == null
+          ? null
+          : TpFmt.toDouble(j['price_paid_thb']),
       rating: j['rating'] == null ? null : TpFmt.toInt(j['rating']),
       paidAt: TpFmt.parse(j['paid_at']),
       respondedAt: TpFmt.parse(j['responded_at']),
@@ -251,7 +262,8 @@ class UserReading {
 
 /// สถานะออนไลน์ของแอดมิน จาก `GET users/admins/online`
 class AdminPresence {
-  const AdminPresence({required this.id, this.isOnline = false, this.lastSeenAt});
+  const AdminPresence(
+      {required this.id, this.isOnline = false, this.lastSeenAt});
   final int id;
   final bool isOnline;
   final DateTime? lastSeenAt;

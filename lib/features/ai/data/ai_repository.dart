@@ -8,7 +8,8 @@ import 'models/ai_models.dart';
 
 export 'models/ai_models.dart';
 
-Map<String, dynamic> _m(dynamic v) => v is Map ? v.cast<String, dynamic>() : const {};
+Map<String, dynamic> _m(dynamic v) =>
+    v is Map ? v.cast<String, dynamic>() : const {};
 
 bool _hasThai(String s) => RegExp(r'[฀-๿]').hasMatch(s);
 
@@ -26,22 +27,29 @@ class AiRepository {
 
   /// สรุปการใช้งาน (โทเคนเดือนนี้ · ค่าตอบสนอง 15 นาทีล่าสุด · จำนวนบอท)
   Future<AiOverview> overview() => _safe(() async {
-        final d = await _api.get<dynamic>('/ai/dashboard', query: {'period': 'month'});
+        final d = await _api
+            .get<dynamic>('/ai/dashboard', query: {'period': 'month'});
         return AiOverview.fromJson(_m(d));
       });
 
   /// คำขอรายชั่วโมง 24 ชม.ล่าสุด
   Future<AiUsageSeries> usage({int hours = 24}) => _safe(() async {
-        final d = await _api.get<dynamic>('/ai/dashboard/timeseries', query: {'hours': hours});
+        final d = await _api
+            .get<dynamic>('/ai/dashboard/timeseries', query: {'hours': hours});
         return AiUsageSeries.fromJson(_m(d), hours: hours);
       });
 
   /// การใช้งานแยกตามผู้ให้บริการ (มากไปน้อย)
-  Future<List<AiProviderUsage>> perProvider({int hours = 24}) => _safe(() async {
-        final d = await _api.get<dynamic>('/ai/usage/per-provider', query: {'hours': hours});
+  Future<List<AiProviderUsage>> perProvider({int hours = 24}) =>
+      _safe(() async {
+        final d = await _api
+            .get<dynamic>('/ai/usage/per-provider', query: {'hours': hours});
         final raw = _m(d)['providers'];
         final list = raw is List
-            ? raw.whereType<Map>().map((e) => AiProviderUsage.fromJson(e.cast<String, dynamic>())).toList()
+            ? raw
+                .whereType<Map>()
+                .map((e) => AiProviderUsage.fromJson(e.cast<String, dynamic>()))
+                .toList()
             : <AiProviderUsage>[];
         list.sort((a, b) {
           final r = b.requests.compareTo(a.requests);
@@ -57,7 +65,8 @@ class AiRepository {
       });
 
   /// สลับเปิด/ปิดผู้ให้บริการ (backend สลับค่า ไม่ได้ตั้งค่า — ต้องเช็คผลที่คืนมา)
-  Future<AiActionResult<AiProviderItem>> toggleProvider(int id) => _safe(() async {
+  Future<AiActionResult<AiProviderItem>> toggleProvider(int id) =>
+      _safe(() async {
         final (data, msg) = await _action('/ai/providers/$id/toggle');
         return AiActionResult(AiProviderItem.fromJson(data), msg);
       });
@@ -68,7 +77,8 @@ class AiRepository {
       });
 
   /// รายการบอทแบบแบ่งหน้า (`{data, links, meta}`)
-  Future<Paged<AiBotItem>> bots({int page = 1, bool? active, String? search}) => _safe(() async {
+  Future<Paged<AiBotItem>> bots({int page = 1, bool? active, String? search}) =>
+      _safe(() async {
         final d = await _api.get<dynamic>('/ai/bots', query: {
           'page': page,
           'per_page': 20,
@@ -92,8 +102,13 @@ class AiRepository {
     if (code >= 400 || body['success'] != true) {
       final msg = (body['message'] ?? '').toString();
       if (code == 401) throw ActionError('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
-      if (code == 403) throw ActionError(_hasThai(msg) ? msg : 'บัญชีนี้ไม่มีสิทธิ์ทำรายการนี้');
-      if (code == 404) throw ActionError('ไม่พบรายการนี้ในระบบ (อาจถูกลบไปแล้ว)');
+      if (code == 403) {
+        throw ActionError(
+            _hasThai(msg) ? msg : 'บัญชีนี้ไม่มีสิทธิ์ทำรายการนี้');
+      }
+      if (code == 404) {
+        throw ActionError('ไม่พบรายการนี้ในระบบ (อาจถูกลบไปแล้ว)');
+      }
       throw ActionError(_hasThai(msg) ? msg : 'ทำรายการไม่สำเร็จ ($code)');
     }
     final msg = body['message']?.toString();
@@ -107,7 +122,9 @@ Future<T> _safe<T>(Future<T> Function() run) async {
     return await run();
   } on DioException catch (e) {
     final code = e.response?.statusCode ?? 0;
-    if (code >= 500) throw ActionError('เซิร์ฟเวอร์ขัดข้องชั่วคราว ($code) ลองใหม่อีกครั้ง');
+    if (code >= 500) {
+      throw ActionError('เซิร์ฟเวอร์ขัดข้องชั่วคราว ($code) ลองใหม่อีกครั้ง');
+    }
     rethrow;
   } on ApiException catch (e) {
     if (const {401, 403, 404, 429}.contains(e.statusCode)) rethrow;
@@ -118,14 +135,18 @@ Future<T> _safe<T>(Future<T> Function() run) async {
 
 // ── Providers (Riverpod) ──
 
-final aiRepositoryProvider = Provider<AiRepository>((ref) => AiRepository(ref.watch(apiClientProvider)));
+final aiRepositoryProvider =
+    Provider<AiRepository>((ref) => AiRepository(ref.watch(apiClientProvider)));
 
-final aiOverviewProvider = FutureProvider.autoDispose<AiOverview>((ref) => ref.watch(aiRepositoryProvider).overview());
+final aiOverviewProvider = FutureProvider.autoDispose<AiOverview>(
+    (ref) => ref.watch(aiRepositoryProvider).overview());
 
-final aiUsageProvider = FutureProvider.autoDispose<AiUsageSeries>((ref) => ref.watch(aiRepositoryProvider).usage());
+final aiUsageProvider = FutureProvider.autoDispose<AiUsageSeries>(
+    (ref) => ref.watch(aiRepositoryProvider).usage());
 
 final aiPerProviderUsageProvider =
-    FutureProvider.autoDispose<List<AiProviderUsage>>((ref) => ref.watch(aiRepositoryProvider).perProvider());
+    FutureProvider.autoDispose<List<AiProviderUsage>>(
+        (ref) => ref.watch(aiRepositoryProvider).perProvider());
 
-final aiProvidersProvider =
-    FutureProvider.autoDispose<List<AiProviderItem>>((ref) => ref.watch(aiRepositoryProvider).providers());
+final aiProvidersProvider = FutureProvider.autoDispose<List<AiProviderItem>>(
+    (ref) => ref.watch(aiRepositoryProvider).providers());

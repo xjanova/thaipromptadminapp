@@ -8,7 +8,15 @@ void main() {
   group('Paged.parse', () {
     test('แบบแบน {data:[...], current_page, last_page, total}', () {
       final p = Paged.parse<int>(
-        {'data': [{'id': 1}, {'id': 2}], 'current_page': 2, 'last_page': 5, 'total': 90},
+        {
+          'data': [
+            {'id': 1},
+            {'id': 2}
+          ],
+          'current_page': 2,
+          'last_page': 5,
+          'total': 90
+        },
         (m) => m['id'] as int,
       );
       expect(p.items, [1, 2]);
@@ -20,7 +28,13 @@ void main() {
 
     test('แบบ Laravel resource {data:[...], meta:{...}}', () {
       final p = Paged.parse<int>(
-        {'data': [{'id': 7}], 'links': {}, 'meta': {'current_page': 3, 'last_page': 3, 'total': 41}},
+        {
+          'data': [
+            {'id': 7}
+          ],
+          'links': {},
+          'meta': {'current_page': 3, 'last_page': 3, 'total': 41}
+        },
         (m) => m['id'] as int,
       );
       expect(p.items, [7]);
@@ -30,7 +44,11 @@ void main() {
     });
 
     test('รายการเปล่า ๆ (ไม่แบ่งหน้า)', () {
-      final p = Paged.parse<int>([{'id': 1}, {'id': 2}, {'id': 3}], (m) => m['id'] as int);
+      final p = Paged.parse<int>([
+        {'id': 1},
+        {'id': 2},
+        {'id': 3}
+      ], (m) => m['id'] as int);
       expect(p.items.length, 3);
       expect(p.total, 3);
       expect(p.hasMore, isFalse);
@@ -44,14 +62,31 @@ void main() {
           'count': 2,
           'oldest_minutes': 14,
           'preview': [
-            {'reading_id': 1, 'customer_name': 'สมหญิง', 'keyword': 'ขอคุยกับแอดมิน'},
+            {
+              'reading_id': 1,
+              'customer_name': 'สมหญิง',
+              'keyword': 'ขอคุยกับแอดมิน'
+            },
             {'reading_id': 2, 'customer_name': 'สมชาย'},
           ],
         },
-        'bills_awaiting': {'count': 3, 'amount_thb': 237.84, 'oldest_minutes': 22, 'preview': []},
+        'bills_awaiting': {
+          'count': 3,
+          'amount_thb': 237.84,
+          'oldest_minutes': 22,
+          'preview': []
+        },
         'withdrawals_pending': {'count': 1, 'amount_thb': 500.0},
         'sms_unmatched': {'count': 4, 'amount_thb': 156.0},
-        'stuck_readings': {'count': 1, 'preview': [{'customer_name': 'นายบี', 'stage': {'label': 'AI กำลังทำนาย'}}]},
+        'stuck_readings': {
+          'count': 1,
+          'preview': [
+            {
+              'customer_name': 'นายบี',
+              'stage': {'label': 'AI กำลังทำนาย'}
+            }
+          ]
+        },
       },
       'health': {
         'ai_pool': {'healthy': 5, 'total': 7},
@@ -63,7 +98,10 @@ void main() {
         'fortune': 1000.0,
         'marketplace': 234.0,
         'other': 0.0,
-        'hourly': [for (var h = 0; h < 24; h++) {'hour': h, 'amount': h == 9 ? 100.0 : 0.0}],
+        'hourly': [
+          for (var h = 0; h < 24; h++)
+            {'hour': h, 'amount': h == 9 ? 100.0 : 0.0}
+        ],
       },
       'revenue_yesterday_same_time': 900.0,
     };
@@ -88,9 +126,16 @@ void main() {
       expect(s.growthPct, closeTo((1234 - 900) / 900 * 100, 0.01));
     });
 
-    test('ส่วนที่ backend อ่านไม่สำเร็จ (null + degraded) ต้องเป็น "ไม่ทราบ" ไม่ใช่ 0 งาน', () {
-      final q = Map<String, dynamic>.from(json['queue'] as Map)..['bills_awaiting'] = null;
-      final s = OpsSummary.fromJson({...json, 'queue': q, 'degraded': ['bills_awaiting']});
+    test(
+        'ส่วนที่ backend อ่านไม่สำเร็จ (null + degraded) ต้องเป็น "ไม่ทราบ" ไม่ใช่ 0 งาน',
+        () {
+      final q = Map<String, dynamic>.from(json['queue'] as Map)
+        ..['bills_awaiting'] = null;
+      final s = OpsSummary.fromJson({
+        ...json,
+        'queue': q,
+        'degraded': ['bills_awaiting']
+      });
       expect(s.billsAwaiting.unavailable, isTrue);
       expect(s.anyUnavailable, isTrue);
       expect(s.degraded, ['bills_awaiting']);
@@ -99,7 +144,11 @@ void main() {
     test('line_push = null (ยังไม่เคยดึงโควตาได้) ไม่ล้ม', () {
       final s = OpsSummary.fromJson({
         ...json,
-        'health': {'ai_pool': {'healthy': 0, 'total': 0}, 'line_push': null, 'queue_backlog': null},
+        'health': {
+          'ai_pool': {'healthy': 0, 'total': 0},
+          'line_push': null,
+          'queue_backlog': null
+        },
       });
       expect(s.linePushUsed, isNull);
       expect(s.queueBacklog, 0);
@@ -107,13 +156,19 @@ void main() {
   });
 
   group('FortuneBill', () {
-    test('backend ห้ามอนุมัติ (บิลลอย / จ่ายบิลอื่นแทนแล้ว) → แอปต้องไม่ให้ยืนยันยอด', () {
+    test(
+        'backend ห้ามอนุมัติ (บิลลอย / จ่ายบิลอื่นแทนแล้ว) → แอปต้องไม่ให้ยืนยันยอด',
+        () {
       final b = FortuneBill.fromJson({
         'id': 1,
         'status': 'awaiting',
         'status_reason': 'floating',
         'amount_thb': '39.42',
-        'actions': {'can_mark_paid': false, 'can_refund': false, 'can_cancel': true},
+        'actions': {
+          'can_mark_paid': false,
+          'can_refund': false,
+          'can_cancel': true
+        },
       });
       expect(b.mayMarkPaid, isFalse);
       expect(b.mayCancel, isTrue);
@@ -122,7 +177,8 @@ void main() {
     });
 
     test('ไม่มี actions → เดาจากสถานะ', () {
-      final paid = FortuneBill.fromJson({'id': 2, 'status': 'paid', 'paid_at': '2026-10-06T10:00:00+07:00'});
+      final paid = FortuneBill.fromJson(
+          {'id': 2, 'status': 'paid', 'paid_at': '2026-10-06T10:00:00+07:00'});
       expect(paid.isPaid, isTrue);
       expect(paid.mayMarkPaid, isFalse);
       expect(paid.mayRefund, isTrue);

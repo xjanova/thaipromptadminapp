@@ -1,6 +1,7 @@
 import '../../../../shared/ui/tp_format.dart';
 
-Map<String, dynamic> _m(dynamic v) => v is Map ? v.cast<String, dynamic>() : const {};
+Map<String, dynamic> _m(dynamic v) =>
+    v is Map ? v.cast<String, dynamic>() : const {};
 
 final _emoji = RegExp(
   r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{2300}-\u{23FF}\u{FE0E}\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]',
@@ -8,7 +9,8 @@ final _emoji = RegExp(
 );
 
 /// ตัดอีโมจิออกจากข้อความที่มาจากเซิร์ฟเวอร์ (แอปห้ามใช้อีโมจิเป็นไอคอน) + ยุบช่องว่างซ้ำ
-String aiClean(String? s) => (s ?? '').replaceAll(_emoji, '').replaceAll(RegExp(r'\s{2,}'), ' ').trim();
+String aiClean(String? s) =>
+    (s ?? '').replaceAll(_emoji, '').replaceAll(RegExp(r'\s{2,}'), ' ').trim();
 
 String? _str(dynamic v) {
   final s = aiClean(v?.toString());
@@ -67,7 +69,8 @@ class AiOverview {
 
 /// หนึ่งชั่วโมงในกราฟการใช้งาน
 class AiHourPoint {
-  const AiHourPoint({required this.hour, required this.requests, required this.avgLatencyMs});
+  const AiHourPoint(
+      {required this.hour, required this.requests, required this.avgLatencyMs});
   final DateTime hour;
   final int requests;
   final int avgLatencyMs;
@@ -98,7 +101,9 @@ class AiUsageSeries {
   AiHourPoint? get peak {
     AiHourPoint? best;
     for (final p in points) {
-      if (p.requests > 0 && (best == null || p.requests > best.requests)) best = p;
+      if (p.requests > 0 && (best == null || p.requests > best.requests)) {
+        best = p;
+      }
     }
     return best;
   }
@@ -109,7 +114,9 @@ class AiUsageSeries {
     if (raw is List) {
       for (final e in raw.whereType<Map>()) {
         final t = (e['time'] ?? '').toString();
-        if (t.length >= 13) byHour[t.substring(0, 13)] = e.cast<String, dynamic>();
+        if (t.length >= 13) {
+          byHour[t.substring(0, 13)] = e.cast<String, dynamic>();
+        }
       }
     }
     final now = DateTime.now();
@@ -247,7 +254,8 @@ class AiProviderItem {
     return AiProviderItem(
       id: TpFmt.toInt(j['id']),
       name: name,
-      displayName: _str(j['display_name']) ?? _str(name) ?? 'ผู้ให้บริการ #${j['id']}',
+      displayName:
+          _str(j['display_name']) ?? _str(name) ?? 'ผู้ให้บริการ #${j['id']}',
       type: j['type']?.toString(),
       isActive: j['is_active'] == true,
       isAvailable: j['is_available'] == true,
@@ -322,7 +330,8 @@ class AiBotItem {
 /// ⚠️ ปัจจุบัน backend ยังไม่ทดสอบจริง — คืน `reachable` = ค่า `is_available` ที่บันทึกไว้
 /// พร้อมข้อความ "Connection test feature in progress" → แอปบอกตรง ๆ ว่ายังไม่ใช่ผลทดสอบจริง
 class AiConnectionTest {
-  const AiConnectionTest({required this.reachable, required this.isStub, required this.at});
+  const AiConnectionTest(
+      {required this.reachable, required this.isStub, required this.at});
   final bool reachable;
   final bool isStub;
   final DateTime at;
@@ -331,7 +340,9 @@ class AiConnectionTest {
     final msg = (j['message'] ?? '').toString().toLowerCase();
     return AiConnectionTest(
       reachable: j['reachable'] == true,
-      isStub: msg.contains('in progress') || msg.contains('stub') || msg.contains('mock'),
+      isStub: msg.contains('in progress') ||
+          msg.contains('stub') ||
+          msg.contains('mock'),
       at: TpFmt.parse(j['test_at']) ?? DateTime.now(),
     );
   }

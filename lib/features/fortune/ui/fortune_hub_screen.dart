@@ -74,7 +74,9 @@ class _FortuneHubScreenState extends ConsumerState<FortuneHubScreen> {
               padding: EdgeInsets.zero,
               value: _period,
               onChanged: (p) => setState(() => _period = p),
-              items: [for (final p in FortunePeriod.values) TpChipItem(p, p.label)],
+              items: [
+                for (final p in FortunePeriod.values) TpChipItem(p, p.label)
+              ],
             ),
           ),
         ),
@@ -110,7 +112,8 @@ class _RevenueHero extends StatelessWidget {
             child: Text('รายได้ดูดวงวันนี้',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TpType.body(13.5, TpPalette.heroMuted, w: FontWeight.w500)),
+                style:
+                    TpType.body(13.5, TpPalette.heroMuted, w: FontWeight.w500)),
           ),
           const SizedBox(width: 8),
           _HeroPill(
@@ -123,7 +126,8 @@ class _RevenueHero extends StatelessWidget {
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: TpFoilText(TpFmt.baht(stats.paidTodayAmount), style: TpType.money(40, Colors.white)),
+          child: TpFoilText(TpFmt.baht(stats.paidTodayAmount),
+              style: TpType.money(40, Colors.white)),
         ),
         Text(
           'นับบิลที่ยืนยันจ่ายวันนี้ · ไม่รวมเว็บจันทรา',
@@ -138,11 +142,14 @@ class _RevenueHero extends StatelessWidget {
             value: '${TpFmt.count(awaiting)} บิล',
             highlight: awaiting > 0,
           ),
-          _HeroStat(label: 'รอลูกค้าโอน', value: TpFmt.count(unpaid), divider: true),
+          _HeroStat(
+              label: 'รอลูกค้าโอน', value: TpFmt.count(unpaid), divider: true),
           _HeroStat(
             label: 'กำลังทำนาย',
             value: live == null ? '–' : TpFmt.count(live!.summaryTotal),
-            alert: (live?.summaryStuck ?? 0) > 0 ? 'ค้าง ${live!.summaryStuck}' : null,
+            alert: (live?.summaryStuck ?? 0) > 0
+                ? 'ค้าง ${live!.summaryStuck}'
+                : null,
             divider: true,
           ),
         ]),
@@ -152,7 +159,8 @@ class _RevenueHero extends StatelessWidget {
 }
 
 class _HeroPill extends StatelessWidget {
-  const _HeroPill({required this.icon, required this.label, required this.color});
+  const _HeroPill(
+      {required this.icon, required this.label, required this.color});
   final IconData icon;
   final String label;
   final Color color;
@@ -161,18 +169,26 @@ class _HeroPill extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         height: 24,
         padding: const EdgeInsets.symmetric(horizontal: 9),
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(99)),
+        decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(99)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 13, color: color),
           const SizedBox(width: 4),
-          Text(label, style: TpType.body(12, color, w: FontWeight.w600, height: 1.1)),
+          Text(label,
+              style: TpType.body(12, color, w: FontWeight.w600, height: 1.1)),
         ]),
       );
 }
 
 /// ตัวเลขย่อยในการ์ดฮีโร่ (พื้นน้ำเงินเข้มเสมอ — ใช้สีคงที่ของฮีโร่)
 class _HeroStat extends StatelessWidget {
-  const _HeroStat({required this.label, required this.value, this.divider = false, this.highlight = false, this.alert});
+  const _HeroStat(
+      {required this.label,
+      required this.value,
+      this.divider = false,
+      this.highlight = false,
+      this.alert});
   final String label;
   final String value;
   final bool divider;
@@ -185,18 +201,25 @@ class _HeroStat extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.only(left: divider ? 12 : 0, right: 6),
         decoration: divider
-            ? BoxDecoration(border: Border(left: BorderSide(color: TpPalette.heroText.withValues(alpha: 0.08))))
+            ? BoxDecoration(
+                border: Border(
+                    left: BorderSide(
+                        color: TpPalette.heroText.withValues(alpha: 0.08))))
             : null,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TpType.body(11.5, TpPalette.heroText.withValues(alpha: 0.55), w: FontWeight.w500)),
+              style: TpType.body(
+                  11.5, TpPalette.heroText.withValues(alpha: 0.55),
+                  w: FontWeight.w500)),
           const SizedBox(height: 1),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(value, style: TpType.money(16, highlight ? TpPalette.heroGold : TpPalette.heroText)),
+            child: Text(value,
+                style: TpType.money(
+                    16, highlight ? TpPalette.heroGold : TpPalette.heroText)),
           ),
           if (alert != null)
             Padding(
@@ -204,7 +227,8 @@ class _HeroStat extends StatelessWidget {
               child: Text(alert!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TpType.body(11, TpPalette.midnight.danger, w: FontWeight.w600, height: 1.2)),
+                  style: TpType.body(11, TpPalette.midnight.danger,
+                      w: FontWeight.w600, height: 1.2)),
             ),
         ]),
       ),
@@ -306,7 +330,9 @@ class _ToolsGroup extends StatelessWidget {
             : aiTotal == 0
                 ? 'ยังไม่มีคีย์ AI ในระบบ'
                 : 'คีย์พร้อมใช้ $aiHealthy จาก $aiTotal คีย์',
-        trailing: ops == null || aiTotal == 0 ? null : TpPill(aiLabel, tone: aiTone, dense: true),
+        trailing: ops == null || aiTotal == 0
+            ? null
+            : TpPill(aiLabel, tone: aiTone, dense: true),
         onTap: () => context.push('/fortune/ai-pool'),
       ),
       TpRow(
@@ -329,7 +355,8 @@ class _PeriodStats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.tp;
-    final cats = [...d.categories]..sort((a, b) => b.sessions.compareTo(a.sessions));
+    final cats = [...d.categories]
+      ..sort((a, b) => b.sessions.compareTo(a.sessions));
     final top = cats.where((c) => c.sessions > 0).take(5).toList();
     final maxSessions = top.isEmpty ? 1 : math.max(1, top.first.sessions);
 
@@ -347,7 +374,10 @@ class _PeriodStats extends StatelessWidget {
           ),
           _VLine(),
           Expanded(
-            child: TpStat(label: 'บทสนทนาใหม่', value: TpFmt.compact(d.sessions), align: CrossAxisAlignment.center),
+            child: TpStat(
+                label: 'บทสนทนาใหม่',
+                value: TpFmt.compact(d.sessions),
+                align: CrossAxisAlignment.center),
           ),
           _VLine(),
           Expanded(
@@ -404,17 +434,24 @@ class _CategoryBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Container(width: 9, height: 9, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(c.name,
-                maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.h(13.5, p.textStrong, w: FontWeight.w600)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TpType.h(13.5, p.textStrong, w: FontWeight.w600)),
           ),
           const SizedBox(width: 8),
-          Text('${TpFmt.count(c.sessions)} ครั้ง', style: TpType.money(12.5, p.muted, w: FontWeight.w600)),
+          Text('${TpFmt.count(c.sessions)} ครั้ง',
+              style: TpType.money(12.5, p.muted, w: FontWeight.w600)),
           if (c.revenue > 0) ...[
             const SizedBox(width: 8),
-            Text(TpFmt.bahtCompact(c.revenue), style: TpType.money(13, p.goldText)),
+            Text(TpFmt.bahtCompact(c.revenue),
+                style: TpType.money(13, p.goldText)),
           ],
         ]),
         const SizedBox(height: 7),
@@ -426,5 +463,6 @@ class _CategoryBar extends StatelessWidget {
 
 class _VLine extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => Container(width: 1, height: 32, color: context.tp.divider);
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 32, color: context.tp.divider);
 }

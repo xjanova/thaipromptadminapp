@@ -45,10 +45,15 @@ Color? _parseColor(String? s) {
     final n = int.tryParse(hex, radix: 16);
     return n == null ? null : Color(n);
   }
-  final m = RegExp(r'hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)').firstMatch(v);
+  final m = RegExp(r'hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)')
+      .firstMatch(v);
   if (m == null) return null;
-  final h = double.tryParse(m[1]!) ?? 0, sat = double.tryParse(m[2]!) ?? 0, l = double.tryParse(m[3]!) ?? 0;
-  return HSLColor.fromAHSL(1, h % 360, (sat / 100).clamp(0, 1), (l / 100).clamp(0, 1)).toColor();
+  final h = double.tryParse(m[1]!) ?? 0,
+      sat = double.tryParse(m[2]!) ?? 0,
+      l = double.tryParse(m[3]!) ?? 0;
+  return HSLColor.fromAHSL(
+          1, h % 360, (sat / 100).clamp(0, 1), (l / 100).clamp(0, 1))
+      .toColor();
 }
 
 /// หน้า "AI และบอท" — การใช้งาน AI · ผู้ให้บริการ (ai_providers) · บอท AI (ai_bot_profiles)
@@ -112,10 +117,13 @@ class _AiScreenState extends ConsumerState<AiScreen> {
       setState(() => _providerState[p.id] = r.item.isActive);
       if (r.item.isActive != want) {
         // backend "สลับ" ค่า — ถ้ามีคนเปลี่ยนจากที่อื่นก่อน ผลจะกลับทิศ ต้องบอกให้ชัด
-        tpToast(context, 'สถานะถูกเปลี่ยนจากที่อื่นก่อนหน้า — ตอนนี้${r.item.isActive ? 'เปิด' : 'ปิด'}อยู่',
+        tpToast(context,
+            'สถานะถูกเปลี่ยนจากที่อื่นก่อนหน้า — ตอนนี้${r.item.isActive ? 'เปิด' : 'ปิด'}อยู่',
             kind: TpToastKind.info);
       } else {
-        tpToast(context, r.message ?? (want ? 'เปิดใช้งานแล้ว' : 'ปิดใช้งานแล้ว'), kind: TpToastKind.success);
+        tpToast(
+            context, r.message ?? (want ? 'เปิดใช้งานแล้ว' : 'ปิดใช้งานแล้ว'),
+            kind: TpToastKind.success);
       }
     } catch (e) {
       if (mounted) tpToast(context, tpErrorText(e), kind: TpToastKind.error);
@@ -159,10 +167,12 @@ class _AiScreenState extends ConsumerState<AiScreen> {
       setState(() => _botState[b.id] = r.item.isActive);
       ref.invalidate(aiOverviewProvider);
       if (r.item.isActive != want) {
-        tpToast(context, 'สถานะถูกเปลี่ยนจากที่อื่นก่อนหน้า — ตอนนี้บอท${r.item.isActive ? 'เปิด' : 'ปิด'}อยู่',
+        tpToast(context,
+            'สถานะถูกเปลี่ยนจากที่อื่นก่อนหน้า — ตอนนี้บอท${r.item.isActive ? 'เปิด' : 'ปิด'}อยู่',
             kind: TpToastKind.info);
       } else {
-        tpToast(context, r.message ?? (want ? 'เปิดบอทแล้ว' : 'ปิดบอทแล้ว'), kind: TpToastKind.success);
+        tpToast(context, r.message ?? (want ? 'เปิดบอทแล้ว' : 'ปิดบอทแล้ว'),
+            kind: TpToastKind.success);
       }
     } catch (e) {
       if (mounted) tpToast(context, tpErrorText(e), kind: TpToastKind.error);
@@ -193,7 +203,8 @@ class _AiScreenState extends ConsumerState<AiScreen> {
         onChanged: (t) => setState(() => _tab = t),
         items: [
           const TpChipItem(_AiTab.overview, 'ภาพรวม'),
-          TpChipItem(_AiTab.providers, _AiTab.providers.label, count: providers?.length),
+          TpChipItem(_AiTab.providers, _AiTab.providers.label,
+              count: providers?.length),
           TpChipItem(_AiTab.bots, _AiTab.bots.label, count: ov?.botsTotal),
         ],
       ),
@@ -229,7 +240,9 @@ class _AiScreenState extends ConsumerState<AiScreen> {
       hero,
       SliverToBoxAdapter(child: _kpiTiles(ov)),
       SliverToBoxAdapter(
-        child: TpSection('แยกตามผู้ให้บริการ', trailing: const TpPill('24 ชม.', tone: TpTone.neutral, dense: true)),
+        child: TpSection('แยกตามผู้ให้บริการ',
+            trailing:
+                const TpPill('24 ชม.', tone: TpTone.neutral, dense: true)),
       ),
       SliverToBoxAdapter(
         child: TpAsync<List<AiProviderUsage>>(
@@ -252,12 +265,16 @@ class _AiScreenState extends ConsumerState<AiScreen> {
             final total = list.fold<int>(0, (a, b) => a + b.requests);
             return Column(children: [
               for (final u in list)
-                Padding(padding: const EdgeInsets.only(bottom: 10), child: _ProviderUsageCard(u: u, total: total)),
+                Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _ProviderUsageCard(u: u, total: total)),
             ]);
           },
         ),
       ),
-      const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.only(top: 4), child: _AiPoolLink())),
+      const SliverToBoxAdapter(
+          child:
+              Padding(padding: EdgeInsets.only(top: 4), child: _AiPoolLink())),
     ];
   }
 
@@ -268,7 +285,10 @@ class _AiScreenState extends ConsumerState<AiScreen> {
           padding: const EdgeInsets.only(top: 12),
           child: TpCard(
             padding: EdgeInsets.zero,
-            child: TpErrorView(error: ov.error, compact: true, onRetry: () => ref.invalidate(aiOverviewProvider)),
+            child: TpErrorView(
+                error: ov.error,
+                compact: true,
+                onRetry: () => ref.invalidate(aiOverviewProvider)),
           ),
         );
       }
@@ -292,7 +312,9 @@ class _AiScreenState extends ConsumerState<AiScreen> {
               art: TpArt.analytics,
               label: 'โทเคนเดือนนี้',
               value: TpFmt.compact(o.tokensMonth),
-              sub: o.costThb > 0 ? 'ค่าใช้จ่าย ${TpFmt.bahtCompact(o.costThb)}' : 'ตั้งแต่วันที่ 1',
+              sub: o.costThb > 0
+                  ? 'ค่าใช้จ่าย ${TpFmt.bahtCompact(o.costThb)}'
+                  : 'ตั้งแต่วันที่ 1',
             ),
           ),
           const SizedBox(width: 10),
@@ -301,7 +323,9 @@ class _AiScreenState extends ConsumerState<AiScreen> {
               art: TpArt.ai,
               label: 'บอทเปิดอยู่',
               value: '${TpFmt.count(o.botsActive)}/${TpFmt.count(o.botsTotal)}',
-              sub: o.botsRentable > 0 ? 'ให้เช่า ${TpFmt.count(o.botsRentable)} ตัว' : 'แตะเพื่อจัดการ',
+              sub: o.botsRentable > 0
+                  ? 'ให้เช่า ${TpFmt.count(o.botsRentable)} ตัว'
+                  : 'แตะเพื่อจัดการ',
               valueColor: o.botsActive > 0 ? p.success : null,
               onTap: () => setState(() => _tab = _AiTab.bots),
             ),
@@ -319,7 +343,8 @@ class _AiScreenState extends ConsumerState<AiScreen> {
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
               child: Text(
@@ -376,21 +401,29 @@ class _AiScreenState extends ConsumerState<AiScreen> {
               padding: EdgeInsets.zero,
               value: _botFilter,
               onChanged: (f) => setState(() => _botFilter = f),
-              items: [for (final f in _BotFilter.values) TpChipItem(f, f.label)],
+              items: [
+                for (final f in _BotFilter.values) TpChipItem(f, f.label)
+              ],
             ),
           ),
         ),
         TpPagedSliver<AiBotItem>(
           reloadKey: '${_botFilter.name}-$_botReload',
-          fetch: (page) => ref.read(aiRepositoryProvider).bots(page: page, active: _botFilter.active),
+          fetch: (page) => ref
+              .read(aiRepositoryProvider)
+              .bots(page: page, active: _botFilter.active),
           onLoaded: (_) {
             if (mounted && _botState.isNotEmpty) setState(_botState.clear);
           },
           skeletonCount: 5,
           empty: TpEmpty(
             art: TpArt.ai,
-            title: _botFilter == _BotFilter.all ? 'ยังไม่มีบอท AI' : 'ไม่มีบอทในกลุ่มนี้',
-            message: _botFilter == _BotFilter.all ? 'สร้างบอทได้จากหน้าเว็บแอดมิน' : null,
+            title: _botFilter == _BotFilter.all
+                ? 'ยังไม่มีบอท AI'
+                : 'ไม่มีบอทในกลุ่มนี้',
+            message: _botFilter == _BotFilter.all
+                ? 'สร้างบอทได้จากหน้าเว็บแอดมิน'
+                : null,
             compact: true,
           ),
           itemBuilder: (context, b, _) => _BotCard(
@@ -418,9 +451,17 @@ class _UsageHero extends StatelessWidget {
     final peak = u.peak;
     final busy = (ov?.requestsPerMin ?? 0) > 0 || total > 0;
     final (Color pillColor, IconData pillIcon, String pillLabel) = err >= 5
-        ? (const Color(0xFFFF8A7A), PhosphorIconsBold.warning, 'ผิดพลาด ${err.toStringAsFixed(1)}%')
+        ? (
+            const Color(0xFFFF8A7A),
+            PhosphorIconsBold.warning,
+            'ผิดพลาด ${err.toStringAsFixed(1)}%'
+          )
         : busy
-            ? (const Color(0xFF4BE08E), PhosphorIconsBold.pulse, ov == null ? 'มีการใช้งาน' : 'ทำงานปกติ')
+            ? (
+                const Color(0xFF4BE08E),
+                PhosphorIconsBold.pulse,
+                ov == null ? 'มีการใช้งาน' : 'ทำงานปกติ'
+              )
             : (const Color(0x8CFFFFFF), PhosphorIconsBold.moon, 'ช่วงนี้เงียบ');
 
     return TpHeroCard(
@@ -430,17 +471,21 @@ class _UsageHero extends StatelessWidget {
             child: Text('คำขอ AI · 24 ชม.ล่าสุด',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TpType.body(13.5, TpPalette.heroMuted, w: FontWeight.w500)),
+                style:
+                    TpType.body(13.5, TpPalette.heroMuted, w: FontWeight.w500)),
           ),
           Container(
             height: 24,
             padding: const EdgeInsets.symmetric(horizontal: 9),
-            decoration:
-                BoxDecoration(color: pillColor.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(99)),
+            decoration: BoxDecoration(
+                color: pillColor.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(99)),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(pillIcon, size: 13, color: pillColor),
               const SizedBox(width: 4),
-              Text(pillLabel, style: TpType.body(12, pillColor, w: FontWeight.w600, height: 1.1)),
+              Text(pillLabel,
+                  style: TpType.body(12, pillColor,
+                      w: FontWeight.w600, height: 1.1)),
             ]),
           ),
         ]),
@@ -450,13 +495,15 @@ class _UsageHero extends StatelessWidget {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: TpFoilText(TpFmt.count(total), style: TpType.money(40, Colors.white)),
+              child: TpFoilText(TpFmt.count(total),
+                  style: TpType.money(40, Colors.white)),
             ),
           ),
           const SizedBox(width: 8),
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Text('คำขอ', style: TpType.body(13, const Color(0x8CFFFFFF))),
+            child:
+                Text('คำขอ', style: TpType.body(13, const Color(0x8CFFFFFF))),
           ),
         ]),
         Text(
@@ -468,7 +515,10 @@ class _UsageHero extends StatelessWidget {
           style: TpType.body(12, const Color(0x8CFFFFFF)),
         ),
         const SizedBox(height: 8),
-        TpAreaChart(values: [for (final p in pts) p.requests.toDouble()], slots: pts.length, height: 84),
+        TpAreaChart(
+            values: [for (final p in pts) p.requests.toDouble()],
+            slots: pts.length,
+            height: 84),
         const SizedBox(height: 4),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -476,14 +526,21 @@ class _UsageHero extends StatelessWidget {
             for (final i in [0, 6, 12, 18])
               if (i < pts.length) _hourLabel(pts[i].hour),
             'ตอนนี้',
-          ].map((t) => Text(t, style: TpType.body(10.5, const Color(0x61FFFFFF), w: FontWeight.w500))).toList(),
+          ]
+              .map((t) => Text(t,
+                  style: TpType.body(10.5, const Color(0x61FFFFFF),
+                      w: FontWeight.w500)))
+              .toList(),
         ),
         const SizedBox(height: 12),
         Container(height: 1, color: const Color(0x14FFFFFF)),
         const SizedBox(height: 11),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _HeroStat(label: 'ตอบเฉลี่ย', value: _latency(u.avgLatencyMs)),
-          _HeroStat(label: 'p95 · 15 นาที', value: ov == null ? '-' : _latency(ov!.p95LatencyMs), divider: true),
+          _HeroStat(
+              label: 'p95 · 15 นาที',
+              value: ov == null ? '-' : _latency(ov!.p95LatencyMs),
+              divider: true),
           _HeroStat(
             label: 'คำขอ/นาที',
             value: ov == null ? '-' : TpFmt.count(ov!.requestsPerMin),
@@ -496,7 +553,8 @@ class _UsageHero extends StatelessWidget {
 }
 
 class _HeroStat extends StatelessWidget {
-  const _HeroStat({required this.label, required this.value, this.divider = false});
+  const _HeroStat(
+      {required this.label, required this.value, this.divider = false});
   final String label;
   final String value;
   final bool divider;
@@ -505,12 +563,17 @@ class _HeroStat extends StatelessWidget {
   Widget build(BuildContext context) => Expanded(
         child: Container(
           padding: EdgeInsets.only(left: divider ? 12 : 0, right: 6),
-          decoration: divider ? const BoxDecoration(border: Border(left: BorderSide(color: Color(0x14FFFFFF)))) : null,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          decoration: divider
+              ? const BoxDecoration(
+                  border: Border(left: BorderSide(color: Color(0x14FFFFFF))))
+              : null,
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TpType.body(11.5, const Color(0x8CFFFFFF), w: FontWeight.w500)),
+                style: TpType.body(11.5, const Color(0x8CFFFFFF),
+                    w: FontWeight.w500)),
             const SizedBox(height: 1),
             FittedBox(
               fit: BoxFit.scaleDown,
@@ -524,7 +587,12 @@ class _HeroStat extends StatelessWidget {
 
 class _Tile extends StatelessWidget {
   const _Tile(
-      {required this.art, required this.label, required this.value, required this.sub, this.valueColor, this.onTap});
+      {required this.art,
+      required this.label,
+      required this.value,
+      required this.sub,
+      this.valueColor,
+      this.onTap});
   final TpArt art;
   final String label;
   final String value;
@@ -542,16 +610,24 @@ class _Tile extends StatelessWidget {
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Tp3D(art, size: 34),
           const Spacer(),
-          if (onTap != null) Icon(PhosphorIconsRegular.caretRight, size: 15, color: p.faint),
+          if (onTap != null)
+            Icon(PhosphorIconsRegular.caretRight, size: 15, color: p.faint),
         ]),
         const SizedBox(height: 8),
-        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12, p.muted, w: FontWeight.w500)),
+        Text(label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TpType.body(12, p.muted, w: FontWeight.w500)),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(value, style: TpType.money(19, valueColor ?? p.textStrong)),
+          child:
+              Text(value, style: TpType.money(19, valueColor ?? p.textStrong)),
         ),
-        Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(11, p.faint)),
+        Text(sub,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TpType.body(11, p.faint)),
       ]),
     );
   }
@@ -569,7 +645,9 @@ class _ProviderUsageCard extends StatelessWidget {
     final p = context.tp;
     final color = _parseColor(u.color) ?? p.gold;
     final share = total <= 0 ? 0.0 : u.requests / total;
-    final errTone = u.errorRatePct >= 10 ? p.danger : (u.errorRatePct >= 3 ? p.warning : p.muted);
+    final errTone = u.errorRatePct >= 10
+        ? p.danger
+        : (u.errorRatePct >= 3 ? p.warning : p.muted);
     return TpCard(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -580,12 +658,15 @@ class _ProviderUsageCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 8)],
+              boxShadow: [
+                BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 8)
+              ],
             ),
           ),
           const SizedBox(width: 9),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(u.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -602,8 +683,13 @@ class _ProviderUsageCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text(TpFmt.count(u.requests), style: TpType.money(17, u.requests > 0 ? p.textStrong : p.faint)),
-            Text(total > 0 ? '${(share * 100).toStringAsFixed(share >= 0.1 ? 0 : 1)}% ของคำขอ' : 'คำขอ',
+            Text(TpFmt.count(u.requests),
+                style:
+                    TpType.money(17, u.requests > 0 ? p.textStrong : p.faint)),
+            Text(
+                total > 0
+                    ? '${(share * 100).toStringAsFixed(share >= 0.1 ? 0 : 1)}% ของคำขอ'
+                    : 'คำขอ',
                 style: TpType.body(10.5, p.faint)),
           ]),
         ]),
@@ -611,8 +697,12 @@ class _ProviderUsageCard extends StatelessWidget {
         TpMeter(value: share, color: color, height: 4),
         const SizedBox(height: 9),
         Wrap(spacing: 14, runSpacing: 4, children: [
-          _MiniStat(icon: PhosphorIconsRegular.timer, text: 'เฉลี่ย ${_latency(u.avgLatencyMs)}'),
-          _MiniStat(icon: PhosphorIconsRegular.gauge, text: 'p95 ${_latency(u.p95LatencyMs)}'),
+          _MiniStat(
+              icon: PhosphorIconsRegular.timer,
+              text: 'เฉลี่ย ${_latency(u.avgLatencyMs)}'),
+          _MiniStat(
+              icon: PhosphorIconsRegular.gauge,
+              text: 'p95 ${_latency(u.p95LatencyMs)}'),
           _MiniStat(
             icon: PhosphorIconsRegular.warningCircle,
             text: 'ผิดพลาด ${u.errorRatePct.toStringAsFixed(1)}%',
@@ -623,7 +713,10 @@ class _ProviderUsageCard extends StatelessWidget {
           const SizedBox(height: 8),
           const Align(
             alignment: Alignment.centerLeft,
-            child: TpPill('ปิดคีย์ทุกตัวอยู่', tone: TpTone.warning, dense: true, icon: PhosphorIconsBold.pause),
+            child: TpPill('ปิดคีย์ทุกตัวอยู่',
+                tone: TpTone.warning,
+                dense: true,
+                icon: PhosphorIconsBold.pause),
           ),
         ],
       ]),
@@ -696,15 +789,20 @@ class _ProviderCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
-          TpIconTile(_icon, tone: p.isActive ? TpTone.gold : TpTone.neutral, size: 40),
+          TpIconTile(_icon,
+              tone: p.isActive ? TpTone.gold : TpTone.neutral, size: 40),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(p.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TpType.h(14.5, c.textStrong, w: FontWeight.w600)),
-              Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12, c.muted)),
+              Text(sub,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TpType.body(12, c.muted)),
             ]),
           ),
           const SizedBox(width: 6),
@@ -713,7 +811,10 @@ class _ProviderCard extends StatelessWidget {
             height: 36,
             child: Center(
               child: busy
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2))
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2.2))
                   : Switch.adaptive(value: p.isActive, onChanged: onToggle),
             ),
           ),
@@ -724,9 +825,13 @@ class _ProviderCard extends StatelessWidget {
               tone: p.isActive ? TpTone.success : TpTone.neutral, dense: true),
           TpPill(p.isAvailable ? 'สถานะ: พร้อมใช้' : 'สถานะ: ไม่พร้อม',
               tone: p.isAvailable ? TpTone.info : TpTone.warning, dense: true),
-          if (p.apiVersion != null) TpPill('API ${p.apiVersion}', tone: TpTone.neutral, dense: true),
+          if (p.apiVersion != null)
+            TpPill('API ${p.apiVersion}', tone: TpTone.neutral, dense: true),
         ]),
-        if (test != null) ...[const SizedBox(height: 10), _TestResult(t: test!)],
+        if (test != null) ...[
+          const SizedBox(height: 10),
+          _TestResult(t: test!)
+        ],
         const SizedBox(height: 10),
         TpButton.outline(
           testing ? 'กำลังทดสอบ…' : 'ทดสอบการเชื่อมต่อ',
@@ -756,17 +861,30 @@ class _TestResult extends StatelessWidget {
             'เซิร์ฟเวอร์ยังไม่เปิดระบบทดสอบการเชื่อมต่อ — ที่เห็นคือสถานะที่บันทึกไว้: ${t.reachable ? 'พร้อมใช้' : 'ไม่พร้อม'}',
           )
         : t.reachable
-            ? (TpTone.success, PhosphorIconsFill.checkCircle, 'เชื่อมต่อได้', 'ผู้ให้บริการตอบกลับปกติ')
-            : (TpTone.danger, PhosphorIconsFill.xCircle, 'เชื่อมต่อไม่ได้', 'ตรวจคีย์หรือปลายทาง API บนหน้าเว็บแอดมิน');
+            ? (
+                TpTone.success,
+                PhosphorIconsFill.checkCircle,
+                'เชื่อมต่อได้',
+                'ผู้ให้บริการตอบกลับปกติ'
+              )
+            : (
+                TpTone.danger,
+                PhosphorIconsFill.xCircle,
+                'เชื่อมต่อไม่ได้',
+                'ตรวจคีย์หรือปลายทาง API บนหน้าเว็บแอดมิน'
+              );
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
-      decoration: BoxDecoration(color: p.soft(tone), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+          color: p.soft(tone), borderRadius: BorderRadius.circular(12)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Icon(icon, size: 16, color: p.fg(tone)),
         const SizedBox(width: 8),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('$title · ${TpFmt.time(t.at)}', style: TpType.h(12.5, p.fg(tone), w: FontWeight.w600)),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('$title · ${TpFmt.time(t.at)}',
+                style: TpType.h(12.5, p.fg(tone), w: FontWeight.w600)),
             Text(body, style: TpType.body(12, p.text)),
           ]),
         ),
@@ -778,7 +896,11 @@ class _TestResult extends StatelessWidget {
 // ═════════════════════ บอท ═════════════════════
 
 class _BotCard extends StatelessWidget {
-  const _BotCard({required this.b, required this.active, required this.busy, required this.onToggle});
+  const _BotCard(
+      {required this.b,
+      required this.active,
+      required this.busy,
+      required this.onToggle});
   final AiBotItem b;
   final bool active;
   final bool busy;
@@ -787,7 +909,8 @@ class _BotCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.tp;
-    final engine = [b.providerName, b.modelName].whereType<String>().join(' · ');
+    final engine =
+        [b.providerName, b.modelName].whereType<String>().join(' · ');
     return TpCard(
       accent: active ? p.success : null,
       padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
@@ -796,13 +919,16 @@ class _BotCard extends StatelessWidget {
           TpAvatar(name: b.displayName, size: 42, gold: active),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(b.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
               Text(engine.isEmpty ? 'ยังไม่ได้เลือกผู้ให้บริการ AI' : engine,
-                  maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12, p.muted)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TpType.body(12, p.muted)),
             ]),
           ),
           const SizedBox(width: 6),
@@ -811,24 +937,38 @@ class _BotCard extends StatelessWidget {
             height: 36,
             child: Center(
               child: busy
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2))
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2.2))
                   : Switch.adaptive(value: active, onChanged: onToggle),
             ),
           ),
         ]),
         if (b.description != null) ...[
           const SizedBox(height: 8),
-          Text(b.description!, maxLines: 2, overflow: TextOverflow.ellipsis, style: TpType.body(12.5, p.text)),
+          Text(b.description!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TpType.body(12.5, p.text)),
         ],
         const SizedBox(height: 10),
         Wrap(spacing: 6, runSpacing: 6, children: [
-          TpPill(active ? 'กำลังทำงาน' : 'ปิดอยู่', tone: active ? TpTone.success : TpTone.neutral, dense: true),
+          TpPill(active ? 'กำลังทำงาน' : 'ปิดอยู่',
+              tone: active ? TpTone.success : TpTone.neutral, dense: true),
           if (b.lineConnected)
-            const TpPill('LINE OA', tone: TpTone.success, icon: PhosphorIconsFill.chatCircle, dense: true),
-          if (b.isPublic) const TpPill('สาธารณะ', tone: TpTone.info, icon: PhosphorIconsBold.globe, dense: true),
+            const TpPill('LINE OA',
+                tone: TpTone.success,
+                icon: PhosphorIconsFill.chatCircle,
+                dense: true),
+          if (b.isPublic)
+            const TpPill('สาธารณะ',
+                tone: TpTone.info, icon: PhosphorIconsBold.globe, dense: true),
           if (b.isRentable)
             TpPill(
-              b.rentalPerMonth > 0 ? 'ให้เช่า ${TpFmt.baht(b.rentalPerMonth)}/เดือน' : 'ให้เช่า',
+              b.rentalPerMonth > 0
+                  ? 'ให้เช่า ${TpFmt.baht(b.rentalPerMonth)}/เดือน'
+                  : 'ให้เช่า',
               tone: TpTone.gold,
               icon: PhosphorIconsBold.tag,
               dense: true,

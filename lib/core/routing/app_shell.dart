@@ -18,7 +18,8 @@ class AppShell extends ConsumerStatefulWidget {
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver {
+class _AppShellState extends ConsumerState<AppShell>
+    with WidgetsBindingObserver {
   Timer? _poll;
 
   @override
@@ -63,14 +64,21 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
       body: widget.shell,
       bottomNavigationBar: TpTabBar(
         index: widget.shell.currentIndex,
-        onTap: (i) => widget.shell.goBranch(i, initialLocation: i == widget.shell.currentIndex),
+        onTap: (i) => widget.shell
+            .goBranch(i, initialLocation: i == widget.shell.currentIndex),
         items: [
-          const TpTabItem('ภาพรวม', PhosphorIconsRegular.house, PhosphorIconsFill.house),
-          TpTabItem('งานรอทำ', PhosphorIconsRegular.tray, PhosphorIconsFill.tray, badge: s?.workBadge ?? 0),
-          TpTabItem('แชท', PhosphorIconsRegular.chatsCircle, PhosphorIconsFill.chatsCircle,
+          const TpTabItem(
+              'ภาพรวม', PhosphorIconsRegular.house, PhosphorIconsFill.house),
+          TpTabItem(
+              'งานรอทำ', PhosphorIconsRegular.tray, PhosphorIconsFill.tray,
+              badge: s?.workBadge ?? 0),
+          TpTabItem('แชท', PhosphorIconsRegular.chatsCircle,
+              PhosphorIconsFill.chatsCircle,
               badge: s?.customerRequests.count ?? 0),
-          const TpTabItem('โมดูล', PhosphorIconsRegular.squaresFour, PhosphorIconsFill.squaresFour),
-          const TpTabItem('บัญชี', PhosphorIconsRegular.userCircle, PhosphorIconsFill.userCircle),
+          const TpTabItem('โมดูล', PhosphorIconsRegular.squaresFour,
+              PhosphorIconsFill.squaresFour),
+          const TpTabItem('บัญชี', PhosphorIconsRegular.userCircle,
+              PhosphorIconsFill.userCircle),
         ],
       ),
     );

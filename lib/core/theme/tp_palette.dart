@@ -134,16 +134,29 @@ class TpPalette extends ThemeExtension<TpPalette> {
   // ───────────── ค่าคงที่ร่วมทั้งสองโหมด ─────────────
 
   /// ทองไล่เฉดของปุ่มหลัก
-  static const goldButton = [Color(0xFFF8E7B0), Color(0xFFE6C36F), Color(0xFFC99A40)];
+  static const goldButton = [
+    Color(0xFFF8E7B0),
+    Color(0xFFE6C36F),
+    Color(0xFFC99A40)
+  ];
 
   /// ทองฟอยล์สำหรับตัวเลข/หัวเรื่องเด่น
-  static const foil = [Color(0xFFF6E6B8), Color(0xFFE4C06B), Color(0xFFC99A40), Color(0xFFF3DC9B)];
+  static const foil = [
+    Color(0xFFF6E6B8),
+    Color(0xFFE4C06B),
+    Color(0xFFC99A40),
+    Color(0xFFF3DC9B)
+  ];
 
   /// ตัวอักษรบนพื้นทอง (น้ำตาลเข้ม contrast ≥ 7:1)
   static const onGold = Color(0xFF2A1D05);
 
   /// การ์ดฮีโร่น้ำเงินเข้ม (ใช้ทั้งสองโหมด ตัวอักษรบนการ์ดเป็นสีอ่อนเสมอ)
-  static const heroCard = [Color(0xFF1B2A47), Color(0xFF0F1A30), Color(0xFF081224)];
+  static const heroCard = [
+    Color(0xFF1B2A47),
+    Color(0xFF0F1A30),
+    Color(0xFF081224)
+  ];
   static const heroText = Color(0xFFF3F5F9);
   static const heroMuted = Color(0xB3FFFFFF);
   static const heroGold = Color(0xFFF0C96A);
@@ -193,7 +206,11 @@ class TpPalette extends ThemeExtension<TpPalette> {
     bubbleAdmin: [Color(0xFFF3DC9B), Color(0xFFD9B25C)],
     onBubbleAdmin: Color(0xFF2A1D05),
     shadow: [
-      BoxShadow(color: Color(0x80000000), blurRadius: 34, offset: Offset(0, 14), spreadRadius: -6),
+      BoxShadow(
+          color: Color(0x80000000),
+          blurRadius: 34,
+          offset: Offset(0, 14),
+          spreadRadius: -6),
     ],
     kanokOpacity: 0.20,
     bodyOverlap: 0,
@@ -240,7 +257,11 @@ class TpPalette extends ThemeExtension<TpPalette> {
     onBubbleAdmin: Color(0xFFFFFFFF),
     shadow: [
       BoxShadow(color: Color(0x0F10223F), blurRadius: 2, offset: Offset(0, 1)),
-      BoxShadow(color: Color(0x1710223F), blurRadius: 28, offset: Offset(0, 10), spreadRadius: -4),
+      BoxShadow(
+          color: Color(0x1710223F),
+          blurRadius: 28,
+          offset: Offset(0, 10),
+          spreadRadius: -4),
     ],
     kanokOpacity: 0.34,
     bodyOverlap: 24,
@@ -257,7 +278,8 @@ class TpPalette extends ThemeExtension<TpPalette> {
     Color c(Color a, Color b) => Color.lerp(a, b, t)!;
     List<Color> l(List<Color> a, List<Color> b) {
       final n = a.length > b.length ? a.length : b.length;
-      return List.generate(n, (i) => c(a[i.clamp(0, a.length - 1)], b[i.clamp(0, b.length - 1)]));
+      return List.generate(n,
+          (i) => c(a[i.clamp(0, a.length - 1)], b[i.clamp(0, b.length - 1)]));
     }
 
     return TpPalette(
@@ -308,7 +330,8 @@ class TpPalette extends ThemeExtension<TpPalette> {
 
 /// ทางลัด `context.tp` อ่านชุดสีปัจจุบัน
 extension TpContext on BuildContext {
-  TpPalette get tp => Theme.of(this).extension<TpPalette>() ?? TpPalette.midnight;
+  TpPalette get tp =>
+      Theme.of(this).extension<TpPalette>() ?? TpPalette.midnight;
 }
 
 /// ระดับสีของป้าย/ตัวนับ

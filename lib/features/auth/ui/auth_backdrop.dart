@@ -9,7 +9,8 @@ class AuthBackdrop extends StatelessWidget {
   final Widget child;
   final double dim;
 
-  static double ringY(BuildContext context) => MediaQuery.sizeOf(context).height * 0.267;
+  static double ringY(BuildContext context) =>
+      MediaQuery.sizeOf(context).height * 0.267;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +21,8 @@ class AuthBackdrop extends StatelessWidget {
       ),
       child: Stack(children: [
         Positioned.fill(
-          child: Image.asset('assets/images/brand/login_bg.webp', fit: BoxFit.cover, alignment: Alignment.topCenter),
+          child: Image.asset('assets/images/brand/login_bg.webp',
+              fit: BoxFit.cover, alignment: Alignment.topCenter),
         ),
         Positioned.fill(
           child: DecoratedBox(
@@ -87,16 +89,19 @@ class AuthField extends StatelessWidget {
       autofillHints: autofillHints,
       autocorrect: false,
       enableSuggestions: !obscure,
-      style: const TextStyle(fontFamily: 'Anuphan', fontSize: 15.5, color: Colors.white),
+      style: const TextStyle(
+          fontFamily: 'Anuphan', fontSize: 15.5, color: Colors.white),
       cursorColor: const Color(0xFFF0C96A),
       decoration: InputDecoration(
         filled: true,
         fillColor: const Color(0x14FFFFFF),
         hintText: hint,
-        hintStyle: const TextStyle(fontFamily: 'Anuphan', fontSize: 15, color: Color(0x73FFFFFF)),
+        hintStyle: const TextStyle(
+            fontFamily: 'Anuphan', fontSize: 15, color: Color(0x73FFFFFF)),
         prefixIcon: Icon(icon, color: const Color(0x99FFFFFF), size: 20),
         suffixIcon: suffix,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: border,
         enabledBorder: border,
         disabledBorder: border,

@@ -15,18 +15,41 @@ class TpType {
   static const serif = 'NotoSerifThai';
   static const tnum = [FontFeature.tabularFigures()];
 
-  static TextStyle title(double size, Color color) =>
-      TextStyle(fontFamily: serif, fontSize: size, fontWeight: FontWeight.w700, color: color, height: 1.3);
+  static TextStyle title(double size, Color color) => TextStyle(
+      fontFamily: serif,
+      fontSize: size,
+      fontWeight: FontWeight.w700,
+      color: color,
+      height: 1.3);
 
-  static TextStyle h(double size, Color color, {FontWeight w = FontWeight.w700}) =>
-      TextStyle(fontFamily: ui, fontSize: size, fontWeight: w, color: color, height: 1.35);
+  static TextStyle h(double size, Color color,
+          {FontWeight w = FontWeight.w700}) =>
+      TextStyle(
+          fontFamily: ui,
+          fontSize: size,
+          fontWeight: w,
+          color: color,
+          height: 1.35);
 
-  static TextStyle body(double size, Color color, {FontWeight w = FontWeight.w400, double height = 1.45}) =>
-      TextStyle(fontFamily: ui, fontSize: size, fontWeight: w, color: color, height: height);
+  static TextStyle body(double size, Color color,
+          {FontWeight w = FontWeight.w400, double height = 1.45}) =>
+      TextStyle(
+          fontFamily: ui,
+          fontSize: size,
+          fontWeight: w,
+          color: color,
+          height: height);
 
   /// ตัวเลขเงิน/จำนวน — tabular กันตัวเลขกระโดดตอนอัปเดต
-  static TextStyle money(double size, Color color, {FontWeight w = FontWeight.w700}) =>
-      TextStyle(fontFamily: ui, fontSize: size, fontWeight: w, color: color, fontFeatures: tnum, height: 1.25);
+  static TextStyle money(double size, Color color,
+          {FontWeight w = FontWeight.w700}) =>
+      TextStyle(
+          fontFamily: ui,
+          fontSize: size,
+          fontWeight: w,
+          color: color,
+          fontFeatures: tnum,
+          height: 1.25);
 }
 
 ThemeData buildTpTheme(TpPalette p) {
@@ -83,10 +106,12 @@ ThemeData buildTpTheme(TpPalette p) {
       prefixIconColor: p.muted,
       suffixIconColor: p.muted,
     ),
-    progressIndicatorTheme: ProgressIndicatorThemeData(color: p.gold, circularTrackColor: p.divider),
+    progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: p.gold, circularTrackColor: p.divider),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: p.isDark ? const Color(0xFF1B2130) : const Color(0xFF10223F),
+      backgroundColor:
+          p.isDark ? const Color(0xFF1B2130) : const Color(0xFF10223F),
       contentTextStyle: TpType.body(14, Colors.white, w: FontWeight.w500),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     ),
@@ -94,7 +119,8 @@ ThemeData buildTpTheme(TpPalette p) {
       backgroundColor: p.sheet,
       modalBackgroundColor: p.sheet,
       surfaceTintColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: p.sheet,
@@ -148,4 +174,5 @@ class TpLookController extends Notifier<TpLook> {
   }
 }
 
-final tpLookProvider = NotifierProvider<TpLookController, TpLook>(TpLookController.new);
+final tpLookProvider =
+    NotifierProvider<TpLookController, TpLook>(TpLookController.new);

@@ -54,13 +54,14 @@ class SecureStorage {
     return v == 'true';
   }
 
-  static Future<void> writeBiometricEnabled(bool enabled) =>
-      _storage.write(key: _kBiometricEnabled, value: enabled ? 'true' : 'false');
+  static Future<void> writeBiometricEnabled(bool enabled) => _storage.write(
+      key: _kBiometricEnabled, value: enabled ? 'true' : 'false');
 
   // ── ข้อมูลแอดมินล่าสุด (ชื่อ/สิทธิ์) ไว้เปิดแอปตอนออฟไลน์ ──
   static const _kAdminCache = 'admin_profile_cache';
   static Future<String?> readAdminCache() => _storage.read(key: _kAdminCache);
-  static Future<void> writeAdminCache(String json) => _storage.write(key: _kAdminCache, value: json);
+  static Future<void> writeAdminCache(String json) =>
+      _storage.write(key: _kAdminCache, value: json);
   static Future<void> deleteAdminCache() => _storage.delete(key: _kAdminCache);
 
   // ── ตัวนับ PIN ผิด (เก็บถาวร — ปิดแอปเปิดใหม่ตัวนับไม่รีเซ็ต กันเดา PIN ไม่จำกัด) ──
@@ -78,7 +79,8 @@ class SecureStorage {
   static Future<void> writePinFails(int count, {DateTime? lockUntil}) async {
     await _storage.write(key: _kPinFails, value: '$count');
     if (lockUntil != null) {
-      await _storage.write(key: _kPinLockUntil, value: '${lockUntil.millisecondsSinceEpoch}');
+      await _storage.write(
+          key: _kPinLockUntil, value: '${lockUntil.millisecondsSinceEpoch}');
     }
   }
 
@@ -89,7 +91,8 @@ class SecureStorage {
 }
 
 /// token ปัจจุบัน (ใช้แนบหัว Authorization ให้รูปที่ต้องยืนยันตัวตน เช่น สลิป)
-final authTokenProvider = FutureProvider<String?>((ref) => SecureStorage.readToken());
+final authTokenProvider =
+    FutureProvider<String?>((ref) => SecureStorage.readToken());
 
 final secureStorageProvider =
     Provider<SecureStorage>((ref) => SecureStorage._());

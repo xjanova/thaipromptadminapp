@@ -5,7 +5,8 @@ import '../../../core/api/api_client.dart';
 import '../../../core/api/api_envelope.dart';
 import '../../../shared/ui/tp_format.dart';
 
-Map<String, dynamic> _m(dynamic v) => v is Map ? v.cast<String, dynamic>() : const {};
+Map<String, dynamic> _m(dynamic v) =>
+    v is Map ? v.cast<String, dynamic>() : const {};
 
 /// ช่วงเวลาที่ `GET /analytics/overview?period=` รองรับ
 ///
@@ -70,7 +71,8 @@ class AnalyticsOverview {
   final int uniqueBuyers;
   final DateTime fetchedAt;
 
-  factory AnalyticsOverview.fromJson(Map<String, dynamic> j, AnalyticsPeriod period) {
+  factory AnalyticsOverview.fromJson(
+      Map<String, dynamic> j, AnalyticsPeriod period) {
     final tm = _m(j['top_metrics']);
     return AnalyticsOverview(
       period: period,
@@ -90,7 +92,8 @@ class AnalyticsOverview {
     for (final e in raw.whereType<Map>()) {
       final d = DateTime.tryParse((e['date'] ?? '').toString());
       if (d == null) continue;
-      out.add(DayPoint(DateTime(d.year, d.month, d.day), TpFmt.toDouble(e['value'])));
+      out.add(DayPoint(
+          DateTime(d.year, d.month, d.day), TpFmt.toDouble(e['value'])));
     }
     return out;
   }
@@ -127,7 +130,8 @@ class AnalyticsRepository {
   final ApiClient _api;
 
   Future<AnalyticsOverview> overview(AnalyticsPeriod period) => _safe(() async {
-        final data = await _api.get<dynamic>('/analytics/overview', query: {'period': period.key});
+        final data = await _api
+            .get<dynamic>('/analytics/overview', query: {'period': period.key});
         return AnalyticsOverview.fromJson(_m(data), period);
       });
 }
@@ -140,7 +144,9 @@ Future<T> _safe<T>(Future<T> Function() run) async {
     return await run();
   } on DioException catch (e) {
     final code = e.response?.statusCode ?? 0;
-    if (code >= 500) throw ActionError('เซิร์ฟเวอร์ขัดข้องชั่วคราว ($code) ลองใหม่อีกครั้ง');
+    if (code >= 500) {
+      throw ActionError('เซิร์ฟเวอร์ขัดข้องชั่วคราว ($code) ลองใหม่อีกครั้ง');
+    }
     rethrow;
   } on ApiException catch (e) {
     if (const {401, 403, 404, 429}.contains(e.statusCode)) rethrow;
@@ -149,9 +155,10 @@ Future<T> _safe<T>(Future<T> Function() run) async {
   }
 }
 
-final analyticsRepositoryProvider =
-    Provider<AnalyticsRepository>((ref) => AnalyticsRepository(ref.watch(apiClientProvider)));
+final analyticsRepositoryProvider = Provider<AnalyticsRepository>(
+    (ref) => AnalyticsRepository(ref.watch(apiClientProvider)));
 
 /// สรุปตามช่วงที่เลือก (ตัวเลขออเดอร์)
-final analyticsOverviewProvider = FutureProvider.autoDispose.family<AnalyticsOverview, AnalyticsPeriod>(
-    (ref, period) => ref.watch(analyticsRepositoryProvider).overview(period));
+final analyticsOverviewProvider = FutureProvider.autoDispose
+    .family<AnalyticsOverview, AnalyticsPeriod>((ref, period) =>
+        ref.watch(analyticsRepositoryProvider).overview(period));

@@ -109,13 +109,17 @@ class _TpPagedSliverState<T> extends State<TpPagedSliver<T>> {
   Widget build(BuildContext context) {
     if (!_loadedOnce) {
       if (_error != null) {
-        return SliverToBoxAdapter(child: TpErrorView(error: _error, onRetry: _reload, compact: true));
+        return SliverToBoxAdapter(
+            child: TpErrorView(error: _error, onRetry: _reload, compact: true));
       }
-      return SliverToBoxAdapter(child: TpSkeletonList(count: widget.skeletonCount));
+      return SliverToBoxAdapter(
+          child: TpSkeletonList(count: widget.skeletonCount));
     }
     if (_items.isEmpty) {
       return SliverToBoxAdapter(
-        child: widget.empty ?? const TpEmpty(art: TpArt.emptyInbox, title: 'ไม่มีรายการ', compact: true),
+        child: widget.empty ??
+            const TpEmpty(
+                art: TpArt.emptyInbox, title: 'ไม่มีรายการ', compact: true),
       );
     }
     final hasMore = _page < _lastPage;
@@ -126,13 +130,19 @@ class _TpPagedSliverState<T> extends State<TpPagedSliver<T>> {
           if (_error != null) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Center(child: TpButton.ghost('โหลดต่อไม่สำเร็จ · ลองใหม่', onPressed: _loadMore)),
+              child: Center(
+                  child: TpButton.ghost('โหลดต่อไม่สำเร็จ · ลองใหม่',
+                      onPressed: _loadMore)),
             );
           }
           WidgetsBinding.instance.addPostFrameCallback((_) => _loadMore());
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 18),
-            child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.2))),
+            child: Center(
+                child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2.2))),
           );
         }
         return Padding(

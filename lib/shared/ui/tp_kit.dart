@@ -8,10 +8,25 @@ import 'tp_format.dart';
 
 /// ภาพ 3D ประจำแบรนด์ (เจนจาก ChatGPT 2026-10-06 + ชุดเดียวกับแอปลูกค้า)
 enum TpArt {
-  bill, headset, payout, sms, hourglass, shield,
-  ai, members, analytics, broadcast, settings, server,
-  tarot, wallet, store, scooter,
-  emptyDone, emptyInbox, emptyOffline;
+  bill,
+  headset,
+  payout,
+  sms,
+  hourglass,
+  shield,
+  ai,
+  members,
+  analytics,
+  broadcast,
+  settings,
+  server,
+  tarot,
+  wallet,
+  store,
+  scooter,
+  emptyDone,
+  emptyInbox,
+  emptyOffline;
 
   String get asset => switch (this) {
         TpArt.emptyDone => 'assets/images/icons/empty_done.webp',
@@ -42,7 +57,8 @@ class Tp3D extends StatelessWidget {
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: context.tp.isDark ? 0.35 : 0.12),
+            color:
+                Colors.black.withValues(alpha: context.tp.isDark ? 0.35 : 0.12),
             blurRadius: size * 0.22,
             offset: Offset(0, size * 0.1),
             spreadRadius: -size * 0.18,
@@ -95,7 +111,8 @@ class TpCard extends StatelessWidget {
             width: 3,
             decoration: BoxDecoration(
               color: accent,
-              borderRadius: const BorderRadius.horizontal(right: Radius.circular(3)),
+              borderRadius:
+                  const BorderRadius.horizontal(right: Radius.circular(3)),
             ),
           ),
         ),
@@ -138,7 +155,10 @@ class TpCard extends StatelessWidget {
 
 /// การ์ดฮีโร่น้ำเงินเข้ม + ลายกนกมุม + ขอบทอง (ใช้กับตัวเลขสำคัญที่สุดของหน้า)
 class TpHeroCard extends StatelessWidget {
-  const TpHeroCard({super.key, required this.child, this.padding = const EdgeInsets.fromLTRB(18, 16, 18, 14)});
+  const TpHeroCard(
+      {super.key,
+      required this.child,
+      this.padding = const EdgeInsets.fromLTRB(18, 16, 18, 14)});
   final Widget child;
   final EdgeInsetsGeometry padding;
 
@@ -156,7 +176,11 @@ class TpHeroCard extends StatelessWidget {
         ),
         border: Border.all(color: const Color(0x38F0C96A)),
         boxShadow: const [
-          BoxShadow(color: Color(0x73060D1B), blurRadius: 40, offset: Offset(0, 18), spreadRadius: -8),
+          BoxShadow(
+              color: Color(0x73060D1B),
+              blurRadius: 40,
+              offset: Offset(0, 18),
+              spreadRadius: -8),
         ],
       ),
       child: Stack(children: [
@@ -166,7 +190,8 @@ class TpHeroCard extends StatelessWidget {
           child: IgnorePointer(
             child: Opacity(
               opacity: 0.16,
-              child: Image.asset('assets/images/brand/kanok-gold.webp', width: 150, cacheWidth: 450),
+              child: Image.asset('assets/images/brand/kanok-gold.webp',
+                  width: 150, cacheWidth: 450),
             ),
           ),
         ),
@@ -198,7 +223,8 @@ class TpFoilText extends StatelessWidget {
 
 /// ป้ายสถานะเม็ดยา
 class TpPill extends StatelessWidget {
-  const TpPill(this.label, {super.key, this.tone = TpTone.neutral, this.icon, this.dense = false});
+  const TpPill(this.label,
+      {super.key, this.tone = TpTone.neutral, this.icon, this.dense = false});
   final String label;
   final TpTone tone;
   final IconData? icon;
@@ -211,10 +237,16 @@ class TpPill extends StatelessWidget {
     return Container(
       height: dense ? 20 : 24,
       padding: EdgeInsets.symmetric(horizontal: dense ? 7 : 9),
-      decoration: BoxDecoration(color: p.soft(tone), borderRadius: BorderRadius.circular(99)),
+      decoration: BoxDecoration(
+          color: p.soft(tone), borderRadius: BorderRadius.circular(99)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        if (icon != null) ...[Icon(icon, size: dense ? 11 : 13, color: fg), const SizedBox(width: 4)],
-        Text(label, style: TpType.body(dense ? 11 : 12, fg, w: FontWeight.w600, height: 1.1)),
+        if (icon != null) ...[
+          Icon(icon, size: dense ? 11 : 13, color: fg),
+          const SizedBox(width: 4)
+        ],
+        Text(label,
+            style: TpType.body(dense ? 11 : 12, fg,
+                w: FontWeight.w600, height: 1.1)),
       ]),
     );
   }
@@ -234,7 +266,8 @@ class TpCount extends StatelessWidget {
       height: 26,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: p.soft(tone), borderRadius: BorderRadius.circular(9)),
+      decoration: BoxDecoration(
+          color: p.soft(tone), borderRadius: BorderRadius.circular(9)),
       child: Text(TpFmt.count(count), style: TpType.money(14, p.fg(tone))),
     );
   }
@@ -260,14 +293,21 @@ class TpBadge extends StatelessWidget {
         border: Border.all(color: ring ?? context.tp.cardSolid, width: 2),
       ),
       child: Text(count > 99 ? '99+' : '$count',
-          style: TpType.money(10.5, Colors.white, w: FontWeight.w700).copyWith(height: 1)),
+          style: TpType.money(10.5, Colors.white, w: FontWeight.w700)
+              .copyWith(height: 1)),
     );
   }
 }
 
 /// ปุ่มไอคอนกระจกบนหัวหน้าจอ
 class TpGlassButton extends StatelessWidget {
-  const TpGlassButton({super.key, required this.icon, this.onTap, this.dot = false, this.tooltip, this.gold = false});
+  const TpGlassButton(
+      {super.key,
+      required this.icon,
+      this.onTap,
+      this.dot = false,
+      this.tooltip,
+      this.gold = false});
   final IconData icon;
   final VoidCallback? onTap;
   final bool dot;
@@ -295,7 +335,8 @@ class TpGlassButton extends StatelessWidget {
           width: 42,
           height: 42,
           child: Stack(alignment: Alignment.center, children: [
-            Icon(icon, size: 21, color: gold ? const Color(0xFFF0C96A) : p.onHeader),
+            Icon(icon,
+                size: 21, color: gold ? const Color(0xFFF0C96A) : p.onHeader),
             if (dot)
               Positioned(
                 top: 8,
@@ -335,15 +376,33 @@ class TpButton extends StatelessWidget {
   });
 
   const TpButton.outline(this.label,
-      {super.key, this.onPressed, this.icon, this.loading = false, this.height = 52, this.expand = true, this.fontSize})
+      {super.key,
+      this.onPressed,
+      this.icon,
+      this.loading = false,
+      this.height = 52,
+      this.expand = true,
+      this.fontSize})
       : kind = TpButtonKind.outline;
 
   const TpButton.danger(this.label,
-      {super.key, this.onPressed, this.icon, this.loading = false, this.height = 52, this.expand = true, this.fontSize})
+      {super.key,
+      this.onPressed,
+      this.icon,
+      this.loading = false,
+      this.height = 52,
+      this.expand = true,
+      this.fontSize})
       : kind = TpButtonKind.danger;
 
   const TpButton.ghost(this.label,
-      {super.key, this.onPressed, this.icon, this.loading = false, this.height = 44, this.expand = false, this.fontSize})
+      {super.key,
+      this.onPressed,
+      this.icon,
+      this.loading = false,
+      this.height = 44,
+      this.expand = false,
+      this.fontSize})
       : kind = TpButtonKind.ghost;
 
   final String label;
@@ -359,26 +418,61 @@ class TpButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.tp;
     final disabled = onPressed == null || loading;
-    final (Color fg, Gradient? grad, Color? bg, Color? border, List<BoxShadow> shadow) = switch (kind) {
+    final (
+      Color fg,
+      Gradient? grad,
+      Color? bg,
+      Color? border,
+      List<BoxShadow> shadow
+    ) = switch (kind) {
       TpButtonKind.gold => (
           TpPalette.onGold,
           const LinearGradient(
-              begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: TpPalette.goldButton, stops: [0, 0.42, 1]),
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: TpPalette.goldButton,
+              stops: [0, 0.42, 1]),
           null,
           null,
-          [BoxShadow(color: const Color(0xFFCFA349).withValues(alpha: 0.35), blurRadius: 22, offset: const Offset(0, 8), spreadRadius: -6)],
+          [
+            BoxShadow(
+                color: const Color(0xFFCFA349).withValues(alpha: 0.35),
+                blurRadius: 22,
+                offset: const Offset(0, 8),
+                spreadRadius: -6)
+          ],
         ),
       TpButtonKind.navy => (
           const Color(0xFFF0C96A),
           const LinearGradient(
-              begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF22427A), Color(0xFF10223F)]),
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF22427A), Color(0xFF10223F)]),
           null,
           const Color(0x38F0C96A),
           const <BoxShadow>[],
         ),
-      TpButtonKind.outline => (p.text, null, p.cardSolid, p.border, const <BoxShadow>[]),
-      TpButtonKind.danger => (p.danger, null, p.dangerSoft, null, const <BoxShadow>[]),
-      TpButtonKind.ghost => (p.goldText, null, Colors.transparent, null, const <BoxShadow>[]),
+      TpButtonKind.outline => (
+          p.text,
+          null,
+          p.cardSolid,
+          p.border,
+          const <BoxShadow>[]
+        ),
+      TpButtonKind.danger => (
+          p.danger,
+          null,
+          p.dangerSoft,
+          null,
+          const <BoxShadow>[]
+        ),
+      TpButtonKind.ghost => (
+          p.goldText,
+          null,
+          Colors.transparent,
+          null,
+          const <BoxShadow>[]
+        ),
     };
     final br = BorderRadius.circular(height >= 50 ? 16 : 13);
     final textStyle = TpType.h(fontSize ?? (height >= 50 ? 15.5 : 14), fg);
@@ -388,11 +482,18 @@ class TpButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (loading)
-          SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2, color: fg))
+          SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2.2, color: fg))
         else if (icon != null)
           Icon(icon, size: 19, color: fg),
         if (loading || icon != null) const SizedBox(width: 8),
-        Flexible(child: Text(label, style: textStyle, maxLines: 1, overflow: TextOverflow.ellipsis)),
+        Flexible(
+            child: Text(label,
+                style: textStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis)),
       ],
     );
 
@@ -418,7 +519,9 @@ class TpButton extends StatelessWidget {
                     HapticFeedback.lightImpact();
                     onPressed!();
                   },
-            child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: inner),
+            child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: inner),
           ),
         ),
       ),
@@ -428,7 +531,8 @@ class TpButton extends StatelessWidget {
 
 /// หัวข้อส่วน + ปุ่มขวา (เช่น "ดูทั้งหมด")
 class TpSection extends StatelessWidget {
-  const TpSection(this.title, {super.key, this.trailing, this.action, this.onAction, this.padding});
+  const TpSection(this.title,
+      {super.key, this.trailing, this.action, this.onAction, this.padding});
   final String title;
   final Widget? trailing;
   final String? action;
@@ -450,7 +554,8 @@ class TpSection extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(action!, style: TpType.body(13, p.goldText, w: FontWeight.w600)),
+                Text(action!,
+                    style: TpType.body(13, p.goldText, w: FontWeight.w600)),
                 Icon(PhosphorIconsBold.caretRight, size: 12, color: p.goldText),
               ]),
             ),
@@ -494,7 +599,9 @@ class TpRow extends StatelessWidget {
     final p = context.tp;
     Widget? lead = leading;
     if (lead == null && art != null) lead = Tp3D(art!, size: dense ? 36 : 42);
-    if (lead == null && icon != null) lead = TpIconTile(icon!, tone: iconTone, size: dense ? 36 : 40);
+    if (lead == null && icon != null) {
+      lead = TpIconTile(icon!, tone: iconTone, size: dense ? 36 : 40);
+    }
     return InkWell(
       onTap: onTap == null
           ? null
@@ -503,22 +610,29 @@ class TpRow extends StatelessWidget {
               onTap!();
             },
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 14, vertical: dense ? 10 : 12),
+        padding:
+            EdgeInsets.symmetric(horizontal: 14, vertical: dense ? 10 : 12),
         child: Row(children: [
           if (lead != null) ...[lead, const SizedBox(width: 12)],
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              Text(title,
-                  style: titleStyle ?? TpType.h(14.5, p.textStrong, w: FontWeight.w600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
-              if (subtitle != null && subtitle!.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 1),
-                  child: Text(subtitle!,
-                      style: TpType.body(12.5, p.muted), maxLines: 2, overflow: TextOverflow.ellipsis),
-                ),
-            ]),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title,
+                      style: titleStyle ??
+                          TpType.h(14.5, p.textStrong, w: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  if (subtitle != null && subtitle!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1),
+                      child: Text(subtitle!,
+                          style: TpType.body(12.5, p.muted),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                ]),
           ),
           if (trailing != null) ...[const SizedBox(width: 8), trailing!],
           if (chevron && onTap != null) ...[
@@ -544,13 +658,15 @@ class TpGroup extends StatelessWidget {
       if (i > 0) items.add(Divider(height: 1, thickness: 1, color: p.divider));
       items.add(children[i]);
     }
-    return TpCard(padding: EdgeInsets.zero, clip: true, child: Column(children: items));
+    return TpCard(
+        padding: EdgeInsets.zero, clip: true, child: Column(children: items));
   }
 }
 
 /// ไอคอนเส้นในกล่องสี่เหลี่ยมมน
 class TpIconTile extends StatelessWidget {
-  const TpIconTile(this.icon, {super.key, this.tone = TpTone.navy, this.size = 40});
+  const TpIconTile(this.icon,
+      {super.key, this.tone = TpTone.navy, this.size = 40});
   final IconData icon;
   final TpTone tone;
   final double size;
@@ -561,7 +677,9 @@ class TpIconTile extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(color: p.soft(tone), borderRadius: BorderRadius.circular(size * 0.34)),
+      decoration: BoxDecoration(
+          color: p.soft(tone),
+          borderRadius: BorderRadius.circular(size * 0.34)),
       child: Icon(icon, size: size * 0.5, color: p.fg(tone)),
     );
   }
@@ -569,7 +687,13 @@ class TpIconTile extends StatelessWidget {
 
 /// อวาตาร์ตัวอักษร + ป้ายแพลตฟอร์ม (Messenger / LINE / Telegram)
 class TpAvatar extends StatelessWidget {
-  const TpAvatar({super.key, required this.name, this.platform, this.size = 42, this.online = false, this.gold = false});
+  const TpAvatar(
+      {super.key,
+      required this.name,
+      this.platform,
+      this.size = 42,
+      this.online = false,
+      this.gold = false});
   final String? name;
   final String? platform;
   final double size;
@@ -593,11 +717,14 @@ class TpAvatar extends StatelessWidget {
             color: gold ? null : p.navySoft,
             gradient: gold
                 ? const LinearGradient(
-                    begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFF3DC9B), Color(0xFFC99A40)])
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFF3DC9B), Color(0xFFC99A40)])
                 : null,
           ),
           child: Text(TpFmt.initial(name),
-              style: TpType.h(size * 0.38, gold ? TpPalette.onGold : p.navyIcon).copyWith(height: 1)),
+              style: TpType.h(size * 0.38, gold ? TpPalette.onGold : p.navyIcon)
+                  .copyWith(height: 1)),
         ),
         if (pf != null)
           Positioned(
@@ -635,12 +762,18 @@ class TpAvatar extends StatelessWidget {
   /// สี + ไอคอนของแพลตฟอร์มแชท (null = ไม่แสดงป้าย)
   static (Color, IconData, String)? platformStyle(String? platform) {
     final v = (platform ?? '').toLowerCase();
-    if (v.contains('line')) return (TpPalette.line, PhosphorIconsFill.chatCircle, 'LINE');
-    if (v.contains('tele') || v == 'tg') return (TpPalette.telegram, PhosphorIconsFill.telegramLogo, 'Telegram');
+    if (v.contains('line')) {
+      return (TpPalette.line, PhosphorIconsFill.chatCircle, 'LINE');
+    }
+    if (v.contains('tele') || v == 'tg') {
+      return (TpPalette.telegram, PhosphorIconsFill.telegramLogo, 'Telegram');
+    }
     if (v.contains('face') || v.contains('fb') || v.contains('messenger')) {
       return (TpPalette.facebook, PhosphorIconsFill.messengerLogo, 'Messenger');
     }
-    if (v.contains('web')) return (const Color(0xFF8A6420), PhosphorIconsFill.globe, 'เว็บ');
+    if (v.contains('web')) {
+      return (const Color(0xFF8A6420), PhosphorIconsFill.globe, 'เว็บ');
+    }
     return null;
   }
 }
@@ -675,7 +808,8 @@ class TpChips<T> extends StatelessWidget {
         itemBuilder: (context, i) {
           final it = items[i];
           final on = it.value == value;
-          final fg = on ? TpPalette.onGold : (onHeader ? p.onHeaderMuted : p.muted);
+          final fg =
+              on ? TpPalette.onGold : (onHeader ? p.onHeaderMuted : p.muted);
           return GestureDetector(
             onTap: () {
               if (on) return;
@@ -696,16 +830,29 @@ class TpChips<T> extends StatelessWidget {
                     : null,
                 color: on ? null : (onHeader ? p.glass : p.cardSolid),
                 borderRadius: BorderRadius.circular(12),
-                border: on ? null : Border.all(color: onHeader ? p.glassBorder : p.border),
+                border: on
+                    ? null
+                    : Border.all(color: onHeader ? p.glassBorder : p.border),
                 boxShadow: on
-                    ? [BoxShadow(color: const Color(0xFFCFA349).withValues(alpha: 0.35), blurRadius: 14, offset: const Offset(0, 5), spreadRadius: -4)]
+                    ? [
+                        BoxShadow(
+                            color:
+                                const Color(0xFFCFA349).withValues(alpha: 0.35),
+                            blurRadius: 14,
+                            offset: const Offset(0, 5),
+                            spreadRadius: -4)
+                      ]
                     : null,
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(it.label, style: TpType.body(13, fg, w: FontWeight.w600, height: 1.1)),
+                Text(it.label,
+                    style:
+                        TpType.body(13, fg, w: FontWeight.w600, height: 1.1)),
                 if (it.count != null) ...[
                   const SizedBox(width: 6),
-                  Text(TpFmt.count(it.count), style: TpType.money(12.5, fg.withValues(alpha: on ? 0.75 : 0.7))),
+                  Text(TpFmt.count(it.count),
+                      style: TpType.money(
+                          12.5, fg.withValues(alpha: on ? 0.75 : 0.7))),
                 ],
               ]),
             ),
@@ -725,7 +872,8 @@ class TpChipItem<T> {
 
 /// แถว key–value ในหน้ารายละเอียด
 class TpKv extends StatelessWidget {
-  const TpKv(this.label, this.value, {super.key, this.valueColor, this.mono = false});
+  const TpKv(this.label, this.value,
+      {super.key, this.valueColor, this.mono = false});
   final String label;
   final String value;
   final Color? valueColor;
@@ -737,13 +885,15 @@ class TpKv extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(width: 118, child: Text(label, style: TpType.body(13, p.muted))),
+        SizedBox(
+            width: 118, child: Text(label, style: TpType.body(13, p.muted))),
         Expanded(
           child: Text(value,
               textAlign: TextAlign.right,
               style: mono
                   ? TpType.money(13.5, valueColor ?? p.text, w: FontWeight.w600)
-                  : TpType.body(13.5, valueColor ?? p.text, w: FontWeight.w600)),
+                  : TpType.body(13.5, valueColor ?? p.text,
+                      w: FontWeight.w600)),
         ),
       ]),
     );
@@ -752,7 +902,15 @@ class TpKv extends StatelessWidget {
 
 /// สวิตช์พร้อมป้ายข้อความ (ใช้ในหน้าตั้งค่า/ควบคุม)
 class TpSwitchRow extends StatelessWidget {
-  const TpSwitchRow({super.key, required this.title, this.subtitle, required this.value, this.onChanged, this.art, this.icon, this.busy = false});
+  const TpSwitchRow(
+      {super.key,
+      required this.title,
+      this.subtitle,
+      required this.value,
+      this.onChanged,
+      this.art,
+      this.icon,
+      this.busy = false});
   final String title;
   final String? subtitle;
   final bool value;
@@ -770,7 +928,14 @@ class TpSwitchRow extends StatelessWidget {
       icon: icon,
       chevron: false,
       trailing: busy
-          ? const SizedBox(width: 44, height: 22, child: Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))))
+          ? const SizedBox(
+              width: 44,
+              height: 22,
+              child: Center(
+                  child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))))
           : Switch.adaptive(value: value, onChanged: onChanged),
     );
   }

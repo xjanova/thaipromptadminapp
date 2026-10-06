@@ -93,7 +93,8 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
   // ── ผู้ต้องสงสัย ──
   final Set<int> _resolving = {};
   final Set<String> _bannedNow = {}; // platform_user_id ที่แบนจากหน้านี้
-  final Set<int> _bannedReadings = {}; // บิลที่กดแบนจากหน้านี้ (ลูกค้า LINE ไม่มี ID ในรายการ)
+  final Set<int> _bannedReadings =
+      {}; // บิลที่กดแบนจากหน้านี้ (ลูกค้า LINE ไม่มี ID ในรายการ)
 
   // ── กติกา ──
   final _kwCtrl = TextEditingController();
@@ -109,7 +110,8 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
     super.dispose();
   }
 
-  List<String>? get _serverExtra => _savedExtra ?? ref.read(moderationRulesProvider).valueOrNull?.extra;
+  List<String>? get _serverExtra =>
+      _savedExtra ?? ref.read(moderationRulesProvider).valueOrNull?.extra;
 
   bool get _dirty {
     final d = _draft;
@@ -181,7 +183,9 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
     BanTarget? target;
     Object? error;
     try {
-      target = await ref.read(moderationRepositoryProvider).resolveTarget(s.readingId);
+      target = await ref
+          .read(moderationRepositoryProvider)
+          .resolveTarget(s.readingId);
     } catch (e) {
       error = e;
     }
@@ -192,17 +196,20 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
       return;
     }
     if (target == null) {
-      tpToast(context, 'บิลนี้ไม่มีบัญชีแชทที่แบนได้ (อาจดูดวงผ่านเว็บ)', kind: TpToastKind.info);
+      tpToast(context, 'บิลนี้ไม่มีบัญชีแชทที่แบนได้ (อาจดูดวงผ่านเว็บ)',
+          kind: TpToastKind.info);
       return;
     }
     final suggested = [
-      if (s.keywords.isNotEmpty) 'พบคำต้องสงสัย: ${s.keywords.take(5).join(', ')}',
+      if (s.keywords.isNotEmpty)
+        'พบคำต้องสงสัย: ${s.keywords.take(5).join(', ')}',
       if (s.lowRating) 'ให้คะแนน ${s.rating ?? '-'} ดาว',
     ].join(' · ');
     final done = await tpShowSheet<bool>(
       context,
       initial: 0.88,
-      builder: (ctx, scroll) => _BanSheet(target: target!, scroll: scroll, suggestedReason: suggested),
+      builder: (ctx, scroll) => _BanSheet(
+          target: target!, scroll: scroll, suggestedReason: suggested),
     );
     if (done == true && mounted) {
       setState(() {
@@ -220,7 +227,8 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
     final ok = await tpConfirm(
       context,
       title: 'ปลดแบน $name?',
-      message: 'ลูกค้าจะทักบอททาง ${modPlatformLabel(b.platform)} ได้ทันที และประวัติการแบนครั้งนี้จะถูกลบออกจากระบบ',
+      message:
+          'ลูกค้าจะทักบอททาง ${modPlatformLabel(b.platform)} ได้ทันที และประวัติการแบนครั้งนี้จะถูกลบออกจากระบบ',
       confirmLabel: 'ปลดแบน',
     );
     if (!ok || !mounted) return;
@@ -252,7 +260,8 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
     }
     final current = _draft ?? _serverExtra ?? r.extra;
     final lower = v.toLowerCase();
-    if (current.any((k) => k.toLowerCase() == lower) || r.defaults.any((k) => k.toLowerCase() == lower)) {
+    if (current.any((k) => k.toLowerCase() == lower) ||
+        r.defaults.any((k) => k.toLowerCase() == lower)) {
       tpToast(context, 'มีคำ "$v" อยู่ในรายการแล้ว');
       return;
     }
@@ -276,7 +285,8 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
       final ok = await tpConfirm(
         context,
         title: 'ลบคำ ${removed.length} คำ?',
-        message: 'คำที่จะลบ: ${removed.take(6).join(', ')}${removed.length > 6 ? ' …' : ''}\n'
+        message:
+            'คำที่จะลบ: ${removed.take(6).join(', ')}${removed.length > 6 ? ' …' : ''}\n'
             'ระบบจะไม่ใช้คำเหล่านี้หาผู้ต้องสงสัยอีก',
         confirmLabel: 'บันทึก',
         danger: true,
@@ -285,7 +295,8 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
     }
     setState(() => _saving = true);
     try {
-      final (saved, msg) = await ref.read(moderationRepositoryProvider).saveRules(draft);
+      final (saved, msg) =
+          await ref.read(moderationRepositoryProvider).saveRules(draft);
       if (!mounted) return;
       setState(() {
         _savedExtra = saved;
@@ -293,7 +304,8 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
         _saving = false;
       });
       ref.invalidate(suspectsProvider);
-      tpToast(context, msg ?? 'บันทึกคำต้องสงสัยแล้ว', kind: TpToastKind.success);
+      tpToast(context, msg ?? 'บันทึกคำต้องสงสัยแล้ว',
+          kind: TpToastKind.success);
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -334,8 +346,10 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
             setState(() => _tab = t);
           },
           items: [
-            TpChipItem(_ModTab.suspects, _ModTab.suspects.label, count: suspects?.total),
-            TpChipItem(_ModTab.banned, _ModTab.banned.label, count: bans?.total),
+            TpChipItem(_ModTab.suspects, _ModTab.suspects.label,
+                count: suspects?.total),
+            TpChipItem(_ModTab.banned, _ModTab.banned.label,
+                count: bans?.total),
             TpChipItem(_ModTab.rules, dirty ? 'กติกา •' : _ModTab.rules.label),
           ],
         ),
@@ -353,7 +367,8 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
   List<Widget> _suspectSlivers() {
     final p = context.tp;
     final res = ref.watch(suspectsProvider(_window.hours));
-    final banIds = ref.watch(activeBansProvider).valueOrNull?.userIds ?? const <String>{};
+    final banIds =
+        ref.watch(activeBansProvider).valueOrNull?.userIds ?? const <String>{};
     return [
       SliverToBoxAdapter(
         child: Padding(
@@ -424,7 +439,8 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
             s: s,
             banned: _bannedReadings.contains(s.readingId) ||
                 (s.platformUserId != null &&
-                    (banIds.contains(s.platformUserId) || _bannedNow.contains(s.platformUserId))),
+                    (banIds.contains(s.platformUserId) ||
+                        _bannedNow.contains(s.platformUserId))),
             resolving: _resolving.contains(s.readingId),
             onBan: () => _startBan(s),
             onChat: () => context.push('/chat/${s.readingId}'),
@@ -450,13 +466,16 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
             decoration: InputDecoration(
               isDense: true,
               hintText: 'ค้นหาชื่อหรือ ID ลูกค้า',
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-              prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass, size: 19, color: p.muted),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass,
+                  size: 19, color: p.muted),
               suffixIcon: _searchCtrl.text.isEmpty
                   ? null
                   : IconButton(
                       tooltip: 'ล้างคำค้น',
-                      icon: Icon(PhosphorIconsRegular.xCircle, size: 19, color: p.muted),
+                      icon: Icon(PhosphorIconsRegular.xCircle,
+                          size: 19, color: p.muted),
                       onPressed: () {
                         _debounce?.cancel();
                         _searchCtrl.clear();
@@ -474,20 +493,25 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
             padding: EdgeInsets.zero,
             value: _platform,
             onChanged: (f) => setState(() => _platform = f),
-            items: [for (final f in _PlatformFilter.values) TpChipItem(f, f.label)],
+            items: [
+              for (final f in _PlatformFilter.values) TpChipItem(f, f.label)
+            ],
           ),
         ),
       ),
       TpPagedSliver<BanEntry>(
         reloadKey: '${_platform.name}|$_search|$_bannedReload',
-        fetch: (page) =>
-            ref.read(moderationRepositoryProvider).banned(page: page, platform: _platform.key, search: _search),
+        fetch: (page) => ref
+            .read(moderationRepositoryProvider)
+            .banned(page: page, platform: _platform.key, search: _search),
         empty: TpEmpty(
           art: TpArt.emptyDone,
           title: _search.isNotEmpty ? 'ไม่พบชื่อที่ค้นหา' : 'ไม่มีผู้ถูกแบน',
           message: _search.isNotEmpty
               ? 'ลองค้นด้วยชื่ออื่นหรือ ID บางส่วน'
-              : (_platform == _PlatformFilter.all ? 'ตอนนี้ไม่มีใครติดแบนอยู่' : 'ไม่มีผู้ถูกแบนใน ${_platform.label}'),
+              : (_platform == _PlatformFilter.all
+                  ? 'ตอนนี้ไม่มีใครติดแบนอยู่'
+                  : 'ไม่มีผู้ถูกแบนใน ${_platform.label}'),
           compact: true,
         ),
         itemBuilder: (context, b, _) => _BanCard(
@@ -534,7 +558,8 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
           const Tp3D(TpArt.shield, size: 44),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('ระบบให้คะแนนอย่างไร', style: TpType.h(14.5, p.textStrong)),
               const SizedBox(height: 2),
               Text(
@@ -546,10 +571,13 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
           ),
         ]),
       ),
-      TpSection('คำที่ตั้งเพิ่มเอง', trailing: TpPill('${draft.length} คำ', tone: TpTone.gold, dense: true)),
+      TpSection('คำที่ตั้งเพิ่มเอง',
+          trailing:
+              TpPill('${draft.length} คำ', tone: TpTone.gold, dense: true)),
       TpCard(
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Row(children: [
             Expanded(
               child: TextField(
@@ -563,7 +591,8 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
                   isDense: true,
                   counterText: '',
                   hintText: 'พิมพ์คำ เช่น "ขอเงินคืน"',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                 ),
               ),
             ),
@@ -577,12 +606,15 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
           ]),
           const SizedBox(height: 12),
           if (draft.isEmpty)
-            Text('ยังไม่มีคำเพิ่มเติม — ตอนนี้ใช้เฉพาะคำมาตรฐานของระบบด้านล่าง', style: TpType.body(12.5, p.muted))
+            Text('ยังไม่มีคำเพิ่มเติม — ตอนนี้ใช้เฉพาะคำมาตรฐานของระบบด้านล่าง',
+                style: TpType.body(12.5, p.muted))
           else
             Wrap(spacing: 6, runSpacing: 6, children: [
               for (final k in draft)
                 _KeywordChip(
-                    label: k, isNew: !server.contains(k), onRemove: _saving ? null : () => _removeKeyword(r, k)),
+                    label: k,
+                    isNew: !server.contains(k),
+                    onRemove: _saving ? null : () => _removeKeyword(r, k)),
             ]),
         ]),
       ),
@@ -597,47 +629,58 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
                 child: TpCard(
                   goldBorder: true,
                   padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    Row(children: [
-                      Icon(PhosphorIconsFill.pencilSimple, size: 16, color: p.goldText),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'ยังไม่บันทึก · ${[
-                            if (added > 0) 'เพิ่ม $added',
-                            if (removed > 0) 'ลบ $removed'
-                          ].join(' · ')}',
-                          style: TpType.h(13.5, p.textStrong, w: FontWeight.w600),
-                        ),
-                      ),
-                    ]),
-                    const SizedBox(height: 10),
-                    Row(children: [
-                      Expanded(
-                        child: TpButton.outline('ยกเลิก',
-                            height: 44, fontSize: 14, onPressed: _saving ? null : () => setState(() => _draft = null)),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TpButton('บันทึก',
-                            icon: PhosphorIconsBold.floppyDisk,
-                            height: 44,
-                            fontSize: 14,
-                            loading: _saving,
-                            onPressed: () => _saveRules(r)),
-                      ),
-                    ]),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(children: [
+                          Icon(PhosphorIconsFill.pencilSimple,
+                              size: 16, color: p.goldText),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'ยังไม่บันทึก · ${[
+                                if (added > 0) 'เพิ่ม $added',
+                                if (removed > 0) 'ลบ $removed'
+                              ].join(' · ')}',
+                              style: TpType.h(13.5, p.textStrong,
+                                  w: FontWeight.w600),
+                            ),
+                          ),
+                        ]),
+                        const SizedBox(height: 10),
+                        Row(children: [
+                          Expanded(
+                            child: TpButton.outline('ยกเลิก',
+                                height: 44,
+                                fontSize: 14,
+                                onPressed: _saving
+                                    ? null
+                                    : () => setState(() => _draft = null)),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TpButton('บันทึก',
+                                icon: PhosphorIconsBold.floppyDisk,
+                                height: 44,
+                                fontSize: 14,
+                                loading: _saving,
+                                onPressed: () => _saveRules(r)),
+                          ),
+                        ]),
+                      ]),
                 ),
               ),
       ),
-      TpSection('คำมาตรฐานของระบบ', trailing: const TpPill('แก้ไขไม่ได้', tone: TpTone.neutral, dense: true)),
+      TpSection('คำมาตรฐานของระบบ',
+          trailing:
+              const TpPill('แก้ไขไม่ได้', tone: TpTone.neutral, dense: true)),
       TpCard(
         padding: const EdgeInsets.all(14),
         child: r.defaults.isEmpty
             ? Text('ไม่มีคำมาตรฐาน', style: TpType.body(12.5, p.muted))
             : Wrap(spacing: 6, runSpacing: 6, children: [
-                for (final k in r.defaults) TpPill(k, tone: TpTone.neutral, dense: true),
+                for (final k in r.defaults)
+                  TpPill(k, tone: TpTone.neutral, dense: true),
               ]),
       ),
     ]);
@@ -663,8 +706,11 @@ class _SuspectCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.tp;
-    final tone = s.score >= 3 ? TpTone.danger : (s.score == 2 ? TpTone.warning : TpTone.gold);
-    final name = s.displayName ?? (s.userId != null ? 'สมาชิก #${s.userId}' : 'ลูกค้าไม่ทราบชื่อ');
+    final tone = s.score >= 3
+        ? TpTone.danger
+        : (s.score == 2 ? TpTone.warning : TpTone.gold);
+    final name = s.displayName ??
+        (s.userId != null ? 'สมาชิก #${s.userId}' : 'ลูกค้าไม่ทราบชื่อ');
     final extra = s.keywords.length > 4 ? s.keywords.length - 4 : 0;
     return TpCard(
       accent: p.fg(tone),
@@ -674,13 +720,16 @@ class _SuspectCard extends StatelessWidget {
           TpAvatar(name: name, size: 42),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
               Text('${TpFmt.ago(s.createdAt)} · บิล #${s.readingId}',
-                  maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12, p.muted)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TpType.body(12, p.muted)),
             ]),
           ),
           const SizedBox(width: 8),
@@ -691,12 +740,21 @@ class _SuspectCard extends StatelessWidget {
         ]),
         const SizedBox(height: 10),
         Wrap(spacing: 6, runSpacing: 6, children: [
-          for (final k in s.keywords.take(4)) TpPill(k, tone: TpTone.danger, dense: true),
+          for (final k in s.keywords.take(4))
+            TpPill(k, tone: TpTone.danger, dense: true),
           if (extra > 0) TpPill('+$extra คำ', tone: TpTone.danger, dense: true),
           if (s.lowRating)
-            TpPill('ให้ ${s.rating ?? '-'} ดาว', tone: TpTone.warning, icon: PhosphorIconsFill.star, dense: true),
-          TpPill(s.isPaid ? 'จ่ายแล้ว' : 'ยังไม่จ่าย', tone: s.isPaid ? TpTone.success : TpTone.neutral, dense: true),
-          if (banned) const TpPill('แบนอยู่', tone: TpTone.danger, icon: PhosphorIconsBold.prohibit, dense: true),
+            TpPill('ให้ ${s.rating ?? '-'} ดาว',
+                tone: TpTone.warning,
+                icon: PhosphorIconsFill.star,
+                dense: true),
+          TpPill(s.isPaid ? 'จ่ายแล้ว' : 'ยังไม่จ่าย',
+              tone: s.isPaid ? TpTone.success : TpTone.neutral, dense: true),
+          if (banned)
+            const TpPill('แบนอยู่',
+                tone: TpTone.danger,
+                icon: PhosphorIconsBold.prohibit,
+                dense: true),
         ]),
         if (s.preview != null) ...[
           const SizedBox(height: 10),
@@ -714,7 +772,10 @@ class _SuspectCard extends StatelessWidget {
               ),
               const SizedBox(width: 7),
               Expanded(
-                child: Text(s.preview!, maxLines: 3, overflow: TextOverflow.ellipsis, style: TpType.body(12.5, p.text)),
+                child: Text(s.preview!,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: TpType.body(12.5, p.text)),
               ),
             ]),
           ),
@@ -723,12 +784,18 @@ class _SuspectCard extends StatelessWidget {
         Row(children: [
           Expanded(
             child: TpButton.outline('เปิดแชท',
-                icon: PhosphorIconsRegular.chatCircleText, height: 40, fontSize: 13.5, onPressed: onChat),
+                icon: PhosphorIconsRegular.chatCircleText,
+                height: 40,
+                fontSize: 13.5,
+                onPressed: onChat),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: banned
-                ? TpButton.outline('แบนแล้ว', icon: PhosphorIconsRegular.check, height: 40, fontSize: 13.5)
+                ? TpButton.outline('แบนแล้ว',
+                    icon: PhosphorIconsRegular.check,
+                    height: 40,
+                    fontSize: 13.5)
                 : TpButton.danger('แบน',
                     icon: PhosphorIconsRegular.prohibit,
                     height: 40,
@@ -745,7 +812,10 @@ class _SuspectCard extends StatelessWidget {
 // ═════════════════════ แผ่นแบน ═════════════════════
 
 class _BanSheet extends ConsumerStatefulWidget {
-  const _BanSheet({required this.target, required this.scroll, required this.suggestedReason});
+  const _BanSheet(
+      {required this.target,
+      required this.scroll,
+      required this.suggestedReason});
   final BanTarget target;
   final ScrollController scroll;
   final String suggestedReason;
@@ -755,7 +825,8 @@ class _BanSheet extends ConsumerStatefulWidget {
 }
 
 class _BanSheetState extends ConsumerState<_BanSheet> {
-  late final TextEditingController _reason = TextEditingController(text: widget.suggestedReason);
+  late final TextEditingController _reason =
+      TextEditingController(text: widget.suggestedReason);
   _BanDuration _duration = _BanDuration.d7;
   bool _busy = false;
 
@@ -784,7 +855,9 @@ class _BanSheetState extends ConsumerState<_BanSheet> {
     if (!ok || !mounted) return;
     setState(() => _busy = true);
     try {
-      final msg = await ref.read(moderationRepositoryProvider).ban(t, minutes: _duration.minutes, reason: reason);
+      final msg = await ref
+          .read(moderationRepositoryProvider)
+          .ban(t, minutes: _duration.minutes, reason: reason);
       if (!mounted) return;
       tpToast(context, msg ?? 'แบนแล้ว', kind: TpToastKind.success);
       Navigator.pop(context, true);
@@ -799,77 +872,106 @@ class _BanSheetState extends ConsumerState<_BanSheet> {
   Widget build(BuildContext context) {
     final p = context.tp;
     final t = widget.target;
-    final until = _duration.minutes == null ? null : DateTime.now().add(Duration(minutes: _duration.minutes!));
+    final until = _duration.minutes == null
+        ? null
+        : DateTime.now().add(Duration(minutes: _duration.minutes!));
     final canSubmit = _reason.text.trim().isNotEmpty;
     // ระหว่างยิงคำสั่งแบน ห้ามปิดแผ่น (กดย้อนกลับ/แตะพื้นหลัง) — กันผลหายกลางทาง
     return PopScope(
       canPop: !_busy,
       child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
         child: Column(children: [
           Expanded(
-            child: ListView(controller: widget.scroll, padding: const EdgeInsets.fromLTRB(18, 6, 18, 18), children: [
-              Text('แบนลูกค้า', style: TpType.title(20, p.textStrong)),
-              const SizedBox(height: 12),
-              TpCard(
-                child: Row(children: [
-                  TpAvatar(name: t.displayName, platform: t.platform, size: 48),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(t.displayName ?? 'ลูกค้าไม่ทราบชื่อ',
-                          maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.h(15.5, p.textStrong)),
-                      Text('${modPlatformLabel(t.platform)} · ID ${modShortId(t.platformUserId)}',
-                          maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12.5, p.muted)),
-                      Text('จากบิล #${t.readingId}', style: TpType.body(12, p.faint)),
+            child: ListView(
+                controller: widget.scroll,
+                padding: const EdgeInsets.fromLTRB(18, 6, 18, 18),
+                children: [
+                  Text('แบนลูกค้า', style: TpType.title(20, p.textStrong)),
+                  const SizedBox(height: 12),
+                  TpCard(
+                    child: Row(children: [
+                      TpAvatar(
+                          name: t.displayName, platform: t.platform, size: 48),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(t.displayName ?? 'ลูกค้าไม่ทราบชื่อ',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TpType.h(15.5, p.textStrong)),
+                              Text(
+                                  '${modPlatformLabel(t.platform)} · ID ${modShortId(t.platformUserId)}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TpType.body(12.5, p.muted)),
+                              Text('จากบิล #${t.readingId}',
+                                  style: TpType.body(12, p.faint)),
+                            ]),
+                      ),
                     ]),
                   ),
-                ]),
-              ),
-              const SizedBox(height: 18),
-              Text('ระยะเวลา', style: TpType.h(14, p.textStrong)),
-              const SizedBox(height: 8),
-              TpChips<_BanDuration>(
-                padding: EdgeInsets.zero,
-                value: _duration,
-                onChanged: _busy ? (_) {} : (d) => setState(() => _duration = d),
-                items: [for (final d in _BanDuration.values) TpChipItem(d, d.label)],
-              ),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                decoration: BoxDecoration(
-                  color: until == null ? p.dangerSoft : p.inset,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Icon(until == null ? PhosphorIconsFill.warning : PhosphorIconsRegular.clockCountdown,
-                      size: 16, color: until == null ? p.danger : p.muted),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      until == null
-                          ? 'แบนถาวร — ไม่ปลดเอง ต้องให้แอดมินปลดแบนจากแท็บ "ถูกแบน"'
-                          : 'ปลดแบนอัตโนมัติ ${TpFmt.shortDate(until)} ${TpFmt.time(until)}',
-                      style: TpType.body(12.5, until == null ? p.danger : p.text, w: FontWeight.w500),
+                  const SizedBox(height: 18),
+                  Text('ระยะเวลา', style: TpType.h(14, p.textStrong)),
+                  const SizedBox(height: 8),
+                  TpChips<_BanDuration>(
+                    padding: EdgeInsets.zero,
+                    value: _duration,
+                    onChanged:
+                        _busy ? (_) {} : (d) => setState(() => _duration = d),
+                    items: [
+                      for (final d in _BanDuration.values)
+                        TpChipItem(d, d.label)
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    decoration: BoxDecoration(
+                      color: until == null ? p.dangerSoft : p.inset,
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                              until == null
+                                  ? PhosphorIconsFill.warning
+                                  : PhosphorIconsRegular.clockCountdown,
+                              size: 16,
+                              color: until == null ? p.danger : p.muted),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              until == null
+                                  ? 'แบนถาวร — ไม่ปลดเอง ต้องให้แอดมินปลดแบนจากแท็บ "ถูกแบน"'
+                                  : 'ปลดแบนอัตโนมัติ ${TpFmt.shortDate(until)} ${TpFmt.time(until)}',
+                              style: TpType.body(
+                                  12.5, until == null ? p.danger : p.text,
+                                  w: FontWeight.w500),
+                            ),
+                          ),
+                        ]),
+                  ),
+                  const SizedBox(height: 18),
+                  Text('เหตุผล (บันทึกไว้ตรวจสอบภายหลัง)',
+                      style: TpType.h(14, p.textStrong)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _reason,
+                    enabled: !_busy,
+                    minLines: 2,
+                    maxLines: 4,
+                    maxLength: 500,
+                    onChanged: (_) => setState(() {}),
+                    style: TpType.body(14.5, p.text),
+                    decoration: const InputDecoration(
+                        hintText: 'เช่น ขู่ทวงเงินคืนซ้ำหลายครั้ง'),
                   ),
                 ]),
-              ),
-              const SizedBox(height: 18),
-              Text('เหตุผล (บันทึกไว้ตรวจสอบภายหลัง)', style: TpType.h(14, p.textStrong)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _reason,
-                enabled: !_busy,
-                minLines: 2,
-                maxLines: 4,
-                maxLength: 500,
-                onChanged: (_) => setState(() {}),
-                style: TpType.body(14.5, p.text),
-                decoration: const InputDecoration(hintText: 'เช่น ขู่ทวงเงินคืนซ้ำหลายครั้ง'),
-              ),
-            ]),
           ),
           TpBottomBar(
             child: TpButton.danger(
@@ -907,13 +1009,17 @@ class _BanCard extends StatelessWidget {
           TpAvatar(name: name, platform: b.platform, size: 42),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
-              Text('${modPlatformLabel(b.platform)} · ID ${modShortId(b.platformUserId)}',
-                  maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12, p.muted)),
+              Text(
+                  '${modPlatformLabel(b.platform)} · ID ${modShortId(b.platformUserId)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TpType.body(12, p.muted)),
             ]),
           ),
           const SizedBox(width: 8),
@@ -930,21 +1036,33 @@ class _BanCard extends StatelessWidget {
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
-          decoration: BoxDecoration(color: p.inset, borderRadius: BorderRadius.circular(12)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(category, style: TpType.h(13, p.textStrong, w: FontWeight.w600)),
+          decoration: BoxDecoration(
+              color: p.inset, borderRadius: BorderRadius.circular(12)),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(category,
+                style: TpType.h(13, p.textStrong, w: FontWeight.w600)),
             if (detail != null)
-              Text(detail, maxLines: 3, overflow: TextOverflow.ellipsis, style: TpType.body(12.5, p.muted)),
+              Text(detail,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TpType.body(12.5, p.muted)),
           ]),
         ),
         const SizedBox(height: 8),
         Wrap(spacing: 12, runSpacing: 4, children: [
           _Meta(
-            icon: b.bannedByName != null ? PhosphorIconsRegular.userCircle : PhosphorIconsRegular.robot,
-            text: b.bannedByName != null ? 'โดย ${b.bannedByName}' : 'โดยระบบอัตโนมัติ',
+            icon: b.bannedByName != null
+                ? PhosphorIconsRegular.userCircle
+                : PhosphorIconsRegular.robot,
+            text: b.bannedByName != null
+                ? 'โดย ${b.bannedByName}'
+                : 'โดยระบบอัตโนมัติ',
           ),
           if (until != null && !b.isPermanent)
-            _Meta(icon: PhosphorIconsRegular.calendarCheck, text: 'ถึง ${TpFmt.shortDate(until)} ${TpFmt.time(until)}'),
+            _Meta(
+                icon: PhosphorIconsRegular.calendarCheck,
+                text: 'ถึง ${TpFmt.shortDate(until)} ${TpFmt.time(until)}'),
           if (b.attemptCount > 0)
             _Meta(
               icon: PhosphorIconsRegular.chatDots,
@@ -954,7 +1072,11 @@ class _BanCard extends StatelessWidget {
         ]),
         const SizedBox(height: 10),
         TpButton.outline('ปลดแบน',
-            icon: PhosphorIconsRegular.lockOpen, height: 40, fontSize: 13.5, loading: busy, onPressed: onUnban),
+            icon: PhosphorIconsRegular.lockOpen,
+            height: 40,
+            fontSize: 13.5,
+            loading: busy,
+            onPressed: onUnban),
       ]),
     );
   }
@@ -972,7 +1094,8 @@ class _Meta extends StatelessWidget {
     return Row(mainAxisSize: MainAxisSize.min, children: [
       Icon(icon, size: 13, color: c),
       const SizedBox(width: 4),
-      Flexible(child: Text(text, style: TpType.body(11.5, c, w: FontWeight.w500))),
+      Flexible(
+          child: Text(text, style: TpType.body(11.5, c, w: FontWeight.w500))),
     ]);
   }
 }
@@ -995,12 +1118,16 @@ class _KeywordChip extends StatelessWidget {
         border: Border.all(color: isNew ? p.borderGold : p.border),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        if (isNew) ...[Icon(PhosphorIconsBold.plus, size: 11, color: p.goldText), const SizedBox(width: 3)],
+        if (isNew) ...[
+          Icon(PhosphorIconsBold.plus, size: 11, color: p.goldText),
+          const SizedBox(width: 3)
+        ],
         Flexible(
           child: Text(label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TpType.body(12.5, isNew ? p.goldText : p.text, w: FontWeight.w600, height: 1.1)),
+              style: TpType.body(12.5, isNew ? p.goldText : p.text,
+                  w: FontWeight.w600, height: 1.1)),
         ),
         const SizedBox(width: 2),
         InkResponse(
@@ -1008,7 +1135,8 @@ class _KeywordChip extends StatelessWidget {
           radius: 16,
           child: Padding(
             padding: const EdgeInsets.all(5),
-            child: Icon(PhosphorIconsBold.x, size: 12, color: onRemove == null ? p.faint : p.muted),
+            child: Icon(PhosphorIconsBold.x,
+                size: 12, color: onRemove == null ? p.faint : p.muted),
           ),
         ),
       ]),

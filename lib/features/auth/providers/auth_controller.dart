@@ -75,7 +75,8 @@ class AuthController extends StateNotifier<AuthState> {
     AdminUser? admin;
     if (cached != null) {
       try {
-        admin = AdminUser.fromJson((jsonDecode(cached) as Map).cast<String, dynamic>());
+        admin = AdminUser.fromJson(
+            (jsonDecode(cached) as Map).cast<String, dynamic>());
       } catch (_) {}
     }
     state = AuthState(admin: admin);
@@ -154,7 +155,13 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
+  /// งานที่ต้องทำก่อนลบ token (เช่น ถอนโทเคนแจ้งเตือนจากเซิร์ฟเวอร์) — main.dart ตั้งค่าไว้
+  static Future<void> Function()? beforeLogout;
+
   Future<void> logout() async {
+    try {
+      await beforeLogout?.call();
+    } catch (_) {}
     try {
       await _repo.logout();
     } catch (_) {

@@ -61,7 +61,8 @@ class TpPage extends StatelessWidget {
     final p = context.tp;
     Widget scroll = CustomScrollView(
       controller: controller,
-      physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+      physics:
+          const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
       slivers: [
         SliverToBoxAdapter(
           child: TpHeader(
@@ -83,16 +84,22 @@ class TpPage extends StatelessWidget {
                 height: p.bodyOverlap,
                 decoration: BoxDecoration(
                   color: p.bg,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(26)),
                 ),
               ),
             ),
           ),
         SliverPadding(
-          padding: p.bodyOverlap > 0 ? bodyPadding.copyWith(top: (bodyPadding.top - 10).clamp(0, 99)) : bodyPadding,
+          padding: p.bodyOverlap > 0
+              ? bodyPadding.copyWith(top: (bodyPadding.top - 10).clamp(0, 99))
+              : bodyPadding,
           sliver: SliverMainAxisGroup(slivers: slivers),
         ),
-        SliverToBoxAdapter(child: SizedBox(height: bottomSpace + MediaQuery.paddingOf(context).bottom * 0.4)),
+        SliverToBoxAdapter(
+            child: SizedBox(
+                height:
+                    bottomSpace + MediaQuery.paddingOf(context).bottom * 0.4)),
       ],
     );
     if (onRefresh != null) {
@@ -111,7 +118,8 @@ class TpPage extends StatelessWidget {
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
         systemNavigationBarColor: p.bg,
-        systemNavigationBarIconBrightness: p.isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarIconBrightness:
+            p.isDark ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
         backgroundColor: p.bg,
@@ -152,7 +160,10 @@ class TpHeader extends StatelessWidget {
     final top = MediaQuery.paddingOf(context).top;
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: p.header),
+        gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: p.header),
       ),
       child: Stack(children: [
         // แสงเรืองมุมขวาบน
@@ -165,7 +176,8 @@ class TpHeader extends StatelessWidget {
               height: 380,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [p.headerGlow, p.headerGlow.withValues(alpha: 0)]),
+                gradient: RadialGradient(
+                    colors: [p.headerGlow, p.headerGlow.withValues(alpha: 0)]),
               ),
             ),
           ),
@@ -176,37 +188,51 @@ class TpHeader extends StatelessWidget {
           child: IgnorePointer(
             child: Opacity(
               opacity: p.kanokOpacity,
-              child: Image.asset('assets/images/brand/kanok-gold.webp', width: 200, cacheWidth: 600),
+              child: Image.asset('assets/images/brand/kanok-gold.webp',
+                  width: 200, cacheWidth: 600),
             ),
           ),
         ),
         Padding(
-          padding: EdgeInsets.fromLTRB(16, top + 8, 16, bottom == null ? 16 : 14),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          padding:
+              EdgeInsets.fromLTRB(16, top + 8, 16, bottom == null ? 16 : 14),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               if (back) ...[
                 TpGlassButton(
                   icon: PhosphorIconsRegular.caretLeft,
                   tooltip: 'ย้อนกลับ',
-                  onTap: onBack ?? () => context.canPop() ? context.pop() : Navigator.maybePop(context),
+                  onTap: onBack ??
+                      () => context.canPop()
+                          ? context.pop()
+                          : Navigator.maybePop(context),
                 ),
                 const SizedBox(width: 12),
               ],
               if (leading != null) ...[leading!, const SizedBox(width: 10)],
               if (showMark && leading == null) ...[
-                Image.asset('assets/images/brand/tp-mark.webp', width: 34, height: 34, cacheWidth: 102),
+                Image.asset('assets/images/brand/tp-mark.webp',
+                    width: 34, height: 34, cacheWidth: 102),
                 const SizedBox(width: 11),
               ],
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                  Text(title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: leading != null ? TpType.h(16, p.onHeader) : TpType.title(back ? 20 : 22, p.onHeader)),
-                  if (subtitle != null)
-                    Text(subtitle!,
-                        maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12.5, p.onHeaderMuted)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: leading != null
+                              ? TpType.h(16, p.onHeader)
+                              : TpType.title(back ? 20 : 22, p.onHeader)),
+                      if (subtitle != null)
+                        Text(subtitle!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TpType.body(12.5, p.onHeaderMuted)),
+                    ]),
               ),
               for (final a in actions) ...[const SizedBox(width: 8), a],
             ]),
@@ -231,7 +257,8 @@ class TpBottomBar extends StatelessWidget {
         color: p.sheet,
         border: Border(top: BorderSide(color: p.divider)),
       ),
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + MediaQuery.paddingOf(context).bottom),
+      padding: EdgeInsets.fromLTRB(
+          16, 12, 16, 12 + MediaQuery.paddingOf(context).bottom),
       child: child,
     );
   }
@@ -247,7 +274,11 @@ class TpTabItem {
 
 /// แท็บบาร์ลอยกระจก — แท็บที่เลือกเป็นทอง + เส้นเรืองด้านบน
 class TpTabBar extends StatelessWidget {
-  const TpTabBar({super.key, required this.items, required this.index, required this.onTap});
+  const TpTabBar(
+      {super.key,
+      required this.items,
+      required this.index,
+      required this.onTap});
   final List<TpTabItem> items;
   final int index;
   final ValueChanged<int> onTap;
@@ -281,35 +312,51 @@ class TpTabBar extends StatelessWidget {
                       onTap(i);
                     },
                     radius: 40,
-                    child: Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 220),
-                        top: on ? 0 : -6,
-                        child: AnimatedOpacity(
-                          duration: const Duration(milliseconds: 220),
-                          opacity: on ? 1 : 0,
-                          child: Container(
-                            width: 22,
-                            height: 3,
-                            decoration: BoxDecoration(
-                              color: p.gold,
-                              borderRadius: BorderRadius.circular(3),
-                              boxShadow: [BoxShadow(color: p.gold, blurRadius: 10)],
+                    child: Stack(
+                        alignment: Alignment.center,
+                        clipBehavior: Clip.none,
+                        children: [
+                          AnimatedPositioned(
+                            duration: const Duration(milliseconds: 220),
+                            top: on ? 0 : -6,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 220),
+                              opacity: on ? 1 : 0,
+                              child: Container(
+                                width: 22,
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  color: p.gold,
+                                  borderRadius: BorderRadius.circular(3),
+                                  boxShadow: [
+                                    BoxShadow(color: p.gold, blurRadius: 10)
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Stack(clipBehavior: Clip.none, children: [
-                          Icon(on ? it.iconOn : it.icon, size: 24, color: color),
-                          if (it.badge > 0)
-                            Positioned(right: -12, top: -6, child: TpBadge(it.badge, ring: p.cardSolid)),
+                          Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Stack(clipBehavior: Clip.none, children: [
+                                  Icon(on ? it.iconOn : it.icon,
+                                      size: 24, color: color),
+                                  if (it.badge > 0)
+                                    Positioned(
+                                        right: -12,
+                                        top: -6,
+                                        child: TpBadge(it.badge,
+                                            ring: p.cardSolid)),
+                                ]),
+                                const SizedBox(height: 3),
+                                Text(it.label,
+                                    style: TpType.body(11.5, color,
+                                        w: on
+                                            ? FontWeight.w600
+                                            : FontWeight.w500,
+                                        height: 1.1)),
+                              ]),
                         ]),
-                        const SizedBox(height: 3),
-                        Text(it.label,
-                            style: TpType.body(11.5, color, w: on ? FontWeight.w600 : FontWeight.w500, height: 1.1)),
-                      ]),
-                    ]),
                   ),
                 );
               }),

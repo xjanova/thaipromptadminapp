@@ -8,6 +8,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// google-services.json ไม่อยู่ใน git (รีโป public) — CI เขียนจาก secret · ไม่มีไฟล์ = build ได้แต่ไม่มี push
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 // อ่าน android/key.properties (ถ้ามี) สำหรับ release signing
 // ไฟล์นี้ถูก gitignore — ใน CI จะถูกสร้างจาก secrets
 val keystoreProperties = Properties()

@@ -59,7 +59,9 @@ class AdminUser {
       };
 
   /// ชื่อบทบาทภาษาไทย
-  String get roleLabel => isSuperAdmin ? 'ผู้ดูแลสูงสุด' : (role == 'admin' ? 'ผู้ดูแลระบบ' : (role ?? 'ผู้ดูแล'));
+  String get roleLabel => isSuperAdmin
+      ? 'ผู้ดูแลสูงสุด'
+      : (role == 'admin' ? 'ผู้ดูแลระบบ' : (role ?? 'ผู้ดูแล'));
 
   /// สิทธิ์ "*" หมายถึง super admin (ทำได้ทุกอย่าง)
   bool can(String permission) =>

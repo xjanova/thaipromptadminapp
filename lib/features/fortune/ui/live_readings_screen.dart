@@ -96,14 +96,17 @@ class _LiveReadingsScreenState extends ConsumerState<LiveReadingsScreen> {
                   const Tp3D(TpArt.hourglass, size: 40),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('คำทำนายค้าง $stuck รายการ', style: TpType.h(14.5, p.textStrong)),
-                      const SizedBox(height: 1),
-                      Text(
-                        'ระบบตรวจบิลค้างและลองส่งซ้ำเองเป็นระยะ ถ้ายังค้างนาน แตะรายการเพื่อเปิดแชทแจ้งลูกค้า หรือสั่งส่งซ้ำจากหน้าเว็บแอดมิน',
-                        style: TpType.body(12.5, p.muted),
-                      ),
-                    ]),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('คำทำนายค้าง $stuck รายการ',
+                              style: TpType.h(14.5, p.textStrong)),
+                          const SizedBox(height: 1),
+                          Text(
+                            'ระบบตรวจบิลค้างและลองส่งซ้ำเองเป็นระยะ ถ้ายังค้างนาน แตะรายการเพื่อเปิดแชทแจ้งลูกค้า หรือสั่งส่งซ้ำจากหน้าเว็บแอดมิน',
+                            style: TpType.body(12.5, p.muted),
+                          ),
+                        ]),
                   ),
                 ]),
               ),
@@ -111,7 +114,9 @@ class _LiveReadingsScreenState extends ConsumerState<LiveReadingsScreen> {
           ),
         TpPagedSliver<LiveReading>(
           reloadKey: '$_stuckOnly-$_tick',
-          fetch: (page) => ref.read(fortuneRepositoryProvider).liveReadings(stuckOnly: _stuckOnly, page: page),
+          fetch: (page) => ref
+              .read(fortuneRepositoryProvider)
+              .liveReadings(stuckOnly: _stuckOnly, page: page),
           onLoaded: (res) {
             if (!mounted) return;
             setState(() {
@@ -132,10 +137,12 @@ class _LiveReadingsScreenState extends ConsumerState<LiveReadingsScreen> {
               : const TpEmpty(
                   art: TpArt.emptyDone,
                   title: 'ไม่มีคำทำนายที่กำลังทำ',
-                  message: 'บิลที่จ่ายแล้วจะขึ้นที่นี่ระหว่างบอทแม่หมอกำลังทำนาย',
+                  message:
+                      'บิลที่จ่ายแล้วจะขึ้นที่นี่ระหว่างบอทแม่หมอกำลังทำนาย',
                   compact: true,
                 ),
-          itemBuilder: (context, r, _) => _LiveCard(r: r, onTap: () => _open(r)),
+          itemBuilder: (context, r, _) =>
+              _LiveCard(r: r, onTap: () => _open(r)),
         ),
       ],
     );
@@ -160,13 +167,16 @@ class _LiveCard extends StatelessWidget {
           TpAvatar(name: r.customerName, platform: r.platform),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(r.customerName ?? 'ลูกค้า',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
               Text('${r.billNumber} · ${r.packageLabel}',
-                  maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12.5, p.muted)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TpType.body(12.5, p.muted)),
             ]),
           ),
           const SizedBox(width: 8),
@@ -175,17 +185,28 @@ class _LiveCard extends StatelessWidget {
         const SizedBox(height: 10),
         Padding(
           padding: const EdgeInsets.only(left: 56),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Wrap(spacing: 6, runSpacing: 6, children: [
               if (r.stuck && r.stuckLabel != null)
-                TpPill(r.stuckLabel!, tone: TpTone.danger, icon: PhosphorIconsBold.warningCircle, dense: true),
-              TpPill(r.stageLabel ?? 'กำลังทำนาย', tone: r.stuck ? TpTone.neutral : TpTone.navy, dense: true),
+                TpPill(r.stuckLabel!,
+                    tone: TpTone.danger,
+                    icon: PhosphorIconsBold.warningCircle,
+                    dense: true),
+              TpPill(r.stageLabel ?? 'กำลังทำนาย',
+                  tone: r.stuck ? TpTone.neutral : TpTone.navy, dense: true),
               if (r.takenOver)
-                const TpPill('แอดมินคุมอยู่', tone: TpTone.gold, icon: PhosphorIconsFill.headset, dense: true),
+                const TpPill('แอดมินคุมอยู่',
+                    tone: TpTone.gold,
+                    icon: PhosphorIconsFill.headset,
+                    dense: true),
             ]),
             if (r.stageDetail != null) ...[
               const SizedBox(height: 6),
-              Text(r.stageDetail!, maxLines: 2, overflow: TextOverflow.ellipsis, style: TpType.body(12.5, p.muted)),
+              Text(r.stageDetail!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TpType.body(12.5, p.muted)),
             ],
           ]),
         ),
@@ -214,7 +235,8 @@ class _IdleBadge extends StatelessWidget {
                     ? '$m นาทีก่อน'
                     : '${m ~/ 60} ชม.ก่อน';
     return Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-      Text(r.stuck ? 'ค้างมา' : 'ขยับล่าสุด', style: TpType.body(11, p.faint, height: 1.2)),
+      Text(r.stuck ? 'ค้างมา' : 'ขยับล่าสุด',
+          style: TpType.body(11, p.faint, height: 1.2)),
       Text(value, style: TpType.money(14, r.stuck ? p.danger : p.textStrong)),
     ]);
   }

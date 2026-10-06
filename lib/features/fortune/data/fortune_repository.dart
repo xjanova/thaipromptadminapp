@@ -10,10 +10,12 @@ import '../../work/data/work_repository.dart' show FortuneBill;
 
 // ═════════════════════════ ตัวช่วยอ่าน JSON ═════════════════════════
 
-Map<String, dynamic> _m(dynamic v) => v is Map ? v.cast<String, dynamic>() : const {};
+Map<String, dynamic> _m(dynamic v) =>
+    v is Map ? v.cast<String, dynamic>() : const {};
 
-List<Map<String, dynamic>> _list(dynamic v) =>
-    v is List ? v.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList() : const [];
+List<Map<String, dynamic>> _list(dynamic v) => v is List
+    ? v.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList()
+    : const [];
 
 /// อีโมจิ/สัญลักษณ์ภาพที่เซิร์ฟเวอร์ใส่มาในป้าย (🔮 ⭐ ✅ ❌ ⏳ ฯลฯ) — ตัวอักษรไทย ฿ • — → ไม่โดน
 final _emoji = RegExp(
@@ -93,14 +95,20 @@ enum FortunePeriod {
 
 /// สถิติต่อหมวดคำถาม (เฉพาะหมวดที่เปิดอยู่)
 class FortuneCategoryStat {
-  const FortuneCategoryStat({required this.id, required this.name, this.color, this.sessions = 0, this.revenue = 0});
+  const FortuneCategoryStat(
+      {required this.id,
+      required this.name,
+      this.color,
+      this.sessions = 0,
+      this.revenue = 0});
   final int id;
   final String name;
   final String? color;
   final int sessions;
   final double revenue;
 
-  factory FortuneCategoryStat.fromJson(Map<String, dynamic> j) => FortuneCategoryStat(
+  factory FortuneCategoryStat.fromJson(Map<String, dynamic> j) =>
+      FortuneCategoryStat(
         id: TpFmt.toInt(j['id']),
         name: _clean(j['name']) ?? 'ไม่มีชื่อหมวด',
         color: j['color']?.toString(),
@@ -136,7 +144,9 @@ class FortuneDashboard {
       sessions: TpFmt.toInt(h['sessions_count']),
       avgRating: TpFmt.toDouble(h['avg_rating']),
       activeNow: TpFmt.toInt(h['active_now']),
-      categories: _list(j['services_summary']).map(FortuneCategoryStat.fromJson).toList(),
+      categories: _list(j['services_summary'])
+          .map(FortuneCategoryStat.fromJson)
+          .toList(),
     );
   }
 }
@@ -198,7 +208,9 @@ class LiveReading {
       stageDetail: _clean(stage['detail']),
       paidAt: TpFmt.parse(j['paid_at']),
       lastActivityAt: TpFmt.parse(j['last_activity_at']),
-      minutesSinceActivity: j['minutes_since_activity'] == null ? null : TpFmt.toInt(j['minutes_since_activity']),
+      minutesSinceActivity: j['minutes_since_activity'] == null
+          ? null
+          : TpFmt.toInt(j['minutes_since_activity']),
       stuckReason: j['stuck_reason']?.toString(),
       takenOver: j['is_taken_over'] == true,
     );
@@ -230,7 +242,9 @@ class LiveReadingsPage extends Paged<LiveReading> {
       total: base.total,
       perPage: base.perPage,
       summaryTotal: s.isEmpty ? base.total : TpFmt.toInt(s['total']),
-      summaryStuck: s.isEmpty ? base.items.where((e) => e.stuck).length : TpFmt.toInt(s['stuck']),
+      summaryStuck: s.isEmpty
+          ? base.items.where((e) => e.stuck).length
+          : TpFmt.toInt(s['stuck']),
     );
   }
 }
@@ -250,7 +264,10 @@ class AiMode {
     final open = label.indexOf('(');
     if (open > 0 && label.endsWith(')')) {
       final desc = label.substring(open + 1, label.length - 1).trim();
-      return AiMode(key: key, title: label.substring(0, open).trim(), description: desc.isEmpty ? null : desc);
+      return AiMode(
+          key: key,
+          title: label.substring(0, open).trim(),
+          description: desc.isEmpty ? null : desc);
     }
     return AiMode(key: key, title: label);
   }
@@ -271,7 +288,9 @@ class AiProviderInfo {
   final int keysTotal;
   final int keysHealthy;
 
-  AiProviderInfo copyWith({String? rotationMode, int? keysTotal, int? keysHealthy}) => AiProviderInfo(
+  AiProviderInfo copyWith(
+          {String? rotationMode, int? keysTotal, int? keysHealthy}) =>
+      AiProviderInfo(
         provider: provider,
         name: name,
         rotationMode: rotationMode ?? this.rotationMode,
@@ -349,11 +368,14 @@ class AiKey {
   }
 
   /// ถูกพักชั่วคราวอยู่ไหม (เทียบเวลาเครื่อง)
-  bool get isSuspended => disabledUntil != null && disabledUntil!.isAfter(DateTime.now());
+  bool get isSuspended =>
+      disabledUntil != null && disabledUntil!.isAfter(DateTime.now());
 
   /// ผลทดสอบล่าสุดคือไม่ผ่าน (ไม่ผ่านใหม่กว่าผ่าน)
   bool get lastTestFailed =>
-      lastTestFailedAt != null && (lastTestPassedAt == null || lastTestFailedAt!.isAfter(lastTestPassedAt!));
+      lastTestFailedAt != null &&
+      (lastTestPassedAt == null ||
+          lastTestFailedAt!.isAfter(lastTestPassedAt!));
 
   factory AiKey.fromJson(Map<String, dynamic> j) {
     final u = _m(j['usage_today']);
@@ -361,7 +383,8 @@ class AiKey {
     return AiKey(
       id: id,
       provider: (j['provider'] ?? '').toString(),
-      providerName: _clean(j['provider_name']) ?? (j['provider'] ?? 'ไม่ระบุ').toString(),
+      providerName:
+          _clean(j['provider_name']) ?? (j['provider'] ?? 'ไม่ระบุ').toString(),
       label: _clean(j['label']) ?? 'คีย์ #$id',
       isActive: j['is_active'] == true,
       healthy: j['healthy'] == true,
@@ -422,13 +445,18 @@ class AiPool {
 
   String modeTitle(String key) => mode(key)?.title ?? key;
 
-  List<AiKey> keysOf(String provider) => keys.where((k) => k.provider == provider).toList();
+  List<AiKey> keysOf(String provider) =>
+      keys.where((k) => k.provider == provider).toList();
 
   /// แทนที่คีย์หนึ่งตัวแล้วคำนวณตัวนับใหม่ในเครื่อง (หลังเปิด/ปิด/ทดสอบ)
-  AiPool withKey(AiKey key) => _rebuild(keys: [for (final k in keys) k.id == key.id ? key : k]);
+  AiPool withKey(AiKey key) =>
+      _rebuild(keys: [for (final k in keys) k.id == key.id ? key : k]);
 
   AiPool withProviderMode(String provider, String mode) => _rebuild(
-        providers: [for (final p in providers) p.provider == provider ? p.copyWith(rotationMode: mode) : p],
+        providers: [
+          for (final p in providers)
+            p.provider == provider ? p.copyWith(rotationMode: mode) : p
+        ],
       );
 
   AiPool _rebuild({List<AiKey>? keys, List<AiProviderInfo>? providers}) {
@@ -437,7 +465,8 @@ class AiPool {
       for (final p in providers ?? this.providers)
         p.copyWith(
           keysTotal: ks.where((k) => k.provider == p.provider).length,
-          keysHealthy: ks.where((k) => k.provider == p.provider && k.healthy).length,
+          keysHealthy:
+              ks.where((k) => k.provider == p.provider && k.healthy).length,
         ),
     ];
     return AiPool(
@@ -461,7 +490,11 @@ class AiPool {
       final seen = <String>{};
       providers = [
         for (final k in keys)
-          if (seen.add(k.provider)) AiProviderInfo(provider: k.provider, name: k.providerName, rotationMode: 'round_robin'),
+          if (seen.add(k.provider))
+            AiProviderInfo(
+                provider: k.provider,
+                name: k.providerName,
+                rotationMode: 'round_robin'),
       ];
     }
     final s = _m(j['summary']);
@@ -472,8 +505,12 @@ class AiPool {
       providers: providers,
       keys: keys,
       total: s.isEmpty ? keys.length : TpFmt.toInt(s['total']),
-      healthy: s.isEmpty ? keys.where((k) => k.healthy).length : TpFmt.toInt(s['healthy']),
-      active: s.isEmpty ? keys.where((k) => k.isActive).length : TpFmt.toInt(s['active']),
+      healthy: s.isEmpty
+          ? keys.where((k) => k.healthy).length
+          : TpFmt.toInt(s['healthy']),
+      active: s.isEmpty
+          ? keys.where((k) => k.isActive).length
+          : TpFmt.toInt(s['active']),
       canManage: j['can_manage'] == true,
     )._rebuild();
   }
@@ -481,7 +518,12 @@ class AiPool {
 
 /// ผลการกด "ทดสอบ" คีย์
 class AiKeyTestResult {
-  const AiKeyTestResult({required this.passed, this.message, this.responseTimeMs, this.modelWarning, this.key});
+  const AiKeyTestResult(
+      {required this.passed,
+      this.message,
+      this.responseTimeMs,
+      this.modelWarning,
+      this.key});
   final bool passed;
   final String? message;
   final int? responseTimeMs;
@@ -492,13 +534,18 @@ class AiKeyTestResult {
 // ═════════════════════════ บริการ/แพคเกจ (fortune/services) ═════════════════════════
 
 class FortuneServiceItem {
-  const FortuneServiceItem({required this.id, required this.name, required this.price, required this.isActive});
+  const FortuneServiceItem(
+      {required this.id,
+      required this.name,
+      required this.price,
+      required this.isActive});
   final String id;
   final String name;
   final double price;
   final bool isActive;
 
-  factory FortuneServiceItem.fromJson(Map<String, dynamic> j) => FortuneServiceItem(
+  factory FortuneServiceItem.fromJson(Map<String, dynamic> j) =>
+      FortuneServiceItem(
         id: (j['id'] ?? '').toString(),
         name: _clean(j['name']) ?? (j['id'] ?? 'แพคเกจ').toString(),
         price: TpFmt.toDouble(j['price_thb']),
@@ -508,13 +555,18 @@ class FortuneServiceItem {
 
 /// หมวดคำถาม — `icon` จากเซิร์ฟเวอร์เป็นอีโมจิ จึงไม่เก็บ (ห้ามแสดง)
 class FortuneCategoryItem {
-  const FortuneCategoryItem({required this.id, required this.name, this.color, required this.isActive});
+  const FortuneCategoryItem(
+      {required this.id,
+      required this.name,
+      this.color,
+      required this.isActive});
   final int id;
   final String name;
   final String? color;
   final bool isActive;
 
-  factory FortuneCategoryItem.fromJson(Map<String, dynamic> j) => FortuneCategoryItem(
+  factory FortuneCategoryItem.fromJson(Map<String, dynamic> j) =>
+      FortuneCategoryItem(
         id: TpFmt.toInt(j['id']),
         name: _clean(j['name']) ?? 'ไม่มีชื่อหมวด',
         color: j['color']?.toString(),
@@ -523,14 +575,19 @@ class FortuneCategoryItem {
 }
 
 class FortuneServices {
-  const FortuneServices({this.services = const [], this.categories = const [], this.writable = false});
+  const FortuneServices(
+      {this.services = const [],
+      this.categories = const [],
+      this.writable = false});
   final List<FortuneServiceItem> services;
   final List<FortuneCategoryItem> categories;
   final bool writable;
 
   factory FortuneServices.fromJson(Map<String, dynamic> j) => FortuneServices(
-        services: _list(j['services']).map(FortuneServiceItem.fromJson).toList(),
-        categories: _list(j['categories']).map(FortuneCategoryItem.fromJson).toList(),
+        services:
+            _list(j['services']).map(FortuneServiceItem.fromJson).toList(),
+        categories:
+            _list(j['categories']).map(FortuneCategoryItem.fromJson).toList(),
         writable: j['writable'] == true,
       );
 }
@@ -542,7 +599,8 @@ class FortuneRepository {
   final ApiClient _api;
 
   Future<FortuneDashboard> dashboard(FortunePeriod period) async {
-    final data = await _api.get<dynamic>('/fortune/dashboard', query: {'period': period.key});
+    final data = await _api
+        .get<dynamic>('/fortune/dashboard', query: {'period': period.key});
     return FortuneDashboard.fromJson(_m(data));
   }
 
@@ -567,7 +625,8 @@ class FortuneRepository {
   }
 
   /// บิลจ่ายแล้วที่กำลังใช้บริการ (ค้างขึ้นก่อน — เรียงจากเซิร์ฟเวอร์)
-  Future<LiveReadingsPage> liveReadings({bool stuckOnly = false, int page = 1, int perPage = 20}) async {
+  Future<LiveReadingsPage> liveReadings(
+      {bool stuckOnly = false, int page = 1, int perPage = 20}) async {
     final data = await _api.get<dynamic>('/fortune/active-readings', query: {
       'page': page,
       'per_page': perPage,
@@ -584,7 +643,8 @@ class FortuneRepository {
 
   /// สลับเปิด/ปิดคีย์ (endpoint เป็น toggle ไม่ใช่ set) — คืนคีย์สถานะล่าสุด + ข้อความ
   Future<(AiKey?, String?)> toggleKey(int id) async {
-    final res = await _api.dio.post<Map<String, dynamic>>('/fortune/ai-pool/keys/$id/toggle');
+    final res = await _api.dio
+        .post<Map<String, dynamic>>('/fortune/ai-pool/keys/$id/toggle');
     final body = _expectOk(res.data, res.statusCode);
     final k = _m(_m(body['data'])['key']);
     return (k.isEmpty ? null : AiKey.fromJson(k), _clean(body['message']));
@@ -592,17 +652,20 @@ class FortuneRepository {
 
   /// ทดสอบคีย์ — ไม่ผ่านตอบ HTTP 200 + success:false + data.passed:false (เป็น "ผลทดสอบ" ไม่ใช่ error)
   Future<AiKeyTestResult> testKey(int id) async {
-    final res = await _api.dio.post<Map<String, dynamic>>('/fortune/ai-pool/keys/$id/test');
+    final res = await _api.dio
+        .post<Map<String, dynamic>>('/fortune/ai-pool/keys/$id/test');
     final body = res.data ?? const <String, dynamic>{};
     final code = res.statusCode ?? 500;
     final data = _m(body['data']);
-    if (code >= 400 || (body['success'] != true && !data.containsKey('passed'))) {
+    if (code >= 400 ||
+        (body['success'] != true && !data.containsKey('passed'))) {
       _expectOk(body, code == 200 ? 500 : code);
     }
     final k = _m(data['key']);
     final ms = data['response_time_ms'];
     return AiKeyTestResult(
-      passed: data['passed'] == true || (body['success'] == true && !data.containsKey('passed')),
+      passed: data['passed'] == true ||
+          (body['success'] == true && !data.containsKey('passed')),
       message: _clean(body['message']),
       responseTimeMs: ms == null ? null : TpFmt.toInt(ms),
       modelWarning: _clean(data['model_warning']),
@@ -632,7 +695,8 @@ class FortuneRepository {
     if (c == 401) {
       // ให้ AuthController พากลับหน้าเข้าสู่ระบบ (เหมือน ApiClient._unwrap)
       ApiClient.onUnauthorized?.call();
-      throw ApiException(statusCode: 401, message: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+      throw ApiException(
+          statusCode: 401, message: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
     }
     final msg = _clean(b['message']);
     // ข้อความไทยจาก backend แสดงได้เลย · ข้อความอังกฤษ (เช่น validation ค่าเริ่มต้นของ Laravel) แทนด้วยข้อความไทย
@@ -647,18 +711,20 @@ class FortuneRepository {
   }
 }
 
-final fortuneRepositoryProvider = Provider<FortuneRepository>((ref) => FortuneRepository(ref.watch(apiClientProvider)));
+final fortuneRepositoryProvider = Provider<FortuneRepository>(
+    (ref) => FortuneRepository(ref.watch(apiClientProvider)));
 
 /// สรุปธุรกิจดูดวงตามช่วงเวลา
-final fortuneDashboardProvider = FutureProvider.autoDispose.family<FortuneDashboard, FortunePeriod>(
-    (ref, period) => ref.watch(fortuneRepositoryProvider).dashboard(period));
+final fortuneDashboardProvider = FutureProvider.autoDispose
+    .family<FortuneDashboard, FortunePeriod>((ref, period) =>
+        ref.watch(fortuneRepositoryProvider).dashboard(period));
 
 /// ตัวนับคำทำนายสด (กำลังทำ / ค้าง) — ขอแค่ 1 แถว เอา summary
 final liveSummaryProvider = FutureProvider.autoDispose<LiveReadingsPage>(
     (ref) => ref.watch(fortuneRepositoryProvider).liveReadings(perPage: 1));
 
-final fortuneServicesProvider =
-    FutureProvider.autoDispose<FortuneServices>((ref) => ref.watch(fortuneRepositoryProvider).services());
+final fortuneServicesProvider = FutureProvider.autoDispose<FortuneServices>(
+    (ref) => ref.watch(fortuneRepositoryProvider).services());
 
 /// คลังคีย์ AI — แก้คีย์ทีละตัวในหน่วยความจำได้ (ไม่ต้องโหลดใหม่ทั้งหน้าหลังกดสวิตช์)
 class AiPoolNotifier extends AutoDisposeAsyncNotifier<AiPool> {
@@ -678,4 +744,6 @@ class AiPoolNotifier extends AutoDisposeAsyncNotifier<AiPool> {
   }
 }
 
-final aiPoolProvider = AsyncNotifierProvider.autoDispose<AiPoolNotifier, AiPool>(AiPoolNotifier.new);
+final aiPoolProvider =
+    AsyncNotifierProvider.autoDispose<AiPoolNotifier, AiPool>(
+        AiPoolNotifier.new);

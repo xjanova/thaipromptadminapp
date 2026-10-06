@@ -29,7 +29,8 @@ class _TriageSliverState extends ConsumerState<TriageSliver> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-          child: Text('ลูกค้าที่อารมณ์ไม่ดี ทวงเงิน หรือเริ่มดูดวงแล้วยังไม่จ่าย ใน 3 ชม.ล่าสุด — แตะเพื่อเปิดแชท',
+          child: Text(
+              'ลูกค้าที่อารมณ์ไม่ดี ทวงเงิน หรือเริ่มดูดวงแล้วยังไม่จ่าย ใน 3 ชม.ล่าสุด — แตะเพื่อเปิดแชท',
               style: TpType.body(12.5, p.muted)),
         ),
         TpAsync<List<TriageCase>>(
@@ -38,11 +39,18 @@ class _TriageSliverState extends ConsumerState<TriageSliver> {
           onRetry: () => ref.invalidate(triageProvider),
           data: (cases) {
             if (cases.isEmpty) {
-              return const TpEmpty(art: TpArt.emptyDone, title: 'ไม่มีลูกค้าที่ต้องดูแลเป็นพิเศษ', compact: true);
+              return const TpEmpty(
+                  art: TpArt.emptyDone,
+                  title: 'ไม่มีลูกค้าที่ต้องดูแลเป็นพิเศษ',
+                  compact: true);
             }
-            final sorted = [...cases]..sort((a, b) => (b.critical ? 1 : 0).compareTo(a.critical ? 1 : 0));
+            final sorted = [...cases]..sort(
+                (a, b) => (b.critical ? 1 : 0).compareTo(a.critical ? 1 : 0));
             return Column(children: [
-              for (final c in sorted) Padding(padding: const EdgeInsets.only(bottom: 10), child: _TriageCard(c: c)),
+              for (final c in sorted)
+                Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _TriageCard(c: c)),
             ]);
           },
         ),
@@ -74,32 +82,47 @@ class _TriageCard extends StatelessWidget {
     final p = context.tp;
     return TpCard(
       accent: c.critical ? p.danger : p.warning,
-      onTap: c.readingId == null ? null : () => context.push('/chat/${c.readingId}'),
+      onTap: c.readingId == null
+          ? null
+          : () => context.push('/chat/${c.readingId}'),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           TpAvatar(name: c.kindLabel, platform: c.platform, size: 38),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(c.kindLabel, style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
-              Text([if (c.readingId != null) 'บิล #${c.readingId}', TpFmt.ago(c.at)].join(' · '),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(c.kindLabel,
+                  style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
+              Text(
+                  [
+                    if (c.readingId != null) 'บิล #${c.readingId}',
+                    TpFmt.ago(c.at)
+                  ].join(' · '),
                   style: TpType.body(12, p.muted)),
             ]),
           ),
           if (c.critical)
-            const TpPill('ด่วน', tone: TpTone.danger, icon: PhosphorIconsFill.warning, dense: true)
+            const TpPill('ด่วน',
+                tone: TpTone.danger,
+                icon: PhosphorIconsFill.warning,
+                dense: true)
           else if (c.mood != null)
             TpPill('อารมณ์ ${c.mood}/5', tone: TpTone.warning, dense: true),
         ]),
         if ((c.preview ?? '').isNotEmpty) ...[
           const SizedBox(height: 8),
-          Text('“${c.preview}”', maxLines: 3, overflow: TextOverflow.ellipsis, style: TpType.body(13.5, p.text, height: 1.5)),
+          Text('“${c.preview}”',
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TpType.body(13.5, p.text, height: 1.5)),
         ],
         if (c.reasons.isNotEmpty) ...[
           const SizedBox(height: 8),
           Wrap(spacing: 6, runSpacing: 6, children: [
-            for (final r in c.reasons.take(4)) TpPill(_reason(r), tone: TpTone.neutral, dense: true),
+            for (final r in c.reasons.take(4))
+              TpPill(_reason(r), tone: TpTone.neutral, dense: true),
           ]),
         ],
       ]),

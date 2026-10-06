@@ -85,11 +85,14 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
 
     return TpPage(
       title: 'กระเป๋าเงิน',
-      subtitle: s == null ? 'กระเป๋าเงินสมาชิกทั้งระบบ' : 'สมาชิก ${TpFmt.count(s.totalWallets)} กระเป๋า',
+      subtitle: s == null
+          ? 'กระเป๋าเงินสมาชิกทั้งระบบ'
+          : 'สมาชิก ${TpFmt.count(s.totalWallets)} กระเป๋า',
       back: true,
       bottomSpace: 32,
       onRefresh: _refresh,
-      headerBottom: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      headerBottom:
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         _HeaderSearchField(
           controller: _search,
           hint: 'ชื่อ อีเมล หรือเลขกระเป๋า',
@@ -109,7 +112,10 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
             _status = f;
             _found = null;
           }),
-          items: [for (final f in WalletStatusFilter.values) TpChipItem(f, f.label, count: s?.count(f))],
+          items: [
+            for (final f in WalletStatusFilter.values)
+              TpChipItem(f, f.label, count: s?.count(f))
+          ],
         ),
       ]),
       slivers: [
@@ -121,22 +127,36 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
             child: _query.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: _WalletHero(value: stats, onRetry: () => ref.invalidate(walletSystemStatsProvider)),
+                    child: _WalletHero(
+                        value: stats,
+                        onRetry: () =>
+                            ref.invalidate(walletSystemStatsProvider)),
                   )
                 : const SizedBox(width: double.infinity),
           ),
         ),
-        SliverToBoxAdapter(child: _ResultLine(found: _found, query: _query, filtered: filtered, onClear: _clearAll)),
+        SliverToBoxAdapter(
+            child: _ResultLine(
+                found: _found,
+                query: _query,
+                filtered: filtered,
+                onClear: _clearAll)),
         TpPagedSliver<AdminWallet>(
           reloadKey: '${_status.key}-$_query-$_reload',
-          fetch: (page) => ref.read(financeRepositoryProvider).wallets(page: page, search: _query, status: _status),
+          fetch: (page) => ref
+              .read(financeRepositoryProvider)
+              .wallets(page: page, search: _query, status: _status),
           onLoaded: (Paged<AdminWallet> p) {
             if (mounted) setState(() => _found = p.total);
           },
           empty: TpEmpty(
             art: TpArt.wallet,
-            title: _query.isNotEmpty ? 'ไม่พบกระเป๋าที่ตรงกับคำค้น' : 'ไม่มีกระเป๋าในกลุ่มนี้',
-            message: _query.isNotEmpty ? 'ลองค้นด้วยชื่อ อีเมล หรือเลขกระเป๋าบางส่วน' : null,
+            title: _query.isNotEmpty
+                ? 'ไม่พบกระเป๋าที่ตรงกับคำค้น'
+                : 'ไม่มีกระเป๋าในกลุ่มนี้',
+            message: _query.isNotEmpty
+                ? 'ลองค้นด้วยชื่อ อีเมล หรือเลขกระเป๋าบางส่วน'
+                : null,
             actionLabel: filtered ? 'ล้างตัวกรอง' : null,
             onAction: filtered ? _clearAll : null,
             compact: true,
@@ -155,7 +175,10 @@ class _WalletsScreenState extends ConsumerState<WalletsScreen> {
 
 (String, TpTone) _stateStyle(AdminWallet w) => switch (w.state) {
       WalletState.active => ('ใช้งานปกติ', TpTone.success),
-      WalletState.locked => (w.isTempLocked ? 'ล็อกชั่วคราว' : 'ล็อกอยู่', TpTone.warning),
+      WalletState.locked => (
+          w.isTempLocked ? 'ล็อกชั่วคราว' : 'ล็อกอยู่',
+          TpTone.warning
+        ),
       WalletState.suspended => ('ถูกระงับ', TpTone.danger),
       WalletState.inactive => ('ปิดใช้งาน', TpTone.neutral),
     };
@@ -181,7 +204,9 @@ class _WalletHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!value.hasValue) {
-      if (value.hasError) return _HeroError(error: value.error, onRetry: onRetry);
+      if (value.hasError) {
+        return _HeroError(error: value.error, onRetry: onRetry);
+      }
       return const TpHeroCard(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           TpSkeleton(width: 130, height: 12),
@@ -203,25 +228,36 @@ class _WalletHero extends StatelessWidget {
             child: Text('เงินในกระเป๋าทั้งระบบ',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TpType.body(13.5, TpPalette.heroMuted, w: FontWeight.w500)),
+                style:
+                    TpType.body(13.5, TpPalette.heroMuted, w: FontWeight.w500)),
           ),
-          _HeroChip(icon: PhosphorIconsBold.wallet, label: '${TpFmt.count(s.totalWallets)} กระเป๋า', color: TpPalette.heroGold),
+          _HeroChip(
+              icon: PhosphorIconsBold.wallet,
+              label: '${TpFmt.count(s.totalWallets)} กระเป๋า',
+              color: TpPalette.heroGold),
         ]),
         const SizedBox(height: 2),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: TpFoilText(TpFmt.baht(s.totalBalance, decimals: true), style: TpType.money(36, Colors.white)),
+          child: TpFoilText(TpFmt.baht(s.totalBalance, decimals: true),
+              style: TpType.money(36, Colors.white)),
         ),
         Text('เฉลี่ย ${TpFmt.baht(s.averageBalance)} ต่อกระเป๋า',
-            style: TpType.body(12.5, const Color(0x8CFFFFFF), w: FontWeight.w500)),
+            style:
+                TpType.body(12.5, const Color(0x8CFFFFFF), w: FontWeight.w500)),
         const SizedBox(height: 12),
         Container(height: 1, color: _line),
         const SizedBox(height: 11),
-        Text('ยอดเงินเคลื่อนไหว (สำเร็จ)', style: TpType.body(11, const Color(0x73FFFFFF), w: FontWeight.w500)),
+        Text('ยอดเงินเคลื่อนไหว (สำเร็จ)',
+            style:
+                TpType.body(11, const Color(0x73FFFFFF), w: FontWeight.w500)),
         const SizedBox(height: 6),
         Row(children: [
-          _HeroSplit(label: 'วันนี้', value: TpFmt.bahtCompact(s.todayVolume), sub: '${TpFmt.count(s.todayTransactions)} รายการ'),
+          _HeroSplit(
+              label: 'วันนี้',
+              value: TpFmt.bahtCompact(s.todayVolume),
+              sub: '${TpFmt.count(s.todayTransactions)} รายการ'),
           _HeroSplit(
             label: '30 วันล่าสุด',
             value: TpFmt.bahtCompact(s.monthlyVolume),
@@ -231,7 +267,9 @@ class _WalletHero extends StatelessWidget {
           _HeroSplit(
             label: 'ล็อก · ระงับ',
             value: TpFmt.count(held),
-            sub: held == 0 ? 'ไม่มี' : 'ล็อก ${s.lockedWallets} · ระงับ ${s.suspendedWallets}',
+            sub: held == 0
+                ? 'ไม่มี'
+                : 'ล็อก ${s.lockedWallets} · ระงับ ${s.suspendedWallets}',
             color: held > 0 ? _red : null,
             divider: true,
           ),
@@ -242,7 +280,8 @@ class _WalletHero extends StatelessWidget {
 }
 
 class _HeroChip extends StatelessWidget {
-  const _HeroChip({required this.icon, required this.label, required this.color});
+  const _HeroChip(
+      {required this.icon, required this.label, required this.color});
   final IconData icon;
   final String label;
   final Color color;
@@ -251,17 +290,25 @@ class _HeroChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         height: 24,
         padding: const EdgeInsets.symmetric(horizontal: 9),
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(99)),
+        decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(99)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 13, color: color),
           const SizedBox(width: 4),
-          Text(label, style: TpType.body(12, color, w: FontWeight.w600, height: 1.1)),
+          Text(label,
+              style: TpType.body(12, color, w: FontWeight.w600, height: 1.1)),
         ]),
       );
 }
 
 class _HeroSplit extends StatelessWidget {
-  const _HeroSplit({required this.label, required this.value, this.sub, this.color, this.divider = false});
+  const _HeroSplit(
+      {required this.label,
+      required this.value,
+      this.sub,
+      this.color,
+      this.divider = false});
   final String label;
   final String value;
   final String? sub;
@@ -272,23 +319,30 @@ class _HeroSplit extends StatelessWidget {
   Widget build(BuildContext context) => Expanded(
         child: Container(
           padding: EdgeInsets.only(left: divider ? 12 : 0, right: 6),
-          decoration: divider ? const BoxDecoration(border: Border(left: BorderSide(color: Color(0x14FFFFFF)))) : null,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          decoration: divider
+              ? const BoxDecoration(
+                  border: Border(left: BorderSide(color: Color(0x14FFFFFF))))
+              : null,
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TpType.body(11.5, const Color(0x8CFFFFFF), w: FontWeight.w500)),
+                style: TpType.body(11.5, const Color(0x8CFFFFFF),
+                    w: FontWeight.w500)),
             const SizedBox(height: 1),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Text(value, style: TpType.money(16, color ?? TpPalette.heroText)),
+              child: Text(value,
+                  style: TpType.money(16, color ?? TpPalette.heroText)),
             ),
             if (sub != null)
               Text(sub!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TpType.body(10.5, const Color(0x73FFFFFF), w: FontWeight.w500)),
+                  style: TpType.body(10.5, const Color(0x73FFFFFF),
+                      w: FontWeight.w500)),
           ]),
         ),
       );
@@ -309,9 +363,14 @@ class _HeroError extends StatelessWidget {
         Icon(PhosphorIconsRegular.warningCircle, size: 20, color: p.warning),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('โหลดยอดรวมไม่สำเร็จ', style: TpType.h(13.5, p.textStrong, w: FontWeight.w600)),
-            Text(tpErrorText(error), maxLines: 2, overflow: TextOverflow.ellipsis, style: TpType.body(12, p.muted)),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('โหลดยอดรวมไม่สำเร็จ',
+                style: TpType.h(13.5, p.textStrong, w: FontWeight.w600)),
+            Text(tpErrorText(error),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TpType.body(12, p.muted)),
           ]),
         ),
         TpButton.ghost('ลองใหม่', height: 38, onPressed: onRetry),
@@ -323,7 +382,11 @@ class _HeroError extends StatelessWidget {
 // ═════════════════════ รายการ ═════════════════════
 
 class _ResultLine extends StatelessWidget {
-  const _ResultLine({required this.found, required this.query, required this.filtered, required this.onClear});
+  const _ResultLine(
+      {required this.found,
+      required this.query,
+      required this.filtered,
+      required this.onClear});
   final int? found;
   final String query;
   final bool filtered;
@@ -341,7 +404,9 @@ class _ResultLine extends StatelessWidget {
                 ? 'กำลังโหลด…'
                 : query.isNotEmpty
                     ? 'พบ ${TpFmt.count(found)} กระเป๋า จาก “$query”'
-                    : (filtered ? 'พบ ${TpFmt.count(found)} กระเป๋า' : 'เปิดล่าสุด · ${TpFmt.count(found)} กระเป๋า'),
+                    : (filtered
+                        ? 'พบ ${TpFmt.count(found)} กระเป๋า'
+                        : 'เปิดล่าสุด · ${TpFmt.count(found)} กระเป๋า'),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TpType.h(13.5, p.muted, w: FontWeight.w600),
@@ -356,7 +421,8 @@ class _ResultLine extends StatelessWidget {
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(PhosphorIconsRegular.x, size: 13, color: p.goldText),
                 const SizedBox(width: 3),
-                Text('ล้างตัวกรอง', style: TpType.body(12.5, p.goldText, w: FontWeight.w600)),
+                Text('ล้างตัวกรอง',
+                    style: TpType.body(12.5, p.goldText, w: FontWeight.w600)),
               ]),
             ),
           ),
@@ -383,17 +449,27 @@ class _WalletTile extends StatelessWidget {
         TpAvatar(name: w.ownerName, size: 44),
         const SizedBox(width: 11),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(w.ownerName,
-                maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
             Text(w.userEmail ?? w.shortAddress,
-                maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12.5, p.muted)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TpType.body(12.5, p.muted)),
             const SizedBox(height: 5),
             Row(children: [
-              if (!normal) ...[TpPill(label, tone: tone, dense: true), const SizedBox(width: 6)],
+              if (!normal) ...[
+                TpPill(label, tone: tone, dense: true),
+                const SizedBox(width: 6)
+              ],
               Flexible(
                 child: Text(
-                  w.lastTransactionAt == null ? 'ยังไม่มีรายการ' : 'เคลื่อนไหว ${TpFmt.ago(w.lastTransactionAt)}',
+                  w.lastTransactionAt == null
+                      ? 'ยังไม่มีรายการ'
+                      : 'เคลื่อนไหว ${TpFmt.ago(w.lastTransactionAt)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TpType.body(11.5, p.faint),
@@ -408,7 +484,8 @@ class _WalletTile extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
-            child: Text(TpFmt.baht(w.balance), style: TpType.money(17, w.balance > 0 ? p.goldText : p.faint)),
+            child: Text(TpFmt.baht(w.balance),
+                style: TpType.money(17, w.balance > 0 ? p.goldText : p.faint)),
           ),
         ),
       ]),
@@ -447,7 +524,11 @@ class _Notice {
 }
 
 class _WalletSheet extends ConsumerStatefulWidget {
-  const _WalletSheet({required this.initial, required this.scroll, this.onChanged, this.showOwnerLink = true});
+  const _WalletSheet(
+      {required this.initial,
+      required this.scroll,
+      this.onChanged,
+      this.showOwnerLink = true});
   final AdminWallet initial;
   final ScrollController scroll;
   final VoidCallback? onChanged;
@@ -513,7 +594,9 @@ class _WalletSheetState extends ConsumerState<_WalletSheet> {
       _txError = null;
     });
     try {
-      final res = await ref.read(financeRepositoryProvider).transactions(walletId: _w.id, page: page);
+      final res = await ref
+          .read(financeRepositoryProvider)
+          .transactions(walletId: _w.id, page: page);
       if (!mounted || gen != _txGen) return;
       setState(() {
         if (reset) _tx.clear();
@@ -554,7 +637,8 @@ class _WalletSheetState extends ConsumerState<_WalletSheet> {
     });
   }
 
-  Future<void> _run(String key, Future<WalletActionResult> Function() action) async {
+  Future<void> _run(
+      String key, Future<WalletActionResult> Function() action) async {
     if (_busy != null) return;
     setState(() {
       _busy = key;
@@ -577,7 +661,8 @@ class _WalletSheetState extends ConsumerState<_WalletSheet> {
     final ok = await tpConfirm(
       context,
       title: 'ล็อกกระเป๋าของ ${_w.ownerName}?',
-      message: 'สมาชิกจะโอน จ่าย และถอนเงินจากกระเป๋าไม่ได้ จนกว่าแอดมินจะปลดล็อก',
+      message:
+          'สมาชิกจะโอน จ่าย และถอนเงินจากกระเป๋าไม่ได้ จนกว่าแอดมินจะปลดล็อก',
       confirmLabel: 'ล็อกกระเป๋า',
       danger: true,
     );
@@ -589,28 +674,33 @@ class _WalletSheetState extends ConsumerState<_WalletSheet> {
     final ok = await tpConfirm(
       context,
       title: 'ปลดล็อกกระเป๋า?',
-      message: 'สมาชิกจะกลับมาใช้กระเป๋าได้ตามปกติ และล้างจำนวนครั้งที่ใส่ PIN ผิด',
+      message:
+          'สมาชิกจะกลับมาใช้กระเป๋าได้ตามปกติ และล้างจำนวนครั้งที่ใส่ PIN ผิด',
       confirmLabel: 'ปลดล็อก',
     );
     if (!ok || !mounted) return;
-    await _run('unlock', () => ref.read(financeRepositoryProvider).unlock(_w.id));
+    await _run(
+        'unlock', () => ref.read(financeRepositoryProvider).unlock(_w.id));
   }
 
   Future<void> _suspend() async {
     final reason = await tpPrompt(
       context,
       title: 'ระงับกระเป๋าของ ${_w.ownerName}?',
-      message: 'ใช้เมื่อพบความผิดปกติ — กระเป๋าจะใช้งานไม่ได้จนกว่าแอดมินจะยกเลิกการระงับ',
+      message:
+          'ใช้เมื่อพบความผิดปกติ — กระเป๋าจะใช้งานไม่ได้จนกว่าแอดมินจะยกเลิกการระงับ',
       hint: 'เหตุผล (บันทึกในประวัติระบบ)',
       confirmLabel: 'ระงับกระเป๋า',
       danger: true,
     );
     if (reason == null || !mounted) return;
     if (reason.length > 500) {
-      setState(() => _notice = const _Notice(_NoticeKind.error, 'เหตุผลยาวเกิน 500 ตัวอักษร'));
+      setState(() => _notice =
+          const _Notice(_NoticeKind.error, 'เหตุผลยาวเกิน 500 ตัวอักษร'));
       return;
     }
-    await _run('suspend', () => ref.read(financeRepositoryProvider).suspend(_w.id, reason));
+    await _run('suspend',
+        () => ref.read(financeRepositoryProvider).suspend(_w.id, reason));
   }
 
   Future<void> _unsuspend() async {
@@ -623,10 +713,12 @@ class _WalletSheetState extends ConsumerState<_WalletSheet> {
     );
     if (reason == null || !mounted) return;
     if (reason.length > 500) {
-      setState(() => _notice = const _Notice(_NoticeKind.error, 'เหตุผลยาวเกิน 500 ตัวอักษร'));
+      setState(() => _notice =
+          const _Notice(_NoticeKind.error, 'เหตุผลยาวเกิน 500 ตัวอักษร'));
       return;
     }
-    await _run('unsuspend', () => ref.read(financeRepositoryProvider).unsuspend(_w.id, reason));
+    await _run('unsuspend',
+        () => ref.read(financeRepositoryProvider).unsuspend(_w.id, reason));
   }
 
   Future<void> _openAdjust() async {
@@ -639,8 +731,10 @@ class _WalletSheetState extends ConsumerState<_WalletSheet> {
       builder: (ctx, scroll) => _AdjustSheet(
         wallet: _w,
         scroll: scroll,
-        onDone: (updated, message) => _afterChange(updated, _Notice(_NoticeKind.success, message)),
-        onUncertain: (message) => _afterChange(null, _Notice(_NoticeKind.warning, message)),
+        onDone: (updated, message) =>
+            _afterChange(updated, _Notice(_NoticeKind.success, message)),
+        onUncertain: (message) =>
+            _afterChange(null, _Notice(_NoticeKind.warning, message)),
       ),
     );
   }
@@ -654,114 +748,151 @@ class _WalletSheetState extends ConsumerState<_WalletSheet> {
     final admin = ref.watch(authControllerProvider).admin;
     final canManage = !_denied && _canManageWallets(admin);
     final now = DateTime.now();
-    final lockedForever = w.lockedUntil != null && w.lockedUntil!.isAfter(now.add(const Duration(days: 365)));
+    final lockedForever = w.lockedUntil != null &&
+        w.lockedUntil!.isAfter(now.add(const Duration(days: 365)));
 
     return Column(children: [
       Expanded(
-        child: ListView(controller: widget.scroll, padding: const EdgeInsets.fromLTRB(18, 6, 18, 18), children: [
-          // ── เจ้าของ ──
-          Row(children: [
-            TpAvatar(name: w.ownerName, size: 48),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(w.ownerName, maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.h(16, p.textStrong)),
-                Text([w.userEmail, w.userPhone].whereType<String>().join(' · '),
-                    maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12.5, p.muted)),
+        child: ListView(
+            controller: widget.scroll,
+            padding: const EdgeInsets.fromLTRB(18, 6, 18, 18),
+            children: [
+              // ── เจ้าของ ──
+              Row(children: [
+                TpAvatar(name: w.ownerName, size: 48),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(w.ownerName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TpType.h(16, p.textStrong)),
+                        Text(
+                            [w.userEmail, w.userPhone]
+                                .whereType<String>()
+                                .join(' · '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TpType.body(12.5, p.muted)),
+                      ]),
+                ),
+                const SizedBox(width: 8),
+                TpPill(label, tone: tone),
               ]),
-            ),
-            const SizedBox(width: 8),
-            TpPill(label, tone: tone),
-          ]),
-          if (_notice != null) ...[
-            const SizedBox(height: 12),
-            _NoticeBanner(notice: _notice!, onClose: () => setState(() => _notice = null)),
-          ],
-          const SizedBox(height: 18),
-          // ── ยอดคงเหลือ ──
-          Center(child: Text('ยอดคงเหลือ', style: TpType.body(12.5, p.muted))),
-          Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(TpFmt.baht(w.balance, decimals: true), style: TpType.money(38, p.goldText)),
-            ),
-          ),
-          Center(
-            child: Text('รับเข้ารวม ${TpFmt.bahtCompact(w.totalIncome)} · จ่ายออกรวม ${TpFmt.bahtCompact(w.totalExpense)}',
-                textAlign: TextAlign.center, style: TpType.body(12.5, p.faint)),
-          ),
-          const SizedBox(height: 16),
-          // ── เดือนนี้ ──
-          TpCard(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-            child: d == null && _detailLoading
-                ? const Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: TpSkeleton(height: 36))
-                : Row(children: [
-                    Expanded(
-                      child: TpStat(
-                        label: 'รับเข้าเดือนนี้',
-                        value: TpFmt.bahtCompact(d?.monthIncome ?? 0),
-                        color: p.success,
-                        align: CrossAxisAlignment.center,
-                      ),
-                    ),
-                    Container(width: 1, height: 32, color: p.divider),
-                    Expanded(
-                      child: TpStat(
-                        label: 'จ่ายออกเดือนนี้',
-                        value: TpFmt.bahtCompact(d?.monthExpense ?? 0),
-                        color: p.danger,
-                        align: CrossAxisAlignment.center,
-                      ),
-                    ),
-                    Container(width: 1, height: 32, color: p.divider),
-                    Expanded(
-                      child: TpStat(
-                        label: 'รายการทั้งหมด',
-                        value: TpFmt.count(d?.transactionsCount ?? _txTotal),
-                        align: CrossAxisAlignment.center,
-                      ),
-                    ),
-                  ]),
-          ),
-          const SizedBox(height: 12),
-          // ── ข้อมูลกระเป๋า ──
-          TpCard(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Column(children: [
-              if (w.address.isNotEmpty) _CopyRow(label: 'เลขกระเป๋า', value: w.address),
-              TpKv('สกุลเงิน', w.currency ?? 'THB'),
-              TpKv('PIN สองชั้น', w.twoFactorEnabled ? 'เปิดอยู่' : 'ปิดอยู่',
-                  valueColor: w.twoFactorEnabled ? p.success : p.muted),
-              if (w.failedAttempts > 0) TpKv('ใส่ PIN ผิด', '${w.failedAttempts} ครั้ง', valueColor: p.warning),
-              if (w.state == WalletState.locked && w.lockedUntil != null)
-                TpKv('ล็อกถึง',
-                    lockedForever
-                        ? 'จนกว่าแอดมินจะปลด'
-                        : '${TpFmt.shortDate(w.lockedUntil!)} ${TpFmt.time(w.lockedUntil!)}',
-                    valueColor: p.warning),
-              TpKv('เคลื่อนไหวล่าสุด', w.lastTransactionAt == null ? 'ยังไม่มีรายการ' : TpFmt.ago(w.lastTransactionAt)),
-              if (w.createdAt != null) TpKv('เปิดกระเป๋าเมื่อ', TpFmt.shortDate(w.createdAt!)),
+              if (_notice != null) ...[
+                const SizedBox(height: 12),
+                _NoticeBanner(
+                    notice: _notice!,
+                    onClose: () => setState(() => _notice = null)),
+              ],
+              const SizedBox(height: 18),
+              // ── ยอดคงเหลือ ──
+              Center(
+                  child: Text('ยอดคงเหลือ', style: TpType.body(12.5, p.muted))),
+              Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(TpFmt.baht(w.balance, decimals: true),
+                      style: TpType.money(38, p.goldText)),
+                ),
+              ),
+              Center(
+                child: Text(
+                    'รับเข้ารวม ${TpFmt.bahtCompact(w.totalIncome)} · จ่ายออกรวม ${TpFmt.bahtCompact(w.totalExpense)}',
+                    textAlign: TextAlign.center,
+                    style: TpType.body(12.5, p.faint)),
+              ),
+              const SizedBox(height: 16),
+              // ── เดือนนี้ ──
+              TpCard(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                child: d == null && _detailLoading
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: TpSkeleton(height: 36))
+                    : Row(children: [
+                        Expanded(
+                          child: TpStat(
+                            label: 'รับเข้าเดือนนี้',
+                            value: TpFmt.bahtCompact(d?.monthIncome ?? 0),
+                            color: p.success,
+                            align: CrossAxisAlignment.center,
+                          ),
+                        ),
+                        Container(width: 1, height: 32, color: p.divider),
+                        Expanded(
+                          child: TpStat(
+                            label: 'จ่ายออกเดือนนี้',
+                            value: TpFmt.bahtCompact(d?.monthExpense ?? 0),
+                            color: p.danger,
+                            align: CrossAxisAlignment.center,
+                          ),
+                        ),
+                        Container(width: 1, height: 32, color: p.divider),
+                        Expanded(
+                          child: TpStat(
+                            label: 'รายการทั้งหมด',
+                            value:
+                                TpFmt.count(d?.transactionsCount ?? _txTotal),
+                            align: CrossAxisAlignment.center,
+                          ),
+                        ),
+                      ]),
+              ),
+              const SizedBox(height: 12),
+              // ── ข้อมูลกระเป๋า ──
+              TpCard(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Column(children: [
+                  if (w.address.isNotEmpty)
+                    _CopyRow(label: 'เลขกระเป๋า', value: w.address),
+                  TpKv('สกุลเงิน', w.currency ?? 'THB'),
+                  TpKv('PIN สองชั้น',
+                      w.twoFactorEnabled ? 'เปิดอยู่' : 'ปิดอยู่',
+                      valueColor: w.twoFactorEnabled ? p.success : p.muted),
+                  if (w.failedAttempts > 0)
+                    TpKv('ใส่ PIN ผิด', '${w.failedAttempts} ครั้ง',
+                        valueColor: p.warning),
+                  if (w.state == WalletState.locked && w.lockedUntil != null)
+                    TpKv(
+                        'ล็อกถึง',
+                        lockedForever
+                            ? 'จนกว่าแอดมินจะปลด'
+                            : '${TpFmt.shortDate(w.lockedUntil!)} ${TpFmt.time(w.lockedUntil!)}',
+                        valueColor: p.warning),
+                  TpKv(
+                      'เคลื่อนไหวล่าสุด',
+                      w.lastTransactionAt == null
+                          ? 'ยังไม่มีรายการ'
+                          : TpFmt.ago(w.lastTransactionAt)),
+                  if (w.createdAt != null)
+                    TpKv('เปิดกระเป๋าเมื่อ', TpFmt.shortDate(w.createdAt!)),
+                ]),
+              ),
+              if (widget.showOwnerLink && w.userId != null) ...[
+                const SizedBox(height: 6),
+                Center(
+                  child: TpButton.ghost('ดูข้อมูลสมาชิก',
+                      icon: PhosphorIconsRegular.userCircle, onPressed: () {
+                    final router = GoRouter.of(context);
+                    final uid = w.userId;
+                    Navigator.of(context).pop();
+                    router.push('/users/$uid');
+                  }),
+                ),
+              ],
+              // ── รายการเคลื่อนไหว ──
+              TpSection(
+                'รายการเคลื่อนไหว',
+                trailing: _txLoadedOnce && _txTotal > 0
+                    ? TpPill('${TpFmt.count(_txTotal)} รายการ', dense: true)
+                    : null,
+              ),
+              _txBody(p),
             ]),
-          ),
-          if (widget.showOwnerLink && w.userId != null) ...[
-            const SizedBox(height: 6),
-            Center(
-              child: TpButton.ghost('ดูข้อมูลสมาชิก', icon: PhosphorIconsRegular.userCircle, onPressed: () {
-                final router = GoRouter.of(context);
-                final uid = w.userId;
-                Navigator.of(context).pop();
-                router.push('/users/$uid');
-              }),
-            ),
-          ],
-          // ── รายการเคลื่อนไหว ──
-          TpSection(
-            'รายการเคลื่อนไหว',
-            trailing: _txLoadedOnce && _txTotal > 0 ? TpPill('${TpFmt.count(_txTotal)} รายการ', dense: true) : null,
-          ),
-          _txBody(p),
-        ]),
       ),
       if (canManage)
         TpBottomBar(child: _actions(w))
@@ -771,7 +902,8 @@ class _WalletSheetState extends ConsumerState<_WalletSheet> {
             Icon(PhosphorIconsRegular.lockSimple, size: 18, color: p.muted),
             const SizedBox(width: 10),
             Expanded(
-              child: Text('บัญชีของคุณดูได้อย่างเดียว — ปรับยอด ล็อก หรือระงับ ต้องมีสิทธิ์จัดการกระเป๋าเงิน',
+              child: Text(
+                  'บัญชีของคุณดูได้อย่างเดียว — ปรับยอด ล็อก หรือระงับ ต้องมีสิทธิ์จัดการกระเป๋าเงิน',
                   style: TpType.body(12.5, p.muted)),
             ),
           ]),
@@ -782,14 +914,20 @@ class _WalletSheetState extends ConsumerState<_WalletSheet> {
   Widget _txBody(TpPalette p) {
     if (!_txLoadedOnce) {
       if (_txError != null) {
-        return TpErrorView(error: _txError, onRetry: () => _loadTx(reset: true), compact: true);
+        return TpErrorView(
+            error: _txError,
+            onRetry: () => _loadTx(reset: true),
+            compact: true);
       }
       return const TpSkeletonList(count: 3, itemHeight: 66);
     }
     if (_tx.isEmpty) {
       return const TpCard(
         padding: EdgeInsets.zero,
-        child: TpEmpty(art: TpArt.emptyInbox, title: 'ยังไม่มีรายการเคลื่อนไหว', compact: true),
+        child: TpEmpty(
+            art: TpArt.emptyInbox,
+            title: 'ยังไม่มีรายการเคลื่อนไหว',
+            compact: true),
       );
     }
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -797,13 +935,18 @@ class _WalletSheetState extends ConsumerState<_WalletSheet> {
       if (_txError != null)
         Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: Center(child: TpButton.ghost('โหลดต่อไม่สำเร็จ · ลองใหม่', onPressed: _loadTx)),
+          child: Center(
+              child: TpButton.ghost('โหลดต่อไม่สำเร็จ · ลองใหม่',
+                  onPressed: _loadTx)),
         )
       else if (_txPage < _txLast)
         Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Center(
-            child: TpButton.ghost('ดูรายการก่อนหน้า', icon: PhosphorIconsRegular.clockCounterClockwise, loading: _txLoading, onPressed: _loadTx),
+            child: TpButton.ghost('ดูรายการก่อนหน้า',
+                icon: PhosphorIconsRegular.clockCounterClockwise,
+                loading: _txLoading,
+                onPressed: _loadTx),
           ),
         ),
     ]);
@@ -822,7 +965,8 @@ class _WalletSheetState extends ConsumerState<_WalletSheet> {
             onPressed: busy ? null : _unsuspend));
       case WalletState.locked:
       case WalletState.inactive:
-        small.add(TpButton.outline(w.state == WalletState.inactive ? 'เปิดใช้งาน' : 'ปลดล็อก',
+        small.add(TpButton.outline(
+            w.state == WalletState.inactive ? 'เปิดใช้งาน' : 'ปลดล็อก',
             icon: PhosphorIconsRegular.lockSimpleOpen,
             height: 44,
             fontSize: 13.5,
@@ -849,7 +993,9 @@ class _WalletSheetState extends ConsumerState<_WalletSheet> {
             onPressed: busy ? null : _suspend));
     }
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      TpButton('ปรับยอดเงิน', icon: PhosphorIconsBold.plusMinus, onPressed: busy ? null : _openAdjust),
+      TpButton('ปรับยอดเงิน',
+          icon: PhosphorIconsBold.plusMinus,
+          onPressed: busy ? null : _openAdjust),
       const SizedBox(height: 10),
       Row(children: [
         for (var i = 0; i < small.length; i++) ...[
@@ -876,11 +1022,16 @@ class _NoticeBanner extends StatelessWidget {
     };
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
-      decoration: BoxDecoration(color: p.soft(tone), borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(
+          color: p.soft(tone), borderRadius: BorderRadius.circular(14)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(padding: const EdgeInsets.only(top: 1), child: Icon(icon, size: 18, color: p.fg(tone))),
+        Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(icon, size: 18, color: p.fg(tone))),
         const SizedBox(width: 8),
-        Expanded(child: Text(notice.text, style: TpType.body(13, p.text, w: FontWeight.w500))),
+        Expanded(
+            child: Text(notice.text,
+                style: TpType.body(13, p.text, w: FontWeight.w500))),
         InkWell(
           onTap: onClose,
           borderRadius: BorderRadius.circular(10),
@@ -933,7 +1084,9 @@ class _CopyRowState extends State<_CopyRow> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 7),
         child: Row(children: [
-          SizedBox(width: 92, child: Text(widget.label, style: TpType.body(13, p.muted))),
+          SizedBox(
+              width: 92,
+              child: Text(widget.label, style: TpType.body(13, p.muted))),
           Expanded(
             child: Text(widget.value,
                 textAlign: TextAlign.right,
@@ -945,8 +1098,10 @@ class _CopyRowState extends State<_CopyRow> {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 160),
             child: _copied
-                ? Icon(PhosphorIconsBold.check, key: const ValueKey(1), size: 16, color: p.success)
-                : Icon(PhosphorIconsRegular.copy, key: const ValueKey(0), size: 16, color: p.goldText),
+                ? Icon(PhosphorIconsBold.check,
+                    key: const ValueKey(1), size: 16, color: p.success)
+                : Icon(PhosphorIconsRegular.copy,
+                    key: const ValueKey(0), size: 16, color: p.goldText),
           ),
         ]),
       ),
@@ -968,33 +1123,51 @@ class _TxnRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        TpIconTile(credit ? PhosphorIconsBold.arrowDownLeft : PhosphorIconsBold.arrowUpRight,
-            tone: credit ? TpTone.success : TpTone.danger, size: 36),
+        TpIconTile(
+            credit
+                ? PhosphorIconsBold.arrowDownLeft
+                : PhosphorIconsBold.arrowUpRight,
+            tone: credit ? TpTone.success : TpTone.danger,
+            size: 36),
         const SizedBox(width: 11),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Flexible(
                 child: Text(t.typeLabel,
-                    maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.h(14, p.textStrong, w: FontWeight.w600)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TpType.h(14, p.textStrong, w: FontWeight.w600)),
               ),
               if (!done) ...[
                 const SizedBox(width: 6),
                 TpPill(t.statusLabel,
-                    tone: t.status == 'failed' || t.status == 'cancelled' ? TpTone.danger : TpTone.warning, dense: true),
+                    tone: t.status == 'failed' || t.status == 'cancelled'
+                        ? TpTone.danger
+                        : TpTone.warning,
+                    dense: true),
               ],
             ]),
             if (sub != null)
-              Text(sub, maxLines: 2, overflow: TextOverflow.ellipsis, style: TpType.body(12.5, p.muted)),
-            Text(t.createdAt == null ? '-' : '${TpFmt.shortDate(t.createdAt!)} ${TpFmt.time(t.createdAt!)}',
+              Text(sub,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TpType.body(12.5, p.muted)),
+            Text(
+                t.createdAt == null
+                    ? '-'
+                    : '${TpFmt.shortDate(t.createdAt!)} ${TpFmt.time(t.createdAt!)}',
                 style: TpType.body(11.5, p.faint)),
           ]),
         ),
         const SizedBox(width: 8),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Text('${credit ? '+' : '−'}${TpFmt.baht(t.amount)}', style: TpType.money(14.5, done ? color : p.muted)),
+          Text('${credit ? '+' : '−'}${TpFmt.baht(t.amount)}',
+              style: TpType.money(14.5, done ? color : p.muted)),
           if (t.balanceAfter != null)
-            Text('คงเหลือ ${TpFmt.baht(t.balanceAfter)}', style: TpType.body(11, p.faint)),
+            Text('คงเหลือ ${TpFmt.baht(t.balanceAfter)}',
+                style: TpType.body(11, p.faint)),
         ]),
       ]),
     );
@@ -1046,28 +1219,35 @@ class _AdjustSheetState extends ConsumerState<_AdjustSheet> {
 
   /// จำนวนเงินเป็นสตางค์ (คำนวณจากสตริง ไม่ผ่าน double — กันปัดเศษ)
   int? get _cents {
-    final m = RegExp(r'^(\d{0,9})(?:\.(\d{0,2}))?$').firstMatch(_amount.text.trim());
+    final m =
+        RegExp(r'^(\d{0,9})(?:\.(\d{0,2}))?$').firstMatch(_amount.text.trim());
     if (m == null) return null;
     final whole = (m.group(1) ?? '').isEmpty ? 0 : int.parse(m.group(1)!);
     final frac = (m.group(2) ?? '').padRight(2, '0');
     return whole * 100 + int.parse(frac);
   }
 
-  static String _centsText(int cents) => '${cents ~/ 100}.${(cents % 100).toString().padLeft(2, '0')}';
+  static String _centsText(int cents) =>
+      '${cents ~/ 100}.${(cents % 100).toString().padLeft(2, '0')}';
 
   /// ข้อความว่าทำไมยังยืนยันไม่ได้ (null = พร้อม)
   String? get _blocker {
     final c = _cents;
-    if (_credit && !widget.wallet.canCredit) return 'กระเป๋าถูกล็อกหรือระงับ — เพิ่มเงินไม่ได้จนกว่าจะปลด';
+    if (_credit && !widget.wallet.canCredit) {
+      return 'กระเป๋าถูกล็อกหรือระงับ — เพิ่มเงินไม่ได้จนกว่าจะปลด';
+    }
     if (c == null || c <= 0) return 'กรอกจำนวนเงิน';
-    if (!_credit && c > _balanceCents) return 'หักได้ไม่เกินยอดคงเหลือ ${TpFmt.baht(widget.wallet.balance, decimals: true)}';
+    if (!_credit && c > _balanceCents) {
+      return 'หักได้ไม่เกินยอดคงเหลือ ${TpFmt.baht(widget.wallet.balance, decimals: true)}';
+    }
     if (_reason.text.trim().isEmpty) return 'ระบุเหตุผลก่อนยืนยัน';
     return null;
   }
 
   void _setAmount(int cents) {
     final t = _centsText(cents).replaceAll(RegExp(r'\.00$'), '');
-    _amount.value = TextEditingValue(text: t, selection: TextSelection.collapsed(offset: t.length));
+    _amount.value = TextEditingValue(
+        text: t, selection: TextSelection.collapsed(offset: t.length));
     setState(() => _error = null);
   }
 
@@ -1078,11 +1258,14 @@ class _AdjustSheetState extends ConsumerState<_AdjustSheet> {
     setState(() => _error = null);
     final amount = '${_credit ? '' : '-'}${_centsText(c)}';
     try {
-      final r = await ref
-          .read(financeRepositoryProvider)
-          .adjust(widget.wallet.id, amount: amount, reason: _reason.text.trim());
+      final r = await ref.read(financeRepositoryProvider).adjust(
+          widget.wallet.id,
+          amount: amount,
+          reason: _reason.text.trim());
       final after = r.wallet?.balance;
-      final msg = after == null ? r.message : '${r.message} — ยอดใหม่ ${TpFmt.baht(after, decimals: true)}';
+      final msg = after == null
+          ? r.message
+          : '${r.message} — ยอดใหม่ ${TpFmt.baht(after, decimals: true)}';
       widget.onDone(r.wallet, msg);
       if (mounted) Navigator.of(context).pop();
       return true;
@@ -1118,16 +1301,21 @@ class _AdjustSheetState extends ConsumerState<_AdjustSheet> {
                 const Tp3D(TpArt.wallet, size: 42),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('ปรับยอดเงิน', style: TpType.h(17, p.textStrong)),
-                    Text('กระเป๋าของ ${w.ownerName}',
-                        maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12.5, p.muted)),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('ปรับยอดเงิน', style: TpType.h(17, p.textStrong)),
+                        Text('กระเป๋าของ ${w.ownerName}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TpType.body(12.5, p.muted)),
+                      ]),
                 ),
               ]),
               const SizedBox(height: 14),
               TpCard(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(children: [
                   Text('ยอดปัจจุบัน', style: TpType.body(13, p.muted)),
                   const SizedBox(width: 8),
@@ -1135,7 +1323,8 @@ class _AdjustSheetState extends ConsumerState<_AdjustSheet> {
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerRight,
-                      child: Text(TpFmt.baht(w.balance, decimals: true), style: TpType.money(17, p.textStrong)),
+                      child: Text(TpFmt.baht(w.balance, decimals: true),
+                          style: TpType.money(17, p.textStrong)),
                     ),
                   ),
                 ]),
@@ -1174,15 +1363,18 @@ class _AdjustSheetState extends ConsumerState<_AdjustSheet> {
               ]),
               if (!w.canCredit) ...[
                 const SizedBox(height: 8),
-                Text('กระเป๋านี้ถูกล็อกหรือระงับ — เพิ่มเงินได้หลังปลดเท่านั้น (หักเงินทำได้)',
+                Text(
+                    'กระเป๋านี้ถูกล็อกหรือระงับ — เพิ่มเงินได้หลังปลดเท่านั้น (หักเงินทำได้)',
                     style: TpType.body(12, p.warning, w: FontWeight.w500)),
               ],
               const SizedBox(height: 16),
-              Text('จำนวนเงินที่จะ$verb (บาท)', style: TpType.body(13, p.muted, w: FontWeight.w500)),
+              Text('จำนวนเงินที่จะ$verb (บาท)',
+                  style: TpType.body(13, p.muted, w: FontWeight.w500)),
               const SizedBox(height: 6),
               TextField(
                 controller: _amount,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 textInputAction: TextInputAction.next,
                 inputFormatters: [
                   TextInputFormatter.withFunction((old, nu) {
@@ -1198,20 +1390,27 @@ class _AdjustSheetState extends ConsumerState<_AdjustSheet> {
                   hintStyle: TpType.money(24, p.faint, w: FontWeight.w500),
                   prefixIcon: Padding(
                     padding: const EdgeInsets.only(left: 16, right: 6),
-                    child: Text(_credit ? '+฿' : '−฿', style: TpType.money(22, _credit ? p.success : p.danger)),
+                    child: Text(_credit ? '+฿' : '−฿',
+                        style:
+                            TpType.money(22, _credit ? p.success : p.danger)),
                   ),
-                  prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                  prefixIconConstraints:
+                      const BoxConstraints(minWidth: 0, minHeight: 0),
                 ),
               ),
               const SizedBox(height: 8),
               Wrap(spacing: 7, runSpacing: 7, children: [
                 for (final b in const [100, 500, 1000, 5000])
-                  _QuickChip(label: TpFmt.baht(b), onTap: () => _setAmount(b * 100)),
+                  _QuickChip(
+                      label: TpFmt.baht(b), onTap: () => _setAmount(b * 100)),
                 if (!_credit && _balanceCents > 0)
-                  _QuickChip(label: 'หักทั้งหมด', onTap: () => _setAmount(_balanceCents)),
+                  _QuickChip(
+                      label: 'หักทั้งหมด',
+                      onTap: () => _setAmount(_balanceCents)),
               ]),
               const SizedBox(height: 16),
-              Text('เหตุผล (บันทึกในประวัติกระเป๋า)', style: TpType.body(13, p.muted, w: FontWeight.w500)),
+              Text('เหตุผล (บันทึกในประวัติกระเป๋า)',
+                  style: TpType.body(13, p.muted, w: FontWeight.w500)),
               const SizedBox(height: 6),
               TextField(
                 controller: _reason,
@@ -1221,7 +1420,8 @@ class _AdjustSheetState extends ConsumerState<_AdjustSheet> {
                 textInputAction: TextInputAction.done,
                 onChanged: (_) => setState(() {}),
                 style: TpType.body(14.5, p.text),
-                decoration: const InputDecoration(hintText: 'เช่น ชดเชยยอดที่ระบบตัดซ้ำ บิล R12345'),
+                decoration: const InputDecoration(
+                    hintText: 'เช่น ชดเชยยอดที่ระบบตัดซ้ำ บิล R12345'),
               ),
               const SizedBox(height: 4),
               // ── สรุปก่อนยืนยัน ──
@@ -1237,8 +1437,14 @@ class _AdjustSheetState extends ConsumerState<_AdjustSheet> {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerRight,
                         child: Text(
-                          c <= 0 ? '-' : TpFmt.baht(afterCents / 100, decimals: true),
-                          style: TpType.money(19, c <= 0 ? p.faint : (afterCents < 0 ? p.danger : p.textStrong)),
+                          c <= 0
+                              ? '-'
+                              : TpFmt.baht(afterCents / 100, decimals: true),
+                          style: TpType.money(
+                              19,
+                              c <= 0
+                                  ? p.faint
+                                  : (afterCents < 0 ? p.danger : p.textStrong)),
                         ),
                       ),
                     ),
@@ -1246,8 +1452,10 @@ class _AdjustSheetState extends ConsumerState<_AdjustSheet> {
                   if (c > 0)
                     Align(
                       alignment: Alignment.centerRight,
-                      child: Text('$verb ${TpFmt.baht(c / 100, decimals: true)}',
-                          style: TpType.body(12, _credit ? p.success : p.danger, w: FontWeight.w600)),
+                      child: Text(
+                          '$verb ${TpFmt.baht(c / 100, decimals: true)}',
+                          style: TpType.body(12, _credit ? p.success : p.danger,
+                              w: FontWeight.w600)),
                     ),
                 ]),
               ),
@@ -1257,8 +1465,10 @@ class _AdjustSheetState extends ConsumerState<_AdjustSheet> {
                   Icon(PhosphorIconsFill.warning, size: 16, color: p.warning),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text('ยอดสูงผิดปกติ — ตรวจจำนวนหลักให้แน่ใจก่อนเลื่อนยืนยัน',
-                        style: TpType.body(12.5, p.warning, w: FontWeight.w600)),
+                    child: Text(
+                        'ยอดสูงผิดปกติ — ตรวจจำนวนหลักให้แน่ใจก่อนเลื่อนยืนยัน',
+                        style:
+                            TpType.body(12.5, p.warning, w: FontWeight.w600)),
                   ),
                 ]),
               ],
@@ -1274,7 +1484,8 @@ class _AdjustSheetState extends ConsumerState<_AdjustSheet> {
                 Icon(PhosphorIconsRegular.info, size: 15, color: p.faint),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text('เงินเข้า/ออกทันทีและย้อนกลับไม่ได้ ถ้าผิดต้องปรับยอดกลับด้วยมือ',
+                  child: Text(
+                      'เงินเข้า/ออกทันทีและย้อนกลับไม่ได้ ถ้าผิดต้องปรับยอดกลับด้วยมือ',
                       style: TpType.body(12, p.faint)),
                 ),
               ]),
@@ -1283,7 +1494,8 @@ class _AdjustSheetState extends ConsumerState<_AdjustSheet> {
         ),
         TpBottomBar(
           child: TpSlideToConfirm(
-            label: blocker ?? 'เลื่อนเพื่อ$verb ${TpFmt.baht(c / 100, decimals: true)}',
+            label: blocker ??
+                'เลื่อนเพื่อ$verb ${TpFmt.baht(c / 100, decimals: true)}',
             enabled: blocker == null,
             onConfirmed: _submit,
           ),
@@ -1334,16 +1546,25 @@ class _ModeCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: selected ? p.soft(tone) : p.cardSolid,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: selected ? fg : p.border, width: selected ? 1.5 : 1),
+              border: Border.all(
+                  color: selected ? fg : p.border, width: selected ? 1.5 : 1),
             ),
             child: Row(children: [
               TpIconTile(icon, tone: tone, size: 34),
               const SizedBox(width: 9),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.h(14, selected ? fg : p.textStrong)),
-                  Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(11.5, p.muted)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TpType.h(14, selected ? fg : p.textStrong)),
+                      Text(subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TpType.body(11.5, p.muted)),
+                    ]),
               ),
             ]),
           ),
@@ -1363,7 +1584,9 @@ class _QuickChip extends StatelessWidget {
     final p = context.tp;
     return Material(
       color: p.cardSolid,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11), side: BorderSide(color: p.border)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(11),
+          side: BorderSide(color: p.border)),
       child: InkWell(
         borderRadius: BorderRadius.circular(11),
         onTap: () {
@@ -1372,7 +1595,8 @@ class _QuickChip extends StatelessWidget {
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          child: Text(label, style: TpType.money(13, p.text, w: FontWeight.w600)),
+          child:
+              Text(label, style: TpType.money(13, p.text, w: FontWeight.w600)),
         ),
       ),
     );
@@ -1400,8 +1624,9 @@ class _HeaderSearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.tp;
-    OutlineInputBorder border(Color c) =>
-        OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: c));
+    OutlineInputBorder border(Color c) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: c));
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
       builder: (context, v, _) => TextField(
@@ -1417,13 +1642,16 @@ class _HeaderSearchField extends StatelessWidget {
           fillColor: p.glass,
           hintText: hint,
           hintStyle: TpType.body(14, p.onHeaderMuted),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass, size: 19, color: p.onHeaderMuted),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass,
+              size: 19, color: p.onHeaderMuted),
           suffixIcon: v.text.isEmpty
               ? null
               : IconButton(
                   tooltip: 'ล้างคำค้น',
-                  icon: Icon(PhosphorIconsRegular.xCircle, size: 19, color: p.onHeaderMuted),
+                  icon: Icon(PhosphorIconsRegular.xCircle,
+                      size: 19, color: p.onHeaderMuted),
                   onPressed: onClear,
                 ),
           border: border(p.glassBorder),

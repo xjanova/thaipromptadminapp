@@ -21,7 +21,8 @@ class QrScannerScreen extends ConsumerStatefulWidget {
 }
 
 class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
-  final _scanner = MobileScannerController(detectionSpeed: DetectionSpeed.normal, facing: CameraFacing.back);
+  final _scanner = MobileScannerController(
+      detectionSpeed: DetectionSpeed.normal, facing: CameraFacing.back);
   bool _processing = false;
   bool _torch = false;
   String _typed = '';
@@ -60,7 +61,8 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
         final otp = await tpPrompt(
           context,
           title: 'ยืนยันรหัส 2FA',
-          message: 'บัญชีนี้เปิดยืนยันสองชั้น กรอกรหัส 6 หลักจากแอป Authenticator',
+          message:
+              'บัญชีนี้เปิดยืนยันสองชั้น กรอกรหัส 6 หลักจากแอป Authenticator',
           hint: '123456',
           maxLines: 1,
         );
@@ -157,16 +159,21 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
             ),
           ),
           // ม่านมืดรอบกรอบสแกน
-          Positioned.fill(child: CustomPaint(painter: _ScanMaskPainter(box: box))),
+          Positioned.fill(
+              child: CustomPaint(painter: _ScanMaskPainter(box: box))),
           SafeArea(
             child: Column(children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
                 child: Row(children: [
-                  _RoundBtn(icon: PhosphorIconsRegular.caretLeft, onTap: () => Navigator.maybePop(context)),
+                  _RoundBtn(
+                      icon: PhosphorIconsRegular.caretLeft,
+                      onTap: () => Navigator.maybePop(context)),
                   const Spacer(),
                   _RoundBtn(
-                    icon: _torch ? PhosphorIconsFill.flashlight : PhosphorIconsRegular.flashlight,
+                    icon: _torch
+                        ? PhosphorIconsFill.flashlight
+                        : PhosphorIconsRegular.flashlight,
                     gold: _torch,
                     onTap: () {
                       _scanner.toggleTorch();
@@ -184,21 +191,27 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
               if (_error != null)
                 Container(
                   margin: const EdgeInsets.fromLTRB(24, 0, 24, 14),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: const Color(0x33FF7A6B),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: const Color(0x66FF7A6B)),
                   ),
                   child: Row(children: [
-                    const Icon(PhosphorIconsFill.warningCircle, color: Color(0xFFFF8A7A), size: 18),
+                    const Icon(PhosphorIconsFill.warningCircle,
+                        color: Color(0xFFFF8A7A), size: 18),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(_error!, style: TpType.body(13, Colors.white))),
+                    Expanded(
+                        child: Text(_error!,
+                            style: TpType.body(13, Colors.white))),
                   ]),
                 ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                child: TpButton.outline('กรอกรหัสด้วยมือ', icon: PhosphorIconsRegular.keyboard, onPressed: _processing ? null : _enterManually),
+                child: TpButton.outline('กรอกรหัสด้วยมือ',
+                    icon: PhosphorIconsRegular.keyboard,
+                    onPressed: _processing ? null : _enterManually),
               ),
             ]),
           ),
@@ -219,7 +232,8 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
               ? const Tp3D(TpArt.emptyDone, size: 120, key: ValueKey('ok'))
               : Container(
                   key: const ValueKey('code'),
-                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(color: const Color(0x66F0C96A)),
@@ -227,14 +241,16 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text(_typed.padRight(8, '·'),
-                        style: TpType.money(30, const Color(0xFFF0C96A), w: FontWeight.w700)),
+                        style: TpType.money(30, const Color(0xFFF0C96A),
+                            w: FontWeight.w700)),
                     const _Caret(),
                   ]),
                 ),
         ),
         const SizedBox(height: 20),
         Text(_success ? 'จับคู่สำเร็จ' : 'กำลังจับคู่กับเซิร์ฟเวอร์…',
-            style: TpType.h(16, _success ? const Color(0xFF3DDC84) : Colors.white)),
+            style: TpType.h(
+                16, _success ? const Color(0xFF3DDC84) : Colors.white)),
       ]),
     );
   }
@@ -247,7 +263,8 @@ class _Caret extends StatefulWidget {
 }
 
 class _CaretState extends State<_Caret> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 520))
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 520))
     ..repeat(reverse: true);
   @override
   void dispose() {
@@ -258,7 +275,11 @@ class _CaretState extends State<_Caret> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) => FadeTransition(
         opacity: _c,
-        child: Container(width: 2.5, height: 30, margin: const EdgeInsets.only(left: 4), color: const Color(0xFFF0C96A)),
+        child: Container(
+            width: 2.5,
+            height: 30,
+            margin: const EdgeInsets.only(left: 4),
+            color: const Color(0xFFF0C96A)),
       );
 }
 
@@ -271,12 +292,19 @@ class _RoundBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
         color: gold ? const Color(0x33F0C96A) : const Color(0x26000000),
-        shape: CircleBorder(side: BorderSide(color: gold ? const Color(0x99F0C96A) : const Color(0x33FFFFFF))),
+        shape: CircleBorder(
+            side: BorderSide(
+                color:
+                    gold ? const Color(0x99F0C96A) : const Color(0x33FFFFFF))),
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onTap,
           child: SizedBox(
-              width: 44, height: 44, child: Icon(icon, color: gold ? const Color(0xFFF0C96A) : Colors.white, size: 21)),
+              width: 44,
+              height: 44,
+              child: Icon(icon,
+                  color: gold ? const Color(0xFFF0C96A) : Colors.white,
+                  size: 21)),
         ),
       );
 }
@@ -288,7 +316,10 @@ class _ScanMaskPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromCenter(center: Offset(size.width / 2, size.height * 0.47), width: box, height: box);
+    final rect = Rect.fromCenter(
+        center: Offset(size.width / 2, size.height * 0.47),
+        width: box,
+        height: box);
     final rr = RRect.fromRectAndRadius(rect, const Radius.circular(26));
     final path = Path()
       ..addRect(Offset.zero & size)
@@ -306,7 +337,8 @@ class _ScanMaskPainter extends CustomPainter {
       final path = Path()
         ..moveTo(o.dx, o.dy + dy * l)
         ..lineTo(o.dx, o.dy + dy * r)
-        ..arcToPoint(Offset(o.dx + dx * r, o.dy), radius: const Radius.circular(r), clockwise: dx * dy > 0)
+        ..arcToPoint(Offset(o.dx + dx * r, o.dy),
+            radius: const Radius.circular(r), clockwise: dx * dy > 0)
         ..lineTo(o.dx + dx * l, o.dy);
       canvas.drawPath(path, p);
     }

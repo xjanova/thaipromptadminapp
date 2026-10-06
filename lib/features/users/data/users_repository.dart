@@ -8,7 +8,8 @@ import 'models/user_models.dart';
 
 export 'models/user_models.dart';
 
-Map<String, dynamic> _m(dynamic v) => v is Map ? v.cast<String, dynamic>() : const {};
+Map<String, dynamic> _m(dynamic v) =>
+    v is Map ? v.cast<String, dynamic>() : const {};
 
 /// ตัวกรองรายชื่อสมาชิก (ชิปบนหัวหน้าจอ)
 enum UserFilter {
@@ -56,7 +57,10 @@ class UsersRepository {
   /// `GET ranks` (ไม่แบ่งหน้า) — เรียงตามระดับ
   Future<List<AdminRank>> ranks() => _guard(() async {
         final data = await _api.get<dynamic>('/ranks');
-        final list = Paged.parse(data, AdminRank.fromJson).items.where((r) => r.id > 0).toList()
+        final list = Paged.parse(data, AdminRank.fromJson)
+            .items
+            .where((r) => r.id > 0)
+            .toList()
           ..sort((a, b) => a.level.compareTo(b.level));
         return list;
       });
@@ -68,8 +72,10 @@ class UsersRepository {
       });
 
   /// `GET users/{id}/readings?per_page=` (สูงสุด 50 รายการล่าสุด ไม่แบ่งหน้า)
-  Future<List<UserReading>> readings(int id, {int perPage = 30}) => _guard(() async {
-        final data = await _api.get<dynamic>('/users/$id/readings', query: {'per_page': perPage});
+  Future<List<UserReading>> readings(int id, {int perPage = 30}) =>
+      _guard(() async {
+        final data = await _api
+            .get<dynamic>('/users/$id/readings', query: {'per_page': perPage});
         return Paged.parse(data, UserReading.fromJson).items;
       });
 
@@ -94,17 +100,23 @@ class UsersRepository {
   }
 }
 
-final usersRepositoryProvider = Provider<UsersRepository>((ref) => UsersRepository(ref.watch(apiClientProvider)));
+final usersRepositoryProvider = Provider<UsersRepository>(
+    (ref) => UsersRepository(ref.watch(apiClientProvider)));
 
-final usersStatsProvider = FutureProvider.autoDispose<UsersStats>((ref) => ref.watch(usersRepositoryProvider).stats());
+final usersStatsProvider = FutureProvider.autoDispose<UsersStats>(
+    (ref) => ref.watch(usersRepositoryProvider).stats());
 
-final ranksListProvider = FutureProvider.autoDispose<List<AdminRank>>((ref) => ref.watch(usersRepositoryProvider).ranks());
+final ranksListProvider = FutureProvider.autoDispose<List<AdminRank>>(
+    (ref) => ref.watch(usersRepositoryProvider).ranks());
 
-final userDetailProvider =
-    FutureProvider.autoDispose.family<AdminListUser, int>((ref, id) => ref.watch(usersRepositoryProvider).user(id));
+final userDetailProvider = FutureProvider.autoDispose
+    .family<AdminListUser, int>(
+        (ref, id) => ref.watch(usersRepositoryProvider).user(id));
 
 final userReadingsProvider = FutureProvider.autoDispose
-    .family<List<UserReading>, int>((ref, id) => ref.watch(usersRepositoryProvider).readings(id));
+    .family<List<UserReading>, int>(
+        (ref, id) => ref.watch(usersRepositoryProvider).readings(id));
 
 final adminsOnlineProvider =
-    FutureProvider.autoDispose<Map<int, AdminPresence>>((ref) => ref.watch(usersRepositoryProvider).adminsOnline());
+    FutureProvider.autoDispose<Map<int, AdminPresence>>(
+        (ref) => ref.watch(usersRepositoryProvider).adminsOnline());

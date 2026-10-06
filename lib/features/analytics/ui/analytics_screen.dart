@@ -12,12 +12,34 @@ import '../data/analytics_repository.dart';
 enum _Metric { commission, members }
 
 const _thDaysShort = ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'];
-const _thDays = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
-const _thMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const _thDays = [
+  'จันทร์',
+  'อังคาร',
+  'พุธ',
+  'พฤหัสบดี',
+  'ศุกร์',
+  'เสาร์',
+  'อาทิตย์'
+];
+const _thMonths = [
+  'ม.ค.',
+  'ก.พ.',
+  'มี.ค.',
+  'เม.ย.',
+  'พ.ค.',
+  'มิ.ย.',
+  'ก.ค.',
+  'ส.ค.',
+  'ก.ย.',
+  'ต.ค.',
+  'พ.ย.',
+  'ธ.ค.'
+];
 
 String _dayMonth(DateTime d) => '${d.day} ${_thMonths[d.month - 1]}';
 
-bool _sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+bool _sameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
 
 /// หน้า "รายงาน & วิเคราะห์" — ยอดขายร้านค้า · ค่าคอมมิชชั่นที่จ่าย · สมาชิกใหม่
 class AnalyticsScreen extends ConsumerStatefulWidget {
@@ -34,7 +56,9 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
   bool _showAllDays = false;
 
   /// กราฟแนวโน้มใช้ข้อมูลย้อนหลังแบบเลื่อน — "วันนี้" ดึงชุด 7 วันมาแสดงแทนให้เห็นแนวโน้ม
-  AnalyticsPeriod get _trendPeriod => _period == AnalyticsPeriod.month ? AnalyticsPeriod.month : AnalyticsPeriod.week;
+  AnalyticsPeriod get _trendPeriod => _period == AnalyticsPeriod.month
+      ? AnalyticsPeriod.month
+      : AnalyticsPeriod.week;
 
   Future<void> _refresh() async {
     ref.invalidate(analyticsOverviewProvider(_period));
@@ -72,7 +96,9 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
     return TpPage(
       title: 'รายงาน & วิเคราะห์',
-      subtitle: fetched == null ? 'ยอดขาย สมาชิก และค่าคอมมิชชั่น' : 'อัปเดต ${TpFmt.time(fetched)} · ดึงลงเพื่อรีเฟรช',
+      subtitle: fetched == null
+          ? 'ยอดขาย สมาชิก และค่าคอมมิชชั่น'
+          : 'อัปเดต ${TpFmt.time(fetched)} · ดึงลงเพื่อรีเฟรช',
       back: true,
       bottomSpace: 32,
       onRefresh: _refresh,
@@ -100,7 +126,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     );
   }
 
-  Widget _buildTrend(AsyncValue<AnalyticsOverview> trend, {required bool mainFailed}) {
+  Widget _buildTrend(AsyncValue<AnalyticsOverview> trend,
+      {required bool mainFailed}) {
     // หัวหน้าโหลดไม่ได้อยู่แล้ว — ไม่ซ้อนกล่อง error อันที่สอง
     if (mainFailed && !trend.hasValue) return const SizedBox.shrink();
     if (!trend.hasValue && trend.hasError) {
@@ -111,7 +138,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           child: TpErrorView(
             error: trend.error,
             compact: true,
-            onRetry: () => ref.invalidate(analyticsOverviewProvider(_trendPeriod)),
+            onRetry: () =>
+                ref.invalidate(analyticsOverviewProvider(_trendPeriod)),
           ),
         ),
       );
@@ -201,29 +229,40 @@ class _SalesHero extends StatelessWidget {
         Row(children: [
           Expanded(
             child: Text('ยอดขายที่ชำระแล้ว',
-                style: TpType.body(13.5, TpPalette.heroMuted, w: FontWeight.w500),
+                style:
+                    TpType.body(13.5, TpPalette.heroMuted, w: FontWeight.w500),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),
           ),
-          _HeroPill(icon: PhosphorIconsBold.calendarBlank, label: o.period.label),
+          _HeroPill(
+              icon: PhosphorIconsBold.calendarBlank, label: o.period.label),
         ]),
         const SizedBox(height: 2),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: TpFoilText(TpFmt.baht(o.ordersPaidThb), style: TpType.money(40, Colors.white)),
+          child: TpFoilText(TpFmt.baht(o.ordersPaidThb),
+              style: TpType.money(40, Colors.white)),
         ),
         Text(
-          empty ? 'ยังไม่มีออเดอร์ร้านค้า${o.period.since}' : 'ออเดอร์ร้านค้า · ${o.period.since}',
+          empty
+              ? 'ยังไม่มีออเดอร์ร้านค้า${o.period.since}'
+              : 'ออเดอร์ร้านค้า · ${o.period.since}',
           style: TpType.body(12, const Color(0x8CFFFFFF)),
         ),
         const SizedBox(height: 14),
         Container(height: 1, color: const Color(0x14FFFFFF)),
         const SizedBox(height: 12),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _HeroSplit(label: 'ออเดอร์', value: TpFmt.count(o.ordersCount), icon: PhosphorIconsRegular.receipt),
           _HeroSplit(
-              label: 'ผู้ซื้อ', value: TpFmt.count(o.uniqueBuyers), icon: PhosphorIconsRegular.users, divider: true),
+              label: 'ออเดอร์',
+              value: TpFmt.count(o.ordersCount),
+              icon: PhosphorIconsRegular.receipt),
+          _HeroSplit(
+              label: 'ผู้ซื้อ',
+              value: TpFmt.count(o.uniqueBuyers),
+              icon: PhosphorIconsRegular.users,
+              divider: true),
           _HeroSplit(
               label: 'เฉลี่ย/ออเดอร์',
               value: TpFmt.bahtCompact(o.avgOrderThb),
@@ -252,13 +291,19 @@ class _HeroPill extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 12, color: TpPalette.heroGold),
           const SizedBox(width: 5),
-          Text(label, style: TpType.body(12, TpPalette.heroGold, w: FontWeight.w600, height: 1.1)),
+          Text(label,
+              style: TpType.body(12, TpPalette.heroGold,
+                  w: FontWeight.w600, height: 1.1)),
         ]),
       );
 }
 
 class _HeroSplit extends StatelessWidget {
-  const _HeroSplit({required this.label, required this.value, required this.icon, this.divider = false});
+  const _HeroSplit(
+      {required this.label,
+      required this.value,
+      required this.icon,
+      this.divider = false});
   final String label;
   final String value;
   final IconData icon;
@@ -269,7 +314,10 @@ class _HeroSplit extends StatelessWidget {
     return Expanded(
       child: Container(
         padding: EdgeInsets.only(left: divider ? 12 : 0, right: 6),
-        decoration: divider ? const BoxDecoration(border: Border(left: BorderSide(color: Color(0x14FFFFFF)))) : null,
+        decoration: divider
+            ? const BoxDecoration(
+                border: Border(left: BorderSide(color: Color(0x14FFFFFF))))
+            : null,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Icon(icon, size: 12, color: const Color(0x8CFFFFFF)),
@@ -278,7 +326,8 @@ class _HeroSplit extends StatelessWidget {
               child: Text(label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TpType.body(11.5, const Color(0x8CFFFFFF), w: FontWeight.w500)),
+                  style: TpType.body(11.5, const Color(0x8CFFFFFF),
+                      w: FontWeight.w500)),
             ),
           ]),
           const SizedBox(height: 2),
@@ -325,24 +374,36 @@ class _MetricTile extends StatelessWidget {
           AnimatedOpacity(
             duration: const Duration(milliseconds: 180),
             opacity: selected ? 1 : 0,
-            child: Icon(PhosphorIconsFill.chartBar, size: 16, color: p.goldText),
+            child:
+                Icon(PhosphorIconsFill.chartBar, size: 16, color: p.goldText),
           ),
         ]),
         const SizedBox(height: 8),
-        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(12, p.muted, w: FontWeight.w500)),
+        Text(label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TpType.body(12, p.muted, w: FontWeight.w500)),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(value, style: TpType.money(19, selected ? p.goldText : p.textStrong)),
+          child: Text(value,
+              style: TpType.money(19, selected ? p.goldText : p.textStrong)),
         ),
-        Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(11, p.faint)),
+        Text(sub,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TpType.body(11, p.faint)),
       ]),
     );
   }
 }
 
 class _TrendCard extends StatelessWidget {
-  const _TrendCard({required this.points, required this.money, required this.selected, required this.onSelect});
+  const _TrendCard(
+      {required this.points,
+      required this.money,
+      required this.selected,
+      required this.onSelect});
   final List<DayPoint> points;
   final bool money;
   final int? selected;
@@ -357,7 +418,9 @@ class _TrendCard extends StatelessWidget {
     final total = points.fold<double>(0, (a, b) => a + b.value);
     final avg = total / points.length;
     final maxV = points.map((e) => e.value).fold<double>(0, math.max);
-    final sel = (selected != null && selected! < points.length) ? points[selected!] : null;
+    final sel = (selected != null && selected! < points.length)
+        ? points[selected!]
+        : null;
     final allZero = maxV <= 0;
     final today = DateTime.now();
 
@@ -370,7 +433,8 @@ class _TrendCard extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 160),
                 child: Text(heading,
@@ -382,14 +446,18 @@ class _TrendCard extends StatelessWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
-                child: Text(_fmt(sel?.value ?? total), style: TpType.money(24, p.goldText)),
+                child: Text(_fmt(sel?.value ?? total),
+                    style: TpType.money(24, p.goldText)),
               ),
             ]),
           ),
           const SizedBox(width: 8),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Text('เฉลี่ย/วัน', style: TpType.body(11, p.faint)),
-            Text(money ? TpFmt.bahtCompact(avg) : avg.toStringAsFixed(avg >= 10 ? 0 : 1),
+            Text(
+                money
+                    ? TpFmt.bahtCompact(avg)
+                    : avg.toStringAsFixed(avg >= 10 ? 0 : 1),
                 style: TpType.money(13.5, p.text)),
           ]),
         ]),
@@ -410,9 +478,15 @@ class _TrendCard extends StatelessWidget {
             if (allZero)
               Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: p.cardSolid, borderRadius: BorderRadius.circular(99)),
-                  child: Text(money ? 'ยังไม่มีการจ่ายคอมมิชชั่นในช่วงนี้' : 'ยังไม่มีสมาชิกสมัครใหม่ในช่วงนี้',
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                      color: p.cardSolid,
+                      borderRadius: BorderRadius.circular(99)),
+                  child: Text(
+                      money
+                          ? 'ยังไม่มีการจ่ายคอมมิชชั่นในช่วงนี้'
+                          : 'ยังไม่มีสมาชิกสมัครใหม่ในช่วงนี้',
                       style: TpType.body(12, p.muted)),
                 ),
               ),
@@ -420,11 +494,14 @@ class _TrendCard extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Row(children: [
-          Text(_dayMonth(points.first.day), style: TpType.body(10.5, p.faint, w: FontWeight.w500)),
+          Text(_dayMonth(points.first.day),
+              style: TpType.body(10.5, p.faint, w: FontWeight.w500)),
           const Spacer(),
-          Text(_dayMonth(points[points.length ~/ 2].day), style: TpType.body(10.5, p.faint, w: FontWeight.w500)),
+          Text(_dayMonth(points[points.length ~/ 2].day),
+              style: TpType.body(10.5, p.faint, w: FontWeight.w500)),
           const Spacer(),
-          Text('วันนี้', style: TpType.body(10.5, p.goldText, w: FontWeight.w600)),
+          Text('วันนี้',
+              style: TpType.body(10.5, p.goldText, w: FontWeight.w600)),
         ]),
         if (!allZero) ...[
           const SizedBox(height: 8),
@@ -433,7 +510,9 @@ class _TrendCard extends StatelessWidget {
             const SizedBox(width: 5),
             Expanded(
               child: Text('แตะหรือลากบนกราฟเพื่อดูยอดแต่ละวัน',
-                  maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(11, p.faint)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TpType.body(11, p.faint)),
             ),
           ]),
         ],
@@ -459,8 +538,9 @@ class _BarChart extends StatelessWidget {
   final Color barSoft;
   final Color grid;
 
-  int _indexAt(double dx, double width) =>
-      values.isEmpty ? 0 : (dx / width * values.length).floor().clamp(0, values.length - 1);
+  int _indexAt(double dx, double width) => values.isEmpty
+      ? 0
+      : (dx / width * values.length).floor().clamp(0, values.length - 1);
 
   @override
   Widget build(BuildContext context) {
@@ -508,10 +588,12 @@ class _BarPainter extends CustomPainter {
     for (final f in [0.0, 0.33, 0.66]) {
       final y = size.height * f + 0.5;
       for (double x = 0; x < size.width; x += 7) {
-        canvas.drawLine(Offset(x, y), Offset(math.min(x + 3, size.width), y), gridPaint);
+        canvas.drawLine(
+            Offset(x, y), Offset(math.min(x + 3, size.width), y), gridPaint);
       }
     }
-    canvas.drawLine(Offset(0, size.height - 0.5), Offset(size.width, size.height - 0.5), gridPaint);
+    canvas.drawLine(Offset(0, size.height - 0.5),
+        Offset(size.width, size.height - 0.5), gridPaint);
     if (values.isEmpty) return;
 
     final n = values.length;
@@ -577,7 +659,8 @@ class _BarPainter extends CustomPainter {
 // ═════════════════════ รายวัน ═════════════════════
 
 class _DailyList extends StatelessWidget {
-  const _DailyList({required this.comm, required this.mem, required this.limit});
+  const _DailyList(
+      {required this.comm, required this.mem, required this.limit});
   final List<DayPoint> comm;
   final List<DayPoint> mem;
   final int limit;
@@ -598,13 +681,20 @@ class _DailyList extends StatelessWidget {
       rows.add(TpRow(
         dense: true,
         leading: _DateBlock(day: d, highlight: isToday),
-        title: isToday ? 'วันนี้' : (isYesterday ? 'เมื่อวาน' : 'วัน${_thDays[d.weekday - 1]}'),
-        subtitle: m > 0 ? 'สมาชิกใหม่ ${TpFmt.count(m)} คน' : 'ไม่มีสมาชิกสมัครใหม่',
+        title: isToday
+            ? 'วันนี้'
+            : (isYesterday ? 'เมื่อวาน' : 'วัน${_thDays[d.weekday - 1]}'),
+        subtitle:
+            m > 0 ? 'สมาชิกใหม่ ${TpFmt.count(m)} คน' : 'ไม่มีสมาชิกสมัครใหม่',
         chevron: false,
-        trailing: Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
-          Text(c > 0 ? TpFmt.baht(c) : '-', style: TpType.money(14.5, c > 0 ? p.goldText : p.faint)),
-          Text('ค่าคอมฯ ที่จ่าย', style: TpType.body(10.5, p.faint)),
-        ]),
+        trailing: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(c > 0 ? TpFmt.baht(c) : '-',
+                  style: TpType.money(14.5, c > 0 ? p.goldText : p.faint)),
+              Text('ค่าคอมฯ ที่จ่าย', style: TpType.body(10.5, p.faint)),
+            ]),
       ));
     }
     return TpGroup(children: rows);
@@ -628,9 +718,12 @@ class _DateBlock extends StatelessWidget {
         border: Border.all(color: highlight ? p.borderGold : p.border),
       ),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Text('${day.day}', style: TpType.money(16, highlight ? p.goldText : p.textStrong).copyWith(height: 1.05)),
+        Text('${day.day}',
+            style: TpType.money(16, highlight ? p.goldText : p.textStrong)
+                .copyWith(height: 1.05)),
         Text('${_thDaysShort[day.weekday - 1]} ${_thMonths[day.month - 1]}',
-            maxLines: 1, style: TpType.body(9.5, p.muted, w: FontWeight.w500, height: 1.1)),
+            maxLines: 1,
+            style: TpType.body(9.5, p.muted, w: FontWeight.w500, height: 1.1)),
       ]),
     );
   }
@@ -647,7 +740,9 @@ class _Notes extends StatelessWidget {
     Widget line(IconData icon, String text) => Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Padding(padding: const EdgeInsets.only(top: 2), child: Icon(icon, size: 14, color: p.faint)),
+            Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(icon, size: 14, color: p.faint)),
             const SizedBox(width: 8),
             Expanded(child: Text(text, style: TpType.body(12, p.muted))),
           ]),

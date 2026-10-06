@@ -6,7 +6,8 @@ import '../../../core/api/api_envelope.dart';
 import '../../../core/api/paged.dart';
 import '../../../shared/ui/tp_format.dart';
 
-Map<String, dynamic> _m(dynamic v) => v is Map ? v.cast<String, dynamic>() : const {};
+Map<String, dynamic> _m(dynamic v) =>
+    v is Map ? v.cast<String, dynamic>() : const {};
 
 // ───────────────────────── บิลดูดวง ─────────────────────────
 
@@ -25,7 +26,8 @@ enum BillBucket {
 }
 
 class SmsMatch {
-  const SmsMatch({required this.matched, this.amount, this.at, this.bank, this.sender});
+  const SmsMatch(
+      {required this.matched, this.amount, this.at, this.bank, this.sender});
   final bool matched;
   final double? amount;
   final DateTime? at;
@@ -98,7 +100,8 @@ class FortuneBill {
   final double? amountReceived;
 
   bool get isPaid => status == 'paid' || (status.isEmpty && paidAt != null);
-  bool get isClosed => status == 'cancelled' || status == 'refunded' || status == 'closed';
+  bool get isClosed =>
+      status == 'cancelled' || status == 'refunded' || status == 'closed';
   bool get isFloating => statusReason == 'floating';
 
   /// ยืนยันจ่ายได้ไหม — บิลลอย / ลูกค้าจ่ายบิลอื่นแทนแล้ว ห้ามอนุมัติ (= เก็บเงินซ้ำ)
@@ -113,33 +116,48 @@ class FortuneBill {
     bool? flag(String k) => actions.containsKey(k) ? actions[k] == true : null;
     return FortuneBill(
       id: TpFmt.toInt(j['id'] ?? j['reading_id']),
-      billNumber: (j['bill_number'] ?? j['bill_no'] ?? 'R${j['id']}').toString(),
-      packageLabel: (j['package_label'] ?? j['tier_label'] ?? j['package'] ?? j['tier'] ?? 'ดูดวง').toString(),
+      billNumber:
+          (j['bill_number'] ?? j['bill_no'] ?? 'R${j['id']}').toString(),
+      packageLabel: (j['package_label'] ??
+              j['tier_label'] ??
+              j['package'] ??
+              j['tier'] ??
+              'ดูดวง')
+          .toString(),
       amount: TpFmt.toDouble(j['amount_thb'] ?? j['amount']),
       status: (j['status'] ?? '').toString(),
       statusLabel: j['status_label']?.toString(),
       platform: j['platform']?.toString(),
-      customerName: (j['customer_name'] ?? user['name'] ?? user['display_name'])?.toString(),
+      customerName: (j['customer_name'] ?? user['name'] ?? user['display_name'])
+          ?.toString(),
       createdAt: TpFmt.parse(j['created_at']),
       paidAt: TpFmt.parse(j['paid_at']),
       slipUrl: (j['slip_image_url'] ?? j['slip_url'])?.toString(),
       sms: SmsMatch.fromJson(j['sms_match'] ?? j['sms']),
       question: (j['question_preview'] ?? j['question'])?.toString(),
-      priorPaid: TpFmt.toInt(j['customer_prior_paid_count'] ?? j['prior_paid_count']),
+      priorPaid:
+          TpFmt.toInt(j['customer_prior_paid_count'] ?? j['prior_paid_count']),
       slipNeedsAuth: slip['image_requires_auth'] == true,
       slipAt: TpFmt.parse(slip['received_at']),
       statusReason: j['status_reason']?.toString(),
       canMarkPaid: flag('can_mark_paid'),
       canRefund: flag('can_refund'),
       canCancel: flag('can_cancel'),
-      stageLabel: j['stage'] is Map ? (j['stage'] as Map)['label']?.toString() : null,
-      amountReceived: j['amount_received_thb'] == null ? null : TpFmt.toDouble(j['amount_received_thb']),
+      stageLabel:
+          j['stage'] is Map ? (j['stage'] as Map)['label']?.toString() : null,
+      amountReceived: j['amount_received_thb'] == null
+          ? null
+          : TpFmt.toDouble(j['amount_received_thb']),
     );
   }
 }
 
 class BillStats {
-  const BillStats({this.counts = const {}, this.paidTodayAmount = 0, this.paidTodayCount = 0, this.awaitingAmount = 0});
+  const BillStats(
+      {this.counts = const {},
+      this.paidTodayAmount = 0,
+      this.paidTodayCount = 0,
+      this.awaitingAmount = 0});
   final Map<String, int> counts;
   final double paidTodayAmount;
   final int paidTodayCount;
@@ -157,7 +175,8 @@ class BillStats {
     final pt = _m(j['paid_today']);
     return BillStats(
       counts: c,
-      paidTodayAmount: TpFmt.toDouble(pt['revenue_thb'] ?? j['paid_today_thb'] ?? j['today_revenue_thb']),
+      paidTodayAmount: TpFmt.toDouble(
+          pt['revenue_thb'] ?? j['paid_today_thb'] ?? j['today_revenue_thb']),
       paidTodayCount: TpFmt.toInt(pt['count'] ?? j['paid_today_count']),
       awaitingAmount: TpFmt.toDouble(j['awaiting_amount_thb']),
     );
@@ -200,10 +219,17 @@ class Withdrawal {
   final String? rejectionReason;
 
   /// ชื่อธนาคาร/เลขบัญชี/ชื่อบัญชี จาก payment_details (คีย์ต่างกันตามช่องทาง)
-  String? get bankName => (details['bank_name'] ?? details['bank'] ?? details['bank_code'])?.toString();
-  String? get accountNumber =>
-      (details['account_number'] ?? details['account_no'] ?? details['promptpay'] ?? details['phone'])?.toString();
-  String? get accountName => (details['account_name'] ?? details['name'] ?? details['holder_name'])?.toString();
+  String? get bankName =>
+      (details['bank_name'] ?? details['bank'] ?? details['bank_code'])
+          ?.toString();
+  String? get accountNumber => (details['account_number'] ??
+          details['account_no'] ??
+          details['promptpay'] ??
+          details['phone'])
+      ?.toString();
+  String? get accountName =>
+      (details['account_name'] ?? details['name'] ?? details['holder_name'])
+          ?.toString();
 
   factory Withdrawal.fromJson(Map<String, dynamic> j) {
     final u = _m(j['user']);
@@ -264,7 +290,9 @@ class BankSms {
         account: j['account_number']?.toString(),
         reference: j['reference_number']?.toString(),
         at: TpFmt.parse(j['sms_timestamp'] ?? j['created_at']),
-        matchedBillId: j['matched_transaction_id'] == null ? null : TpFmt.toInt(j['matched_transaction_id']),
+        matchedBillId: j['matched_transaction_id'] == null
+            ? null
+            : TpFmt.toInt(j['matched_transaction_id']),
       );
 }
 
@@ -311,11 +339,15 @@ class ActiveReading {
     final stage = j['stage'];
     return ActiveReading(
       id: TpFmt.toInt(j['reading_id'] ?? j['id']),
-      billNumber: (j['bill_number'] ?? 'R${j['reading_id'] ?? j['id']}').toString(),
+      billNumber:
+          (j['bill_number'] ?? 'R${j['reading_id'] ?? j['id']}').toString(),
       packageLabel: (j['package_label'] ?? j['package'] ?? 'ดูดวง').toString(),
       stuck: j['stuck'] == true,
-      idleMinutes: TpFmt.toInt(j['minutes_since_activity'] ?? j['idle_minutes']),
-      stage: stage is Map ? stage['label']?.toString() : (j['stage_label'] ?? stage)?.toString(),
+      idleMinutes:
+          TpFmt.toInt(j['minutes_since_activity'] ?? j['idle_minutes']),
+      stage: stage is Map
+          ? stage['label']?.toString()
+          : (j['stage_label'] ?? stage)?.toString(),
       customerName: (j['customer_name'] ?? u['name'])?.toString(),
       platform: j['platform']?.toString(),
       question: (j['question_preview'] ?? j['question'])?.toString(),
@@ -365,7 +397,8 @@ class TriageCase {
         kind: (j['kind'] ?? '').toString(),
         critical: j['severity'] == 'crit',
         platform: j['platform']?.toString(),
-        readingId: j['reading_id'] == null ? null : TpFmt.toInt(j['reading_id']),
+        readingId:
+            j['reading_id'] == null ? null : TpFmt.toInt(j['reading_id']),
         reasons: ((j['reasons'] as List?) ?? const [])
             .map((e) => e.toString())
             .where((e) => e.isNotEmpty && !e.startsWith('service:'))
@@ -383,7 +416,8 @@ class WorkRepository {
   WorkRepository(this._api);
   final ApiClient _api;
 
-  Future<Paged<FortuneBill>> bills(BillBucket bucket, {int page = 1, String? search}) async {
+  Future<Paged<FortuneBill>> bills(BillBucket bucket,
+      {int page = 1, String? search}) async {
     final data = await _api.get<dynamic>('/fortune/bills', query: {
       'status': bucket.key,
       'page': page,
@@ -393,82 +427,112 @@ class WorkRepository {
   }
 
   Future<BillStats> billStats() async {
-    final data = await _api.get<Map<String, dynamic>>('/fortune/bills/stats', parser: (d) => _m(d));
+    final data = await _api.get<Map<String, dynamic>>('/fortune/bills/stats',
+        parser: (d) => _m(d));
     return BillStats.fromJson(data);
   }
 
   /// ยืนยันว่าจ่ายแล้ว → backend ส่งคำทำนายให้ลูกค้าทันที (FortuneReadingsController@markPaid)
-  Future<String?> markPaid(int readingId, {required double amount, String? note}) async {
+  Future<String?> markPaid(int readingId,
+      {required double amount, String? note}) async {
     // ส่งยอดจริงของบิลเสมอ — backend เดิมใส่ 49 บาทเองถ้าไม่ส่ง (บิล 39/99 จะบันทึกผิด)
-    final res = await _api.dio.post<Map<String, dynamic>>('/fortune/readings/$readingId/mark-paid', data: {
-      if (amount > 0) 'amount': amount.toStringAsFixed(2),
-      if (note != null && note.isNotEmpty) 'note': note,
-    });
+    final res = await _api.dio.post<Map<String, dynamic>>(
+        '/fortune/readings/$readingId/mark-paid',
+        data: {
+          if (amount > 0) 'amount': amount.toStringAsFixed(2),
+          if (note != null && note.isNotEmpty) 'note': note,
+        });
     return _expectOk(res.data, res.statusCode);
   }
 
   Future<String?> cancelBill(int readingId, {String? reason}) async {
-    final res = await _api.dio.post<Map<String, dynamic>>('/fortune/readings/$readingId/cancel',
+    final res = await _api.dio.post<Map<String, dynamic>>(
+        '/fortune/readings/$readingId/cancel',
         data: {if (reason != null) 'reason': reason});
     return _expectOk(res.data, res.statusCode);
   }
 
   Future<String?> refundBill(int readingId, {String? reason}) async {
-    final res = await _api.dio.post<Map<String, dynamic>>('/fortune/readings/$readingId/refund',
+    final res = await _api.dio.post<Map<String, dynamic>>(
+        '/fortune/readings/$readingId/refund',
         data: {if (reason != null) 'reason': reason});
     return _expectOk(res.data, res.statusCode);
   }
 
-  Future<Paged<Withdrawal>> withdrawals({String status = 'pending', int page = 1}) async {
-    final data = await _api.get<dynamic>('/finance/withdrawals', query: {'status': status, 'page': page});
+  Future<Paged<Withdrawal>> withdrawals(
+      {String status = 'pending', int page = 1}) async {
+    final data = await _api.get<dynamic>('/finance/withdrawals',
+        query: {'status': status, 'page': page});
     return Paged.parse(data, Withdrawal.fromJson);
   }
 
   Future<String?> approveWithdrawal(int id, {String? note}) async {
-    final res = await _api.dio.post<Map<String, dynamic>>('/finance/withdrawals/$id/approve',
+    final res = await _api.dio.post<Map<String, dynamic>>(
+        '/finance/withdrawals/$id/approve',
         data: {if (note != null && note.isNotEmpty) 'admin_note': note});
     return _expectOk(res.data, res.statusCode);
   }
 
   Future<String?> rejectWithdrawal(int id, String reason) async {
-    final res = await _api.dio.post<Map<String, dynamic>>('/finance/withdrawals/$id/reject', data: {'reason': reason});
+    final res = await _api.dio.post<Map<String, dynamic>>(
+        '/finance/withdrawals/$id/reject',
+        data: {'reason': reason});
     return _expectOk(res.data, res.statusCode);
   }
 
   /// ปิดงานถอนเงินหลังโอนแล้ว — แนบสลิป (รูป ≤ 5MB) + หมายเหตุ
-  Future<String?> completeWithdrawal(int id, {String? slipPath, String? note}) async {
+  Future<String?> completeWithdrawal(int id,
+      {String? slipPath, String? note}) async {
     final form = FormData.fromMap({
       if (note != null && note.isNotEmpty) 'transfer_note': note,
-      if (slipPath != null) 'transfer_slip': await MultipartFile.fromFile(slipPath, filename: 'slip_$id.jpg'),
+      if (slipPath != null)
+        'transfer_slip':
+            await MultipartFile.fromFile(slipPath, filename: 'slip_$id.jpg'),
     });
-    final res = await _api.dio.post<Map<String, dynamic>>('/finance/withdrawals/$id/complete',
-        data: form, options: Options(contentType: 'multipart/form-data'));
+    final res = await _api.dio.post<Map<String, dynamic>>(
+        '/finance/withdrawals/$id/complete',
+        data: form,
+        options: Options(contentType: 'multipart/form-data'));
     return _expectOk(res.data, res.statusCode);
   }
 
   /// เคสลูกค้าที่ต้องดูแล (อารมณ์ลบ / ทวงเงิน / เริ่มแต่ยังไม่จ่าย) — ชุดเดียวกับ Warroom triage
   Future<List<TriageCase>> triage({int sinceMinutes = 180}) async {
-    final data = await _api.get<Map<String, dynamic>>('/fortune/triage/behavior',
-        query: {'since_minutes': sinceMinutes}, parser: (d) => _m(d));
+    final data = await _api.get<Map<String, dynamic>>(
+        '/fortune/triage/behavior',
+        query: {'since_minutes': sinceMinutes},
+        parser: (d) => _m(d));
     final list = (data['cases'] as List?) ?? const [];
-    return list.whereType<Map>().map((e) => TriageCase.fromJson(e.cast<String, dynamic>())).toList();
+    return list
+        .whereType<Map>()
+        .map((e) => TriageCase.fromJson(e.cast<String, dynamic>()))
+        .toList();
   }
 
   Future<Paged<BankSms>> sms({String status = 'pending', int page = 1}) async {
-    final data = await _api.get<dynamic>('/payment/sms/inbox', query: {'status': status, 'page': page});
+    final data = await _api.get<dynamic>('/payment/sms/inbox',
+        query: {'status': status, 'page': page});
     return Paged.parse(data, BankSms.fromJson);
   }
 
   /// ลองจับคู่ SMS กับบิลอีกครั้ง (backend: attemptMatch) — คืน (สำเร็จ, ข้อความ)
   Future<(bool, String)> rematchSms(int id) async {
-    final res = await _api.dio.post<Map<String, dynamic>>('/payment/sms/$id/match');
+    final res =
+        await _api.dio.post<Map<String, dynamic>>('/payment/sms/$id/match');
     final body = res.data ?? const {};
     final ok = body['success'] == true;
-    return (ok, (body['message'] ?? (ok ? 'จับคู่สำเร็จ' : 'ยังไม่พบบิลที่ตรงกับ SMS นี้')).toString());
+    return (
+      ok,
+      (body['message'] ??
+              (ok ? 'จับคู่สำเร็จ' : 'ยังไม่พบบิลที่ตรงกับ SMS นี้'))
+          .toString()
+    );
   }
 
   Future<String?> rejectSms(int id, String reason) async {
-    final res = await _api.dio.post<Map<String, dynamic>>('/payment/sms/$id/reject', data: {'reason': reason});
+    final res = await _api.dio.post<Map<String, dynamic>>(
+        '/payment/sms/$id/reject',
+        data: {'reason': reason});
     return _expectOk(res.data, res.statusCode);
   }
 
@@ -481,25 +545,32 @@ class WorkRepository {
   String? _expectOk(Map<String, dynamic>? body, int? code) {
     final b = body ?? const {};
     if ((code ?? 500) >= 400 || b['success'] == false) {
-      throw ActionError((b['message'] ?? 'ทำรายการไม่สำเร็จ ($code)').toString());
+      throw ActionError(
+          (b['message'] ?? 'ทำรายการไม่สำเร็จ ($code)').toString());
     }
     return b['message']?.toString();
   }
 }
 
-final workRepositoryProvider = Provider<WorkRepository>((ref) => WorkRepository(ref.watch(apiClientProvider)));
+final workRepositoryProvider = Provider<WorkRepository>(
+    (ref) => WorkRepository(ref.watch(apiClientProvider)));
 
-final billStatsProvider = FutureProvider.autoDispose<BillStats>((ref) => ref.watch(workRepositoryProvider).billStats());
+final billStatsProvider = FutureProvider.autoDispose<BillStats>(
+    (ref) => ref.watch(workRepositoryProvider).billStats());
 
-final billsProvider = FutureProvider.autoDispose.family<Paged<FortuneBill>, BillBucket>(
-    (ref, b) => ref.watch(workRepositoryProvider).bills(b));
+final billsProvider = FutureProvider.autoDispose
+    .family<Paged<FortuneBill>, BillBucket>(
+        (ref, b) => ref.watch(workRepositoryProvider).bills(b));
 
 final pendingWithdrawalsProvider =
-    FutureProvider.autoDispose<Paged<Withdrawal>>((ref) => ref.watch(workRepositoryProvider).withdrawals());
+    FutureProvider.autoDispose<Paged<Withdrawal>>(
+        (ref) => ref.watch(workRepositoryProvider).withdrawals());
 
-final pendingSmsProvider = FutureProvider.autoDispose<Paged<BankSms>>((ref) => ref.watch(workRepositoryProvider).sms());
+final pendingSmsProvider = FutureProvider.autoDispose<Paged<BankSms>>(
+    (ref) => ref.watch(workRepositoryProvider).sms());
 
-final activeReadingsProvider =
-    FutureProvider.autoDispose<List<ActiveReading>>((ref) => ref.watch(workRepositoryProvider).activeReadings());
+final activeReadingsProvider = FutureProvider.autoDispose<List<ActiveReading>>(
+    (ref) => ref.watch(workRepositoryProvider).activeReadings());
 
-final triageProvider = FutureProvider.autoDispose<List<TriageCase>>((ref) => ref.watch(workRepositoryProvider).triage());
+final triageProvider = FutureProvider.autoDispose<List<TriageCase>>(
+    (ref) => ref.watch(workRepositoryProvider).triage());

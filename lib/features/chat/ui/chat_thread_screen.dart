@@ -87,7 +87,8 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   void _scrollToEnd() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
-        _scroll.animateTo(0, duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
+        _scroll.animateTo(0,
+            duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
       }
     });
   }
@@ -98,7 +99,8 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       final s = await _repo.takeover(widget.readingId, minutes: 30);
       if (!mounted) return;
       setState(() => _takeover = s);
-      tpToast(context, 'รับช่วงแล้ว · บอทหยุดตอบ 30 นาที', kind: TpToastKind.success);
+      tpToast(context, 'รับช่วงแล้ว · บอทหยุดตอบ 30 นาที',
+          kind: TpToastKind.success);
       ref.invalidate(opsSummaryProvider);
     } catch (e) {
       if (mounted) tpToast(context, tpErrorText(e), kind: TpToastKind.error);
@@ -167,7 +169,14 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       _input.clear();
       setState(() {
         _draft = null;
-        _messages = [..._messages, ChatMsg(id: -DateTime.now().millisecondsSinceEpoch, sender: 'admin', text: text, at: DateTime.now())];
+        _messages = [
+          ..._messages,
+          ChatMsg(
+              id: -DateTime.now().millisecondsSinceEpoch,
+              sender: 'admin',
+              text: text,
+              at: DateTime.now())
+        ];
       });
       _scrollToEnd();
       Future.delayed(const Duration(seconds: 2), _load);
@@ -195,7 +204,9 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                 _ => m.sender
               }}: ${m.text}')
           .join('\n');
-      final s = await _repo.suggest(widget.readingId, ctx.isEmpty ? 'ลูกค้าเพิ่งทักมา' : ctx, customerName: _bill?.customerName);
+      final s = await _repo.suggest(
+          widget.readingId, ctx.isEmpty ? 'ลูกค้าเพิ่งทักมา' : ctx,
+          customerName: _bill?.customerName);
       if (!mounted) return;
       setState(() => _draft = s.isEmpty ? null : s);
       if (s.isEmpty) tpToast(context, 'AI ร่างไม่สำเร็จ ลองใหม่อีกครั้ง');
@@ -221,9 +232,12 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
         body: Column(children: [
           TpHeader(
             title: b?.customerName ?? 'ลูกค้า',
-            subtitle: [platform?.$3, b?.packageLabel, b?.billNumber].whereType<String>().join(' · '),
+            subtitle: [platform?.$3, b?.packageLabel, b?.billNumber]
+                .whereType<String>()
+                .join(' · '),
             back: true,
-            leading: TpAvatar(name: b?.customerName, platform: b?.platform, size: 40),
+            leading: TpAvatar(
+                name: b?.customerName, platform: b?.platform, size: 40),
             actions: [
               if (b != null)
                 TpGlassButton(
@@ -238,7 +252,10 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
               color: p.header.last,
               child: Container(
                 height: 18,
-                decoration: BoxDecoration(color: p.bg, borderRadius: const BorderRadius.vertical(top: Radius.circular(22))),
+                decoration: BoxDecoration(
+                    color: p.bg,
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(22))),
               ),
             ),
           _TakeoverBanner(
@@ -251,7 +268,9 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
           if (b?.platform?.toLowerCase() == 'line')
             _Note(
               icon: PhosphorIconsRegular.warning,
-              tone: (ops?.linePushExhausted ?? false) ? TpTone.danger : TpTone.warning,
+              tone: (ops?.linePushExhausted ?? false)
+                  ? TpTone.danger
+                  : TpTone.warning,
               text: (ops?.linePushExhausted ?? false)
                   ? 'โควตา LINE push เดือนนี้หมดแล้ว — ส่งข้อความหาลูกค้า LINE ไม่ได้'
                   : 'ข้อความแอดมินบน LINE ใช้โควตา push${ops?.linePushUsed == null ? '' : ' (ใช้ไป ${ops!.linePushUsed}/${ops.linePushLimit})'} — พิมพ์ให้ครบในข้อความเดียว',
@@ -263,12 +282,19 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
               text: 'Messenger ส่งได้เฉพาะลูกค้าที่ทักมาภายใน 24 ชม.',
             ),
           Expanded(child: _body()),
-          if (_draft != null || _drafting) _DraftCard(text: _draft, loading: _drafting, onUse: () {
-            _input.text = _draft ?? '';
-            _input.selection = TextSelection.collapsed(offset: _input.text.length);
-            setState(() => _draft = null);
-            _focus.requestFocus();
-          }, onRetry: _aiDraft, onClose: () => setState(() => _draft = null)),
+          if (_draft != null || _drafting)
+            _DraftCard(
+                text: _draft,
+                loading: _drafting,
+                onUse: () {
+                  _input.text = _draft ?? '';
+                  _input.selection =
+                      TextSelection.collapsed(offset: _input.text.length);
+                  setState(() => _draft = null);
+                  _focus.requestFocus();
+                },
+                onRetry: _aiDraft,
+                onClose: () => setState(() => _draft = null)),
           _Composer(
             controller: _input,
             focus: _focus,
@@ -284,11 +310,23 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
 
   Widget _body() {
     if (!_loaded) {
-      if (_error != null) return Center(child: TpErrorView(error: _error, onRetry: () => _load(first: true), compact: true));
-      return const Padding(padding: EdgeInsets.all(16), child: TpSkeletonList(count: 4, itemHeight: 64));
+      if (_error != null) {
+        return Center(
+            child: TpErrorView(
+                error: _error,
+                onRetry: () => _load(first: true),
+                compact: true));
+      }
+      return const Padding(
+          padding: EdgeInsets.all(16),
+          child: TpSkeletonList(count: 4, itemHeight: 64));
     }
     if (_messages.isEmpty) {
-      return const Center(child: TpEmpty(art: TpArt.emptyInbox, title: 'ยังไม่มีข้อความวันนี้', compact: true));
+      return const Center(
+          child: TpEmpty(
+              art: TpArt.emptyInbox,
+              title: 'ยังไม่มีข้อความวันนี้',
+              compact: true));
     }
     final items = _messages.reversed.toList();
     return ListView.builder(
@@ -300,18 +338,27 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
         final m = items[i];
         final older = i + 1 < items.length ? items[i + 1] : null;
         final showDay = m.at != null &&
-            (older?.at == null || older!.at!.day != m.at!.day || older.at!.month != m.at!.month);
-        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          if (showDay) _DayDivider(at: m.at!),
-          _Bubble(m: m),
-        ]);
+            (older?.at == null ||
+                older!.at!.day != m.at!.day ||
+                older.at!.month != m.at!.month);
+        return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (showDay) _DayDivider(at: m.at!),
+              _Bubble(m: m),
+            ]);
       },
     );
   }
 }
 
 class _TakeoverBanner extends StatelessWidget {
-  const _TakeoverBanner({required this.state, required this.busy, required this.onTakeover, required this.onExtend, required this.onResume});
+  const _TakeoverBanner(
+      {required this.state,
+      required this.busy,
+      required this.onTakeover,
+      required this.onExtend,
+      required this.onResume});
   final TakeoverState? state;
   final bool busy;
   final VoidCallback onTakeover;
@@ -323,7 +370,9 @@ class _TakeoverBanner extends StatelessWidget {
     final p = context.tp;
     final s = state;
     if (s == null) return const SizedBox(height: 4);
-    final remaining = s.until == null ? s.remainingMinutes : s.until!.difference(DateTime.now()).inMinutes.clamp(0, 9999);
+    final remaining = s.until == null
+        ? s.remainingMinutes
+        : s.until!.difference(DateTime.now()).inMinutes.clamp(0, 9999);
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 8, 14, 4),
       padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
@@ -333,20 +382,28 @@ class _TakeoverBanner extends StatelessWidget {
         border: Border.all(color: s.active ? p.borderGold : p.border),
       ),
       child: Row(children: [
-        Icon(s.active ? PhosphorIconsFill.headset : PhosphorIconsFill.robot, color: s.active ? p.goldText : p.navyIcon, size: 22),
+        Icon(s.active ? PhosphorIconsFill.headset : PhosphorIconsFill.robot,
+            color: s.active ? p.goldText : p.navyIcon, size: 22),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(s.active ? 'คุณกำลังคุยแทนบอท' : 'บอทแม่หมอกำลังตอบอยู่',
                 style: TpType.h(13.5, s.active ? p.goldText : p.textStrong)),
-            Text(s.active ? 'เหลืออีก ${TpFmt.duration(remaining)} แล้วบอทจะกลับมาเอง' : 'รับช่วงเพื่อหยุดบอทแล้วคุยเอง',
+            Text(
+                s.active
+                    ? 'เหลืออีก ${TpFmt.duration(remaining)} แล้วบอทจะกลับมาเอง'
+                    : 'รับช่วงเพื่อหยุดบอทแล้วคุยเอง',
                 style: TpType.body(12, p.muted)),
           ]),
         ),
         if (busy)
           const Padding(
             padding: EdgeInsets.all(8),
-            child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+            child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2)),
           )
         else if (s.active) ...[
           _MiniBtn(label: '+15 นาที', onTap: onExtend),
@@ -374,10 +431,15 @@ class _MiniBtn extends StatelessWidget {
       child: Ink(
         decoration: gold
             ? BoxDecoration(
-                gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: TpPalette.goldButton),
+                gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: TpPalette.goldButton),
                 borderRadius: BorderRadius.circular(10),
               )
-            : BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: p.border)),
+            : BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: p.border)),
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
           onTap: () {
@@ -386,7 +448,9 @@ class _MiniBtn extends StatelessWidget {
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            child: Text(label, style: TpType.body(12.5, gold ? TpPalette.onGold : p.text, w: FontWeight.w600, height: 1.1)),
+            child: Text(label,
+                style: TpType.body(12.5, gold ? TpPalette.onGold : p.text,
+                    w: FontWeight.w600, height: 1.1)),
           ),
         ),
       ),
@@ -395,7 +459,8 @@ class _MiniBtn extends StatelessWidget {
 }
 
 class _Note extends StatelessWidget {
-  const _Note({required this.icon, required this.text, this.tone = TpTone.info});
+  const _Note(
+      {required this.icon, required this.text, this.tone = TpTone.info});
   final IconData icon;
   final String text;
   final TpTone tone;
@@ -408,7 +473,9 @@ class _Note extends StatelessWidget {
       child: Row(children: [
         Icon(icon, size: 14, color: p.fg(tone)),
         const SizedBox(width: 6),
-        Expanded(child: Text(text, style: TpType.body(11.5, p.fg(tone), w: FontWeight.w500))),
+        Expanded(
+            child: Text(text,
+                style: TpType.body(11.5, p.fg(tone), w: FontWeight.w500))),
       ]),
     );
   }
@@ -422,14 +489,17 @@ class _DayDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.tp;
     final now = DateTime.now();
-    final today = at.year == now.year && at.month == now.month && at.day == now.day;
+    final today =
+        at.year == now.year && at.month == now.month && at.day == now.day;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Center(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-          decoration: BoxDecoration(color: p.inset, borderRadius: BorderRadius.circular(99)),
-          child: Text(today ? 'วันนี้' : TpFmt.shortDate(at), style: TpType.body(11.5, p.muted, w: FontWeight.w500)),
+          decoration: BoxDecoration(
+              color: p.inset, borderRadius: BorderRadius.circular(99)),
+          child: Text(today ? 'วันนี้' : TpFmt.shortDate(at),
+              style: TpType.body(11.5, p.muted, w: FontWeight.w500)),
         ),
       ),
     );
@@ -450,7 +520,13 @@ class _Bubble extends StatelessWidget {
           Expanded(child: Divider(color: p.divider)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(m.text.replaceAll(RegExp(r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]', unicode: true), '').trim(),
+            child: Text(
+                m.text
+                    .replaceAll(
+                        RegExp(r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]',
+                            unicode: true),
+                        '')
+                    .trim(),
                 style: TpType.body(11.5, p.muted, w: FontWeight.w500)),
           ),
           Expanded(child: Divider(color: p.divider)),
@@ -468,54 +544,82 @@ class _Bubble extends StatelessWidget {
     );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(crossAxisAlignment: mine ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [
-        if (bot || (mine && m.adminName != null))
-          Padding(
-            padding: const EdgeInsets.fromLTRB(6, 0, 6, 3),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(bot ? PhosphorIconsFill.robot : PhosphorIconsFill.headset, size: 12, color: bot ? p.navyIcon : p.goldText),
-              const SizedBox(width: 4),
-              Text(bot ? 'บอทแม่หมอ' : m.adminName!, style: TpType.body(11, bot ? p.navyIcon : p.goldText, w: FontWeight.w600)),
-            ]),
-          ),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxW),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(13, 9, 13, 10),
-            decoration: BoxDecoration(
-              color: mine ? null : (bot ? p.bubbleBot : p.bubbleIn),
-              gradient: mine ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: p.bubbleAdmin) : null,
-              borderRadius: radius,
-              border: (!mine && !bot) ? Border.all(color: p.border) : null,
-            ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (m.imageUrl != null && m.imageUrl!.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(m.imageUrl!, width: 200, fit: BoxFit.cover, cacheWidth: 600,
-                        errorBuilder: (_, __, ___) => const SizedBox.shrink()),
-                  ),
+      child: Column(
+          crossAxisAlignment:
+              mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            if (bot || (mine && m.adminName != null))
+              Padding(
+                padding: const EdgeInsets.fromLTRB(6, 0, 6, 3),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(
+                      bot ? PhosphorIconsFill.robot : PhosphorIconsFill.headset,
+                      size: 12,
+                      color: bot ? p.navyIcon : p.goldText),
+                  const SizedBox(width: 4),
+                  Text(bot ? 'บอทแม่หมอ' : m.adminName!,
+                      style: TpType.body(11, bot ? p.navyIcon : p.goldText,
+                          w: FontWeight.w600)),
+                ]),
+              ),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxW),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(13, 9, 13, 10),
+                decoration: BoxDecoration(
+                  color: mine ? null : (bot ? p.bubbleBot : p.bubbleIn),
+                  gradient: mine
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: p.bubbleAdmin)
+                      : null,
+                  borderRadius: radius,
+                  border: (!mine && !bot) ? Border.all(color: p.border) : null,
                 ),
-              if (m.text.isNotEmpty)
-                SelectableText(m.text,
-                    style: TpType.body(14, mine ? p.onBubbleAdmin : p.text, w: mine ? FontWeight.w500 : FontWeight.w400, height: 1.5)),
-            ]),
-          ),
-        ),
-        if (m.at != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(6, 3, 6, 0),
-            child: Text(TpFmt.time(m.at!), style: TpType.body(10.5, p.faint)),
-          ),
-      ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (m.imageUrl != null && m.imageUrl!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(m.imageUrl!,
+                                width: 200,
+                                fit: BoxFit.cover,
+                                cacheWidth: 600,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink()),
+                          ),
+                        ),
+                      if (m.text.isNotEmpty)
+                        SelectableText(m.text,
+                            style: TpType.body(
+                                14, mine ? p.onBubbleAdmin : p.text,
+                                w: mine ? FontWeight.w500 : FontWeight.w400,
+                                height: 1.5)),
+                    ]),
+              ),
+            ),
+            if (m.at != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(6, 3, 6, 0),
+                child:
+                    Text(TpFmt.time(m.at!), style: TpType.body(10.5, p.faint)),
+              ),
+          ]),
     );
   }
 }
 
 class _DraftCard extends StatelessWidget {
-  const _DraftCard({required this.text, required this.loading, required this.onUse, required this.onRetry, required this.onClose});
+  const _DraftCard(
+      {required this.text,
+      required this.loading,
+      required this.onUse,
+      required this.onRetry,
+      required this.onClose});
   final String? text;
   final bool loading;
   final VoidCallback onUse;
@@ -537,8 +641,12 @@ class _DraftCard extends StatelessWidget {
         Row(children: [
           Icon(PhosphorIconsFill.sparkle, size: 15, color: p.goldText),
           const SizedBox(width: 5),
-          Expanded(child: Text('ร่างคำตอบด้วย AI', style: TpType.h(12.5, p.goldText))),
-          InkWell(onTap: onClose, child: Icon(PhosphorIconsRegular.x, size: 16, color: p.faint)),
+          Expanded(
+              child:
+                  Text('ร่างคำตอบด้วย AI', style: TpType.h(12.5, p.goldText))),
+          InkWell(
+              onTap: onClose,
+              child: Icon(PhosphorIconsRegular.x, size: 16, color: p.faint)),
         ]),
         const SizedBox(height: 5),
         if (loading)
@@ -578,8 +686,10 @@ class _Composer extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.tp;
     return Container(
-      padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + MediaQuery.paddingOf(context).bottom),
-      decoration: BoxDecoration(color: p.sheet, border: Border(top: BorderSide(color: p.divider))),
+      padding: EdgeInsets.fromLTRB(
+          12, 8, 12, 8 + MediaQuery.paddingOf(context).bottom),
+      decoration: BoxDecoration(
+          color: p.sheet, border: Border(top: BorderSide(color: p.divider))),
       child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Tooltip(
           message: 'ให้ AI ช่วยร่าง',
@@ -589,7 +699,11 @@ class _Composer extends StatelessWidget {
             child: InkWell(
               borderRadius: BorderRadius.circular(15),
               onTap: drafting ? null : onDraft,
-              child: SizedBox(width: 46, height: 46, child: Icon(PhosphorIconsFill.sparkle, color: p.goldText, size: 20)),
+              child: SizedBox(
+                  width: 46,
+                  height: 46,
+                  child: Icon(PhosphorIconsFill.sparkle,
+                      color: p.goldText, size: 20)),
             ),
           ),
         ),
@@ -607,9 +721,14 @@ class _Composer extends StatelessWidget {
               hintText: 'พิมพ์ข้อความถึงลูกค้า…',
               counterText: '',
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: p.border)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: p.border)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: p.border)),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: p.border)),
             ),
           ),
         ),
@@ -626,7 +745,10 @@ class _Composer extends StatelessWidget {
                 height: 46,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(15),
-                  gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: TpPalette.goldButton),
+                  gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: TpPalette.goldButton),
                 ),
                 child: Material(
                   type: MaterialType.transparency,
@@ -635,8 +757,13 @@ class _Composer extends StatelessWidget {
                     onTap: enabled ? onSend : null,
                     child: Center(
                       child: sending
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2, color: TpPalette.onGold))
-                          : const Icon(PhosphorIconsFill.paperPlaneTilt, color: TpPalette.onGold, size: 20),
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2.2, color: TpPalette.onGold))
+                          : const Icon(PhosphorIconsFill.paperPlaneTilt,
+                              color: TpPalette.onGold, size: 20),
                     ),
                   ),
                 ),

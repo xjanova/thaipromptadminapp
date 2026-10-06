@@ -18,7 +18,9 @@ class TpFmt {
   /// ฿12.8M / ฿48.9K สำหรับพื้นที่แคบ
   static String bahtCompact(num? v) {
     final n = (v ?? 0).toDouble();
-    if (n.abs() >= 1000000) return '฿${(n / 1000000).toStringAsFixed(n.abs() >= 10000000 ? 1 : 2)}M';
+    if (n.abs() >= 1000000) {
+      return '฿${(n / 1000000).toStringAsFixed(n.abs() >= 10000000 ? 1 : 2)}M';
+    }
     if (n.abs() >= 10000) return '฿${(n / 1000).toStringAsFixed(1)}K';
     return baht(n);
   }
@@ -28,7 +30,9 @@ class TpFmt {
   static String compact(num? v) {
     final n = (v ?? 0).toDouble();
     if (n.abs() >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
-    if (n.abs() >= 1000) return '${(n / 1000).toStringAsFixed(n.abs() >= 10000 ? 0 : 1)}K';
+    if (n.abs() >= 1000) {
+      return '${(n / 1000).toStringAsFixed(n.abs() >= 10000 ? 0 : 1)}K';
+    }
     return _int.format(n);
   }
 
@@ -40,21 +44,50 @@ class TpFmt {
   }
 
   static const _thMonths = [
-    'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
-    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.',
+    'ม.ค.',
+    'ก.พ.',
+    'มี.ค.',
+    'เม.ย.',
+    'พ.ค.',
+    'มิ.ย.',
+    'ก.ค.',
+    'ส.ค.',
+    'ก.ย.',
+    'ต.ค.',
+    'พ.ย.',
+    'ธ.ค.',
   ];
   static const _thMonthsFull = [
-    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
+    'มกราคม',
+    'กุมภาพันธ์',
+    'มีนาคม',
+    'เมษายน',
+    'พฤษภาคม',
+    'มิถุนายน',
+    'กรกฎาคม',
+    'สิงหาคม',
+    'กันยายน',
+    'ตุลาคม',
+    'พฤศจิกายน',
+    'ธันวาคม',
   ];
-  static const _thDays = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
+  static const _thDays = [
+    'จันทร์',
+    'อังคาร',
+    'พุธ',
+    'พฤหัสบดี',
+    'ศุกร์',
+    'เสาร์',
+    'อาทิตย์'
+  ];
 
   /// อังคาร 6 ตุลาคม 2569
   static String longDate(DateTime d) =>
       '${_thDays[d.weekday - 1]} ${d.day} ${_thMonthsFull[d.month - 1]} ${d.year + 543}';
 
   /// 6 ต.ค. 69
-  static String shortDate(DateTime d) => '${d.day} ${_thMonths[d.month - 1]} ${(d.year + 543) % 100}';
+  static String shortDate(DateTime d) =>
+      '${d.day} ${_thMonths[d.month - 1]} ${(d.year + 543) % 100}';
 
   /// 14:08
   static String time(DateTime d) =>
@@ -63,7 +96,8 @@ class TpFmt {
   /// 6 ต.ค. 14:08 (ถ้าเป็นวันนี้แสดงแค่เวลา)
   static String dateTime(DateTime d) {
     final now = DateTime.now();
-    final sameDay = d.year == now.year && d.month == now.month && d.day == now.day;
+    final sameDay =
+        d.year == now.year && d.month == now.month && d.day == now.day;
     return sameDay ? time(d) : '${d.day} ${_thMonths[d.month - 1]} ${time(d)}';
   }
 
@@ -102,7 +136,9 @@ class TpFmt {
   static int toInt(dynamic v) {
     if (v == null) return 0;
     if (v is num) return v.toInt();
-    return int.tryParse(v.toString()) ?? double.tryParse(v.toString())?.toInt() ?? 0;
+    return int.tryParse(v.toString()) ??
+        double.tryParse(v.toString())?.toInt() ??
+        0;
   }
 
   /// อักษรแรกของชื่อ (ข้ามคำนำหน้า "คุณ")
@@ -113,7 +149,9 @@ class TpFmt {
     // สระหน้า (เ แ โ ใ ไ) ไม่ใช่ตัวอักษรต้น — ข้ามไปเอาพยัญชนะตัวถัดไป
     final runes = n.runes.toList();
     const leading = [0x0E40, 0x0E41, 0x0E42, 0x0E43, 0x0E44];
-    final pick = (leading.contains(runes.first) && runes.length > 1) ? runes[1] : runes.first;
+    final pick = (leading.contains(runes.first) && runes.length > 1)
+        ? runes[1]
+        : runes.first;
     return String.fromCharCode(pick).toUpperCase();
   }
 }

@@ -33,7 +33,8 @@ class TpAreaChart extends StatelessWidget {
     return SizedBox(
       height: height,
       width: double.infinity,
-      child: CustomPaint(painter: _AreaPainter(values, color, gridColor, showNow, slots)),
+      child: CustomPaint(
+          painter: _AreaPainter(values, color, gridColor, showNow, slots)),
     );
   }
 }
@@ -54,7 +55,8 @@ class _AreaPainter extends CustomPainter {
     for (final f in [0.25, 0.5, 0.75]) {
       final y = size.height * f;
       for (double x = 0; x < size.width; x += 8) {
-        canvas.drawLine(Offset(x, y), Offset(math.min(x + 3, size.width), y), gridPaint);
+        canvas.drawLine(
+            Offset(x, y), Offset(math.min(x + 3, size.width), y), gridPaint);
       }
     }
     if (values.isEmpty) return;
@@ -66,7 +68,8 @@ class _AreaPainter extends CustomPainter {
     final stepX = size.width / (total - 1);
     final pts = <Offset>[
       for (var i = 0; i < values.length; i++)
-        Offset(i * stepX, size.height - 6 - (values[i] / top) * (size.height - 14)),
+        Offset(i * stepX,
+            size.height - 6 - (values[i] / top) * (size.height - 14)),
     ];
     if (pts.length == 1) pts.add(Offset(stepX, pts.first.dy));
 
@@ -79,7 +82,8 @@ class _AreaPainter extends CustomPainter {
       final p3 = i + 2 < pts.length ? pts[i + 2] : p2;
       final c1 = p1 + (p2 - p0) / 6;
       final c2 = p2 - (p3 - p1) / 6;
-      line.cubicTo(c1.dx, math.min(c1.dy, size.height), c2.dx, math.min(c2.dy, size.height), p2.dx, p2.dy);
+      line.cubicTo(c1.dx, math.min(c1.dy, size.height), c2.dx,
+          math.min(c2.dy, size.height), p2.dx, p2.dy);
     }
     final area = Path.from(line)
       ..lineTo(pts.last.dx, size.height)
@@ -101,8 +105,11 @@ class _AreaPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.6
         ..strokeCap = StrokeCap.round
-        ..shader = const LinearGradient(colors: [Color(0xFFC99A40), Color(0xFFF0C96A), Color(0xFFF8E7B0)])
-            .createShader(Offset.zero & size),
+        ..shader = const LinearGradient(colors: [
+          Color(0xFFC99A40),
+          Color(0xFFF0C96A),
+          Color(0xFFF8E7B0)
+        ]).createShader(Offset.zero & size),
     );
 
     final last = pts.last;
@@ -112,11 +119,13 @@ class _AreaPainter extends CustomPainter {
         ..color = color.withValues(alpha: 0.35)
         ..strokeWidth = 2;
       for (double x = last.dx + 6; x < size.width; x += 8) {
-        canvas.drawLine(Offset(x, last.dy), Offset(math.min(x + 3, size.width), last.dy), dash);
+        canvas.drawLine(Offset(x, last.dy),
+            Offset(math.min(x + 3, size.width), last.dy), dash);
       }
     }
     if (showNow) {
-      canvas.drawCircle(last, 9, Paint()..color = color.withValues(alpha: 0.18));
+      canvas.drawCircle(
+          last, 9, Paint()..color = color.withValues(alpha: 0.18));
       canvas.drawCircle(last, 4.5, Paint()..color = const Color(0xFFF8E7B0));
       canvas.drawCircle(
           last,
@@ -158,7 +167,12 @@ class TpMeter extends StatelessWidget {
 
 /// ตัวเลขใหญ่ + คำบรรยายเล็ก (ใช้ในกริดสถิติ)
 class TpStat extends StatelessWidget {
-  const TpStat({super.key, required this.label, required this.value, this.color, this.align = CrossAxisAlignment.start});
+  const TpStat(
+      {super.key,
+      required this.label,
+      required this.value,
+      this.color,
+      this.align = CrossAxisAlignment.start});
   final String label;
   final String value;
   final Color? color;
@@ -167,10 +181,13 @@ class TpStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.tp;
-    return Column(crossAxisAlignment: align, mainAxisSize: MainAxisSize.min, children: [
-      Text(label, style: TpType.body(11.5, p.muted, w: FontWeight.w500)),
-      const SizedBox(height: 1),
-      Text(value, style: TpType.money(17, color ?? p.textStrong)),
-    ]);
+    return Column(
+        crossAxisAlignment: align,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: TpType.body(11.5, p.muted, w: FontWeight.w500)),
+          const SizedBox(height: 1),
+          Text(value, style: TpType.money(17, color ?? p.textStrong)),
+        ]);
   }
 }

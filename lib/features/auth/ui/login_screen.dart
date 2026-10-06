@@ -27,7 +27,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void initState() {
     super.initState();
     PackageInfo.fromPlatform().then((p) {
-      if (mounted) setState(() => _version = 'v${p.version} (${p.buildNumber})');
+      if (mounted) {
+        setState(() => _version = 'v${p.version} (${p.buildNumber})');
+      }
     });
   }
 
@@ -52,7 +54,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     FocusScope.of(context).unfocus();
     setState(() => _error = null);
     try {
-      final result = await ref.read(authControllerProvider.notifier).login(email, password);
+      final result = await ref
+          .read(authControllerProvider.notifier)
+          .login(email, password);
       if (!mounted) return;
       if (result.requiresTwoFactor && result.challengeToken != null) {
         context.push('/auth/2fa', extra: result.challengeToken);
@@ -86,18 +90,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Column(children: [
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
-                    height: keyboard ? 24 : (ringY - topPad - 38).clamp(0, 9999).toDouble(),
+                    height: keyboard
+                        ? 24
+                        : (ringY - topPad - 38).clamp(0, 9999).toDouble(),
                   ),
                   AnimatedScale(
                     duration: const Duration(milliseconds: 220),
                     scale: keyboard ? 0.7 : 1,
-                    child: Image.asset('assets/images/brand/tp-mark.webp', width: 76, cacheWidth: 228),
+                    child: Image.asset('assets/images/brand/tp-mark.webp',
+                        width: 76, cacheWidth: 228),
                   ),
-                  SizedBox(height: keyboard ? 12 : (ringY * 0.42).clamp(40, 110)),
-                  TpFoilText('ไทยพร้อม แอดมิน', style: TpType.title(27, Colors.white)),
+                  SizedBox(
+                      height: keyboard ? 12 : (ringY * 0.42).clamp(40, 110)),
+                  TpFoilText('ไทยพร้อม แอดมิน',
+                      style: TpType.title(27, Colors.white)),
                   const SizedBox(height: 2),
                   Text('ศูนย์ควบคุมหลังบ้าน · main.thaiprompt.online',
-                      style: TpType.body(13, const Color(0x9EFFFFFF)), textAlign: TextAlign.center),
+                      style: TpType.body(13, const Color(0x9EFFFFFF)),
+                      textAlign: TextAlign.center),
                   const SizedBox(height: 26),
                   AutofillGroup(
                     child: Column(children: [
@@ -107,7 +117,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         icon: PhosphorIconsRegular.envelopeSimple,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
-                        autofillHints: const [AutofillHints.email, AutofillHints.username],
+                        autofillHints: const [
+                          AutofillHints.email,
+                          AutofillHints.username
+                        ],
                         enabled: !auth.loading,
                       ),
                       const SizedBox(height: 12),
@@ -122,8 +135,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         enabled: !auth.loading,
                         suffix: IconButton(
                           tooltip: _obscure ? 'แสดงรหัสผ่าน' : 'ซ่อนรหัสผ่าน',
-                          icon: Icon(_obscure ? PhosphorIconsRegular.eye : PhosphorIconsRegular.eyeSlash,
-                              color: const Color(0x99FFFFFF), size: 20),
+                          icon: Icon(
+                              _obscure
+                                  ? PhosphorIconsRegular.eye
+                                  : PhosphorIconsRegular.eyeSlash,
+                              color: const Color(0x99FFFFFF),
+                              size: 20),
                           onPressed: () => setState(() => _obscure = !_obscure),
                         ),
                       ),
@@ -136,11 +153,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         : Padding(
                             padding: const EdgeInsets.fromLTRB(4, 12, 4, 6),
                             child: Row(children: [
-                              const Icon(PhosphorIconsFill.warningCircle, color: Color(0xFFFF8A7A), size: 18),
+                              const Icon(PhosphorIconsFill.warningCircle,
+                                  color: Color(0xFFFF8A7A), size: 18),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(sessionMsg,
-                                    style: TpType.body(13, const Color(0xFFFF8A7A), w: FontWeight.w500)),
+                                    style: TpType.body(
+                                        13, const Color(0xFFFF8A7A),
+                                        w: FontWeight.w500)),
                               ),
                             ]),
                           ),
@@ -156,12 +176,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const Expanded(child: Divider(color: Color(0x1FFFFFFF))),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('หรือ', style: TpType.body(12.5, const Color(0x73FFFFFF))),
+                      child: Text('หรือ',
+                          style: TpType.body(12.5, const Color(0x73FFFFFF))),
                     ),
                     const Expanded(child: Divider(color: Color(0x1FFFFFFF))),
                   ]),
                   const SizedBox(height: 14),
-                  _QrButton(onTap: auth.loading ? null : () => context.push('/auth/qr')),
+                  _QrButton(
+                      onTap:
+                          auth.loading ? null : () => context.push('/auth/qr')),
                   const SizedBox(height: 22),
                   Text(
                     'สร้าง QR ได้ที่ main.thaiprompt.online/admin/mobile-pair\n$_version',
@@ -197,9 +220,11 @@ class _QrButton extends StatelessWidget {
         child: SizedBox(
           height: 52,
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(PhosphorIconsRegular.qrCode, color: Color(0xFFF0C96A), size: 21),
+            const Icon(PhosphorIconsRegular.qrCode,
+                color: Color(0xFFF0C96A), size: 21),
             const SizedBox(width: 10),
-            Text('สแกน QR จับคู่เครื่องนี้', style: TpType.h(15, const Color(0xFFF0C96A))),
+            Text('สแกน QR จับคู่เครื่องนี้',
+                style: TpType.h(15, const Color(0xFFF0C96A))),
           ]),
         ),
       ),

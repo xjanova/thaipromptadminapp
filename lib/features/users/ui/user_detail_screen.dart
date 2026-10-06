@@ -25,7 +25,10 @@ class UserDetailScreen extends ConsumerWidget {
         bottomSpace: 32,
         slivers: [
           SliverToBoxAdapter(
-            child: TpEmpty(art: TpArt.members, title: 'ไม่พบสมาชิกนี้', message: 'ลิงก์ไม่ถูกต้องหรือสมาชิกถูกลบไปแล้ว'),
+            child: TpEmpty(
+                art: TpArt.members,
+                title: 'ไม่พบสมาชิกนี้',
+                message: 'ลิงก์ไม่ถูกต้องหรือสมาชิกถูกลบไปแล้ว'),
           ),
         ],
       );
@@ -79,7 +82,8 @@ class _UserBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final p = context.tp;
     final u = user;
-    final online = u.isAdmin ? ref.watch(adminsOnlineProvider).valueOrNull : null;
+    final online =
+        u.isAdmin ? ref.watch(adminsOnlineProvider).valueOrNull : null;
     final presence = online == null ? null : online[u.id];
     final place = [u.city, u.country].whereType<String>().join(', ');
 
@@ -90,7 +94,8 @@ class _UserBody extends ConsumerWidget {
           title: u.email,
           subtitle: 'อีเมล · แตะเพื่อคัดลอก',
           chevron: false,
-          trailing: Icon(PhosphorIconsRegular.copy, size: 17, color: p.goldText),
+          trailing:
+              Icon(PhosphorIconsRegular.copy, size: 17, color: p.goldText),
           onTap: () => _copy(context, 'อีเมล', u.email),
         ),
       if (u.phone != null)
@@ -101,7 +106,8 @@ class _UserBody extends ConsumerWidget {
           subtitle: 'เบอร์โทร · แตะเพื่อคัดลอก',
           titleStyle: TpType.money(15, p.textStrong, w: FontWeight.w600),
           chevron: false,
-          trailing: Icon(PhosphorIconsRegular.copy, size: 17, color: p.goldText),
+          trailing:
+              Icon(PhosphorIconsRegular.copy, size: 17, color: p.goldText),
           onTap: () => _copy(context, 'เบอร์โทร', u.phone!),
         ),
       if (u.referralCode != null)
@@ -112,18 +118,26 @@ class _UserBody extends ConsumerWidget {
           subtitle: 'รหัสแนะนำ · แตะเพื่อคัดลอก',
           titleStyle: TpType.money(15, p.textStrong, w: FontWeight.w600),
           chevron: false,
-          trailing: Icon(PhosphorIconsRegular.copy, size: 17, color: p.goldText),
+          trailing:
+              Icon(PhosphorIconsRegular.copy, size: 17, color: p.goldText),
           onTap: () => _copy(context, 'รหัสแนะนำ', u.referralCode!),
         ),
       if (place.isNotEmpty)
-        TpRow(icon: PhosphorIconsRegular.mapPin, iconTone: TpTone.info, title: place, subtitle: 'ที่อยู่ (ระดับเมือง)', chevron: false),
+        TpRow(
+            icon: PhosphorIconsRegular.mapPin,
+            iconTone: TpTone.info,
+            title: place,
+            subtitle: 'ที่อยู่ (ระดับเมือง)',
+            chevron: false),
     ];
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _ProfileCard(user: u, presence: presence),
       const TpSection('ข้อมูลติดต่อ'),
       if (contact.isEmpty)
-        TpCard(child: Text('สมาชิกนี้ยังไม่มีข้อมูลติดต่อในระบบ', style: TpType.body(13.5, p.muted)))
+        TpCard(
+            child: Text('สมาชิกนี้ยังไม่มีข้อมูลติดต่อในระบบ',
+                style: TpType.body(13.5, p.muted)))
       else
         TpGroup(children: contact),
       const TpSection('กระเป๋าเงิน'),
@@ -132,12 +146,16 @@ class _UserBody extends ConsumerWidget {
       TpCard(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
         child: Column(children: [
-          TpKv('สถานะ', u.isBlocked ? 'ถูกระงับ' : 'ใช้งานปกติ', valueColor: u.isBlocked ? p.danger : p.success),
-          if (u.isBlocked && u.blockedAt != null) TpKv('ระงับเมื่อ', _when(u.blockedAt!)),
+          TpKv('สถานะ', u.isBlocked ? 'ถูกระงับ' : 'ใช้งานปกติ',
+              valueColor: u.isBlocked ? p.danger : p.success),
+          if (u.isBlocked && u.blockedAt != null)
+            TpKv('ระงับเมื่อ', _when(u.blockedAt!)),
           TpKv('ระดับ', u.rankName ?? 'ยังไม่มีระดับ'),
-          if (u.roleLabel != null) TpKv('บทบาท', u.roleLabel!, valueColor: p.goldText),
+          if (u.roleLabel != null)
+            TpKv('บทบาท', u.roleLabel!, valueColor: p.goldText),
           TpKv('สมัครเมื่อ', u.createdAt == null ? '-' : _when(u.createdAt!)),
-          TpKv('เข้าใช้ล่าสุด', u.lastLoginAt == null ? 'ไม่มีข้อมูล' : TpFmt.ago(u.lastLoginAt)),
+          TpKv('เข้าใช้ล่าสุด',
+              u.lastLoginAt == null ? 'ไม่มีข้อมูล' : TpFmt.ago(u.lastLoginAt)),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -147,11 +165,15 @@ class _UserBody extends ConsumerWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Wrap(alignment: WrapAlignment.end, spacing: 6, runSpacing: 6, children: [
-                  _VerifyPill('โทรศัพท์', u.phoneVerified),
-                  _VerifyPill('LINE', u.lineVerified),
-                  _VerifyPill('Facebook', u.facebookVerified),
-                ]),
+                child: Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      _VerifyPill('โทรศัพท์', u.phoneVerified),
+                      _VerifyPill('LINE', u.lineVerified),
+                      _VerifyPill('Facebook', u.facebookVerified),
+                    ]),
               ),
             ]),
           ),
@@ -191,24 +213,50 @@ class _ProfileCard extends StatelessWidget {
       goldBorder: true,
       padding: const EdgeInsets.all(18),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        TpAvatar(name: u.displayName, size: 62, gold: true, online: presence?.isOnline ?? false),
+        TpAvatar(
+            name: u.displayName,
+            size: 62,
+            gold: true,
+            online: presence?.isOnline ?? false),
         const SizedBox(width: 14),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(u.displayName, maxLines: 2, overflow: TextOverflow.ellipsis, style: TpType.h(18, p.textStrong)),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(u.displayName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TpType.h(18, p.textStrong)),
             if (u.contactLine.isNotEmpty)
-              Text(u.contactLine, maxLines: 2, overflow: TextOverflow.ellipsis, style: TpType.body(13, p.muted)),
+              Text(u.contactLine,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TpType.body(13, p.muted)),
             const SizedBox(height: 9),
             Wrap(spacing: 6, runSpacing: 6, children: [
               TpPill(u.rankName ?? 'ยังไม่มีระดับ',
-                  tone: u.rankName == null ? TpTone.neutral : TpTone.gold, icon: PhosphorIconsFill.crown, dense: true),
-              if (u.isBlocked) const TpPill('ถูกระงับ', tone: TpTone.danger, icon: PhosphorIconsBold.prohibit, dense: true),
-              if (role != null) TpPill(role, tone: TpTone.navy, icon: PhosphorIconsFill.shieldCheck, dense: true),
+                  tone: u.rankName == null ? TpTone.neutral : TpTone.gold,
+                  icon: PhosphorIconsFill.crown,
+                  dense: true),
+              if (u.isBlocked)
+                const TpPill('ถูกระงับ',
+                    tone: TpTone.danger,
+                    icon: PhosphorIconsBold.prohibit,
+                    dense: true),
+              if (role != null)
+                TpPill(role,
+                    tone: TpTone.navy,
+                    icon: PhosphorIconsFill.shieldCheck,
+                    dense: true),
               if (presence != null)
                 presence!.isOnline
-                    ? const TpPill('ออนไลน์อยู่', tone: TpTone.success, icon: PhosphorIconsFill.circle, dense: true)
+                    ? const TpPill('ออนไลน์อยู่',
+                        tone: TpTone.success,
+                        icon: PhosphorIconsFill.circle,
+                        dense: true)
                     : TpPill(
-                        presence!.lastSeenAt == null ? 'ยังไม่เคยใช้แอป' : 'ใช้แอปล่าสุด ${TpFmt.ago(presence!.lastSeenAt)}',
+                        presence!.lastSeenAt == null
+                            ? 'ยังไม่เคยใช้แอป'
+                            : 'ใช้แอปล่าสุด ${TpFmt.ago(presence!.lastSeenAt)}',
                         tone: TpTone.neutral,
                         dense: true,
                       ),
@@ -236,7 +284,9 @@ class _WalletCardState extends ConsumerState<_WalletCard> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      final page = await ref.read(financeRepositoryProvider).wallets(userId: widget.user.id, perPage: 1);
+      final page = await ref
+          .read(financeRepositoryProvider)
+          .wallets(userId: widget.user.id, perPage: 1);
       if (!mounted) return;
       setState(() => _busy = false);
       if (page.items.isEmpty) {
@@ -244,7 +294,8 @@ class _WalletCardState extends ConsumerState<_WalletCard> {
         return;
       }
       final id = widget.user.id;
-      await showWalletSheet(context, page.items.first, showOwnerLink: false, onChanged: () {
+      await showWalletSheet(context, page.items.first, showOwnerLink: false,
+          onChanged: () {
         if (mounted) ref.invalidate(userDetailProvider(id));
       });
     } catch (e) {
@@ -264,9 +315,12 @@ class _WalletCardState extends ConsumerState<_WalletCard> {
           const Opacity(opacity: 0.55, child: Tp3D(TpArt.wallet, size: 44)),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('ยังไม่มีกระเป๋าเงิน', style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
-              Text('สมาชิกนี้ยังไม่ได้เปิดใช้กระเป๋าเงินในระบบ', style: TpType.body(12.5, p.muted)),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('ยังไม่มีกระเป๋าเงิน',
+                  style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
+              Text('สมาชิกนี้ยังไม่ได้เปิดใช้กระเป๋าเงินในระบบ',
+                  style: TpType.body(12.5, p.muted)),
             ]),
           ),
         ]),
@@ -280,23 +334,32 @@ class _WalletCardState extends ConsumerState<_WalletCard> {
         const Tp3D(TpArt.wallet, size: 48),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('ยอดคงเหลือ', style: TpType.body(12.5, p.muted)),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Text(TpFmt.baht(bal, decimals: true), style: TpType.money(22, bal > 0 ? p.goldText : p.text)),
+              child: Text(TpFmt.baht(bal, decimals: true),
+                  style: TpType.money(22, bal > 0 ? p.goldText : p.text)),
             ),
             if (u.walletAddress != null)
-              Text(u.walletAddress!, maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.body(11.5, p.faint)),
+              Text(u.walletAddress!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TpType.body(11.5, p.faint)),
           ]),
         ),
         const SizedBox(width: 8),
         if (_busy)
-          const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2))
+          const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2.2))
         else
           Row(mainAxisSize: MainAxisSize.min, children: [
-            Text('จัดการ', style: TpType.body(13, p.goldText, w: FontWeight.w600)),
+            Text('จัดการ',
+                style: TpType.body(13, p.goldText, w: FontWeight.w600)),
             Icon(PhosphorIconsBold.caretRight, size: 13, color: p.goldText),
           ]),
       ]),
@@ -320,7 +383,10 @@ class _Readings extends ConsumerWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       TpSection(
         'ประวัติดูดวง',
-        trailing: n == null || n == 0 ? null : TpPill(n >= _limit ? 'ล่าสุด $n รายการ' : '$n รายการ', dense: true),
+        trailing: n == null || n == 0
+            ? null
+            : TpPill(n >= _limit ? 'ล่าสุด $n รายการ' : '$n รายการ',
+                dense: true),
       ),
       TpAsync<List<UserReading>>(
         value: readings,
@@ -343,12 +409,15 @@ class _Readings extends ConsumerWidget {
             for (final r in list)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: _ReadingTile(r: r, onTap: () => context.push('/chat/${r.id}')),
+                child: _ReadingTile(
+                    r: r, onTap: () => context.push('/chat/${r.id}')),
               ),
             if (list.length >= _limit)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Text('แสดง $_limit รายการล่าสุด', textAlign: TextAlign.center, style: TpType.body(12, p.faint)),
+                child: Text('แสดง $_limit รายการล่าสุด',
+                    textAlign: TextAlign.center,
+                    style: TpType.body(12, p.faint)),
               ),
           ]);
         },
@@ -365,7 +434,9 @@ class _ReadingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.tp;
-    final when = r.createdAt == null ? null : '${TpFmt.shortDate(r.createdAt!)} ${TpFmt.time(r.createdAt!)}';
+    final when = r.createdAt == null
+        ? null
+        : '${TpFmt.shortDate(r.createdAt!)} ${TpFmt.time(r.createdAt!)}';
     final meta = ['R${r.id}', if (when != null) when].join(' · ');
     final price = r.pricePaid ?? 0;
     return TpCard(
@@ -376,19 +447,29 @@ class _ReadingTile extends StatelessWidget {
         const Tp3D(TpArt.tarot, size: 40),
         const SizedBox(width: 11),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(r.firstQuestion ?? 'ไม่มีคำถามในบันทึก',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TpType.h(14, r.firstQuestion == null ? p.muted : p.textStrong, w: FontWeight.w600)),
+                style: TpType.h(
+                    14, r.firstQuestion == null ? p.muted : p.textStrong,
+                    w: FontWeight.w600)),
             const SizedBox(height: 3),
-            Text(meta, maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.money(12, p.faint, w: FontWeight.w500)),
+            Text(meta,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TpType.money(12, p.faint, w: FontWeight.w500)),
             if (r.questions.length > 1 || r.rating != null) ...[
               const SizedBox(height: 6),
               Wrap(spacing: 6, runSpacing: 4, children: [
-                if (r.questions.length > 1) TpPill('${r.questions.length} คำถาม', dense: true),
+                if (r.questions.length > 1)
+                  TpPill('${r.questions.length} คำถาม', dense: true),
                 if (r.rating != null)
-                  TpPill('ให้คะแนน ${r.rating}/5', tone: TpTone.gold, icon: PhosphorIconsFill.star, dense: true),
+                  TpPill('ให้คะแนน ${r.rating}/5',
+                      tone: TpTone.gold,
+                      icon: PhosphorIconsFill.star,
+                      dense: true),
               ]),
             ],
           ]),
@@ -398,9 +479,11 @@ class _ReadingTile extends StatelessWidget {
           if (r.isPaid && price > 0)
             Text(TpFmt.baht(price), style: TpType.money(15, p.goldText))
           else
-            TpPill(r.isPaid ? 'จ่ายแล้ว' : 'ยังไม่จ่าย', tone: r.isPaid ? TpTone.success : TpTone.neutral, dense: true),
+            TpPill(r.isPaid ? 'จ่ายแล้ว' : 'ยังไม่จ่าย',
+                tone: r.isPaid ? TpTone.success : TpTone.neutral, dense: true),
           const SizedBox(height: 8),
-          Icon(PhosphorIconsRegular.chatCircleText, size: 18, color: p.goldText),
+          Icon(PhosphorIconsRegular.chatCircleText,
+              size: 18, color: p.goldText),
         ]),
       ]),
     );
@@ -411,20 +494,23 @@ class _DetailSkeleton extends StatelessWidget {
   const _DetailSkeleton();
 
   @override
-  Widget build(BuildContext context) => const Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+  Widget build(BuildContext context) =>
+      const Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         TpCard(
           padding: EdgeInsets.all(18),
           child: Row(children: [
             TpSkeleton(width: 62, height: 62, radius: 31),
             SizedBox(width: 14),
             Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                TpSkeleton(width: 150, height: 16),
-                SizedBox(height: 8),
-                TpSkeleton(width: 190, height: 11),
-                SizedBox(height: 12),
-                TpSkeleton(width: 120, height: 18),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TpSkeleton(width: 150, height: 16),
+                    SizedBox(height: 8),
+                    TpSkeleton(width: 190, height: 11),
+                    SizedBox(height: 12),
+                    TpSkeleton(width: 120, height: 18),
+                  ]),
             ),
           ]),
         ),

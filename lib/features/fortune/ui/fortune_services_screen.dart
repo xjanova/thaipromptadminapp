@@ -13,7 +13,8 @@ class FortuneServicesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final services = ref.watch(fortuneServicesProvider);
     // สถิติหมวด (เดือนนี้) เป็นของเสริม — โหลดไม่ได้ก็ยังแสดงรายการได้
-    final month = ref.watch(fortuneDashboardProvider(FortunePeriod.month)).valueOrNull;
+    final month =
+        ref.watch(fortuneDashboardProvider(FortunePeriod.month)).valueOrNull;
 
     Future<void> refresh() async {
       ref.invalidate(fortuneDashboardProvider(FortunePeriod.month));
@@ -55,7 +56,10 @@ class _Body extends StatelessWidget {
     final p = context.tp;
     final activeServices = d.services.where((s) => s.isActive).length;
     final activeCats = d.categories.where((c) => c.isActive).length;
-    final stats = {for (final c in month?.categories ?? const <FortuneCategoryStat>[]) c.id: c};
+    final stats = {
+      for (final c in month?.categories ?? const <FortuneCategoryStat>[])
+        c.id: c
+    };
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (!d.writable) const _ReadOnlyNote(),
@@ -74,7 +78,8 @@ class _Body extends StatelessWidget {
       if (d.services.isEmpty)
         const TpCard(
           padding: EdgeInsets.zero,
-          child: TpEmpty(art: TpArt.tarot, title: 'ยังไม่มีแพคเกจในระบบ', compact: true),
+          child: TpEmpty(
+              art: TpArt.tarot, title: 'ยังไม่มีแพคเกจในระบบ', compact: true),
         )
       else
         TpGroup(children: [for (final s in d.services) _ServiceRow(s: s)]),
@@ -84,7 +89,8 @@ class _Body extends StatelessWidget {
         'หมวดคำถาม',
         trailing: d.categories.isEmpty
             ? null
-            : TpPill('เปิด $activeCats/${d.categories.length}', tone: TpTone.navy, dense: true),
+            : TpPill('เปิด $activeCats/${d.categories.length}',
+                tone: TpTone.navy, dense: true),
       ),
       if (d.categories.isEmpty)
         const TpCard(
@@ -97,7 +103,9 @@ class _Body extends StatelessWidget {
           ),
         )
       else ...[
-        TpGroup(children: [for (final c in d.categories) _CategoryRow(c: c, stat: stats[c.id])]),
+        TpGroup(children: [
+          for (final c in d.categories) _CategoryRow(c: c, stat: stats[c.id])
+        ]),
         if (month != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
@@ -124,8 +132,10 @@ class _ReadOnlyNote extends StatelessWidget {
         const TpIconTile(PhosphorIconsRegular.desktop, tone: TpTone.info),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('แก้ราคา/เปิดปิดแพคเกจได้ที่หน้าเว็บแอดมิน', style: TpType.h(14, p.textStrong)),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('แก้ราคา/เปิดปิดแพคเกจได้ที่หน้าเว็บแอดมิน',
+                style: TpType.h(14, p.textStrong)),
             const SizedBox(height: 1),
             Text(
               'ในแอปดูได้อย่างเดียว — ราคาและการเปิดขายตั้งรวมกันในหน้าตั้งค่าแม่หมอบนเว็บ',
@@ -147,12 +157,16 @@ class _ServiceRow extends StatelessWidget {
     return TpRow(
       leading: _PriceTile(price: s.price, active: s.isActive),
       title: s.name,
-      subtitle: s.price <= 0 ? 'ไม่มีค่าใช้จ่าย' : 'ราคา ${TpFmt.baht(s.price)} ต่อบิล',
+      subtitle: s.price <= 0
+          ? 'ไม่มีค่าใช้จ่าย'
+          : 'ราคา ${TpFmt.baht(s.price)} ต่อบิล',
       chevron: false,
       trailing: TpPill(
         s.isActive ? 'เปิดขาย' : 'ปิดอยู่',
         tone: s.isActive ? TpTone.success : TpTone.neutral,
-        icon: s.isActive ? PhosphorIconsBold.check : PhosphorIconsBold.pauseCircle,
+        icon: s.isActive
+            ? PhosphorIconsBold.check
+            : PhosphorIconsBold.pauseCircle,
         dense: true,
       ),
     );
@@ -205,11 +219,14 @@ class _CategoryRow extends StatelessWidget {
         width: 36,
         height: 36,
         alignment: Alignment.center,
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(12)),
         child: Container(
           width: 12,
           height: 12,
-          decoration: BoxDecoration(color: c.isActive ? color : p.faint, shape: BoxShape.circle),
+          decoration: BoxDecoration(
+              color: c.isActive ? color : p.faint, shape: BoxShape.circle),
         ),
       ),
       title: c.name,
@@ -219,7 +236,8 @@ class _CategoryRow extends StatelessWidget {
               ? 'เดือนนี้ยังไม่มีคนถาม'
               : 'เดือนนี้ ${TpFmt.count(st.sessions)} ครั้ง${st.revenue > 0 ? ' · ${TpFmt.baht(st.revenue)}' : ''}',
       chevron: false,
-      trailing: TpPill(c.isActive ? 'เปิด' : 'ปิด', tone: c.isActive ? TpTone.success : TpTone.neutral, dense: true),
+      trailing: TpPill(c.isActive ? 'เปิด' : 'ปิด',
+          tone: c.isActive ? TpTone.success : TpTone.neutral, dense: true),
     );
   }
 }

@@ -45,3 +45,6 @@ app.*.map.json
 /android/app/release
 release-artifacts/
 
+
+# Firebase config — CI เขียนจาก secret GOOGLE_SERVICES_JSON_BASE64 (รีโปนี้ public ห้าม commit)
+android/app/google-services.json

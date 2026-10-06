@@ -6,7 +6,8 @@ import '../../../core/api/api_envelope.dart';
 import '../../../core/api/paged.dart';
 import '../../../shared/ui/tp_format.dart';
 
-Map<String, dynamic> _m(dynamic v) => v is Map ? v.cast<String, dynamic>() : const {};
+Map<String, dynamic> _m(dynamic v) =>
+    v is Map ? v.cast<String, dynamic>() : const {};
 
 String? _s(dynamic v) {
   if (v == null) return null;
@@ -121,7 +122,11 @@ class MarketplaceDashboard {
       productsCount: TpFmt.toInt(hero['products_count']),
       pendingCommissions: TpFmt.toDouble(hero['pending_commissions_thb']),
       platforms: ps is List
-          ? ps.whereType<Map>().map((e) => MarketplacePlatform.fromJson(e.cast<String, dynamic>())).toList()
+          ? ps
+              .whereType<Map>()
+              .map((e) =>
+                  MarketplacePlatform.fromJson(e.cast<String, dynamic>()))
+              .toList()
           : const [],
       generatedAt: TpFmt.parse(j['generated_at']),
     );
@@ -130,7 +135,12 @@ class MarketplaceDashboard {
 
 /// บัญชีแพลตฟอร์มที่เชื่อมอยู่ (Lazada / Shopee / TikTok)
 class MarketplacePlatform {
-  const MarketplacePlatform({required this.id, required this.name, this.platform, this.isActive = false, this.lastSyncAt});
+  const MarketplacePlatform(
+      {required this.id,
+      required this.name,
+      this.platform,
+      this.isActive = false,
+      this.lastSyncAt});
   final int id;
   final String name;
   final String? platform;
@@ -138,9 +148,12 @@ class MarketplacePlatform {
   final DateTime? lastSyncAt;
 
   /// ไม่ได้ซิงก์เกิน 24 ชม. = น่าจะค้าง
-  bool get syncStale => lastSyncAt == null || DateTime.now().difference(lastSyncAt!).inHours >= 24;
+  bool get syncStale =>
+      lastSyncAt == null ||
+      DateTime.now().difference(lastSyncAt!).inHours >= 24;
 
-  factory MarketplacePlatform.fromJson(Map<String, dynamic> j) => MarketplacePlatform(
+  factory MarketplacePlatform.fromJson(Map<String, dynamic> j) =>
+      MarketplacePlatform(
         id: TpFmt.toInt(j['id']),
         name: _s(j['name']) ?? marketPlatformLabel(_s(j['platform'])),
         platform: _s(j['platform']),
@@ -180,7 +193,8 @@ class MarketplaceOrder {
   MarketOrderStatus? get status => MarketOrderStatus.parse(orderStatus);
 
   /// ป้ายสถานะภาษาไทย (สถานะที่ไม่รู้จักจากแพลตฟอร์ม = "สถานะอื่น")
-  String get statusLabel => status?.label ?? (orderStatus.isEmpty ? 'ไม่ระบุสถานะ' : 'สถานะอื่น');
+  String get statusLabel =>
+      status?.label ?? (orderStatus.isEmpty ? 'ไม่ระบุสถานะ' : 'สถานะอื่น');
 
   factory MarketplaceOrder.fromJson(Map<String, dynamic> j) => MarketplaceOrder(
         id: TpFmt.toInt(j['id']),
@@ -205,13 +219,17 @@ class MarketplaceRepository {
   final ApiClient _api;
 
   /// `GET marketplace/dashboard?period=today|week|month`
-  Future<MarketplaceDashboard> dashboard({MarketPeriod period = MarketPeriod.month}) => _guard(() async {
-        final data = await _api.get<dynamic>('/marketplace/dashboard', query: {'period': period.key});
+  Future<MarketplaceDashboard> dashboard(
+          {MarketPeriod period = MarketPeriod.month}) =>
+      _guard(() async {
+        final data = await _api.get<dynamic>('/marketplace/dashboard',
+            query: {'period': period.key});
         return MarketplaceDashboard.fromJson(_m(data));
       });
 
   /// `GET marketplace/orders?status=&search=&page=&per_page=`
-  Future<Paged<MarketplaceOrder>> orders({int page = 1, String? status, String? search, int perPage = 20}) =>
+  Future<Paged<MarketplaceOrder>> orders(
+          {int page = 1, String? status, String? search, int perPage = 20}) =>
       _guard(() async {
         final data = await _api.get<dynamic>('/marketplace/orders', query: {
           'page': page,
@@ -235,7 +253,9 @@ class MarketplaceRepository {
         return null;
       }
     }));
-    return {for (final e in results.whereType<MapEntry<String, int>>()) e.key: e.value};
+    return {
+      for (final e in results.whereType<MapEntry<String, int>>()) e.key: e.value
+    };
   }
 
   Future<T> _guard<T>(Future<T> Function() run) async {
@@ -251,11 +271,13 @@ class MarketplaceRepository {
   }
 }
 
-final marketplaceRepositoryProvider =
-    Provider<MarketplaceRepository>((ref) => MarketplaceRepository(ref.watch(apiClientProvider)));
+final marketplaceRepositoryProvider = Provider<MarketplaceRepository>(
+    (ref) => MarketplaceRepository(ref.watch(apiClientProvider)));
 
 final marketplaceDashboardProvider = FutureProvider.autoDispose
-    .family<MarketplaceDashboard, MarketPeriod>((ref, p) => ref.watch(marketplaceRepositoryProvider).dashboard(period: p));
+    .family<MarketplaceDashboard, MarketPeriod>((ref, p) =>
+        ref.watch(marketplaceRepositoryProvider).dashboard(period: p));
 
 final marketplaceStatusCountsProvider =
-    FutureProvider.autoDispose<Map<String, int>>((ref) => ref.watch(marketplaceRepositoryProvider).statusCounts());
+    FutureProvider.autoDispose<Map<String, int>>(
+        (ref) => ref.watch(marketplaceRepositoryProvider).statusCounts());

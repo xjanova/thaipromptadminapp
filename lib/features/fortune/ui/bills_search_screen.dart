@@ -46,7 +46,8 @@ class _BillsSearchScreenState extends ConsumerState<BillsSearchScreen> {
   int _reload = 0;
   int? _total;
 
-  bool get _filtered => _query.isNotEmpty || _platform != null || _package != null;
+  bool get _filtered =>
+      _query.isNotEmpty || _platform != null || _package != null;
 
   @override
   void dispose() {
@@ -102,7 +103,8 @@ class _BillsSearchScreenState extends ConsumerState<BillsSearchScreen> {
       initial: 0.6,
       min: 0.4,
       max: 0.8,
-      builder: (ctx, scroll) => _PackageSheet(scroll: scroll, current: _package),
+      builder: (ctx, scroll) =>
+          _PackageSheet(scroll: scroll, current: _package),
     );
     if (picked == null || !mounted || picked.pkg == _package) return;
     setState(() {
@@ -124,7 +126,9 @@ class _BillsSearchScreenState extends ConsumerState<BillsSearchScreen> {
 
     return TpPage(
       title: 'ค้นหาบิล',
-      subtitle: _total == null ? 'บิลดูดวงทุกสถานะ ทุกช่องทาง' : 'พบ ${TpFmt.count(_total)} บิล',
+      subtitle: _total == null
+          ? 'บิลดูดวงทุกสถานะ ทุกช่องทาง'
+          : 'พบ ${TpFmt.count(_total)} บิล',
       back: true,
       bottomSpace: 32,
       onRefresh: _refresh,
@@ -136,8 +140,14 @@ class _BillsSearchScreenState extends ConsumerState<BillsSearchScreen> {
           onTap: _pickPackage,
         ),
       ],
-      headerBottom: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _SearchField(controller: _search, focusNode: _focus, onChanged: _onChanged, onSubmitted: _apply, onClear: _clearSearch),
+      headerBottom:
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        _SearchField(
+            controller: _search,
+            focusNode: _focus,
+            onChanged: _onChanged,
+            onSubmitted: _apply,
+            onClear: _clearSearch),
         const SizedBox(height: 12),
         TpChips<_Status>(
           onHeader: true,
@@ -147,14 +157,18 @@ class _BillsSearchScreenState extends ConsumerState<BillsSearchScreen> {
             _status = s;
             _total = null;
           }),
-          items: [for (final s in _Status.values) TpChipItem(s, s.label, count: countOf(s))],
+          items: [
+            for (final s in _Status.values)
+              TpChipItem(s, s.label, count: countOf(s))
+          ],
         ),
       ]),
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               TpChips<FortunePlatform?>(
                 padding: EdgeInsets.zero,
                 value: _platform,
@@ -164,7 +178,8 @@ class _BillsSearchScreenState extends ConsumerState<BillsSearchScreen> {
                 }),
                 items: [
                   const TpChipItem<FortunePlatform?>(null, 'ทุกช่องทาง'),
-                  for (final pf in FortunePlatform.values) TpChipItem<FortunePlatform?>(pf, pf.label),
+                  for (final pf in FortunePlatform.values)
+                    TpChipItem<FortunePlatform?>(pf, pf.label),
                 ],
               ),
               if (_package != null) ...[
@@ -181,7 +196,8 @@ class _BillsSearchScreenState extends ConsumerState<BillsSearchScreen> {
           ),
         ),
         TpPagedSliver<FortuneBill>(
-          reloadKey: '${_status.key}|$_query|${_platform?.key}|${_package?.key}|$_reload',
+          reloadKey:
+              '${_status.key}|$_query|${_platform?.key}|${_package?.key}|$_reload',
           fetch: (page) => ref.read(fortuneRepositoryProvider).searchBills(
                 status: _status.key,
                 search: _query,
@@ -212,7 +228,8 @@ class _BillsSearchScreenState extends ConsumerState<BillsSearchScreen> {
       return TpEmpty(
         art: TpArt.emptyInbox,
         title: 'ไม่พบบิลที่ตรงกับ “$_query”',
-        message: 'ลองค้นด้วยเลขบิลเต็ม หรือพิมพ์ # ตามด้วยรหัสบิล — แล้วตรวจตัวกรองสถานะและช่องทางอีกครั้ง',
+        message:
+            'ลองค้นด้วยเลขบิลเต็ม หรือพิมพ์ # ตามด้วยรหัสบิล — แล้วตรวจตัวกรองสถานะและช่องทางอีกครั้ง',
         actionLabel: 'ล้างการค้นหาและตัวกรอง',
         onAction: _clearFilters,
         compact: true,
@@ -280,16 +297,20 @@ class _SearchField extends StatelessWidget {
         fillColor: p.glass,
         hintText: 'ชื่อลูกค้า · เลขบิล · #รหัส',
         hintStyle: TpType.body(14.5, p.onHeaderMuted),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-        prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass, size: 20, color: p.onHeaderMuted),
-        prefixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+        prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass,
+            size: 20, color: p.onHeaderMuted),
+        prefixIconConstraints:
+            const BoxConstraints(minWidth: 44, minHeight: 44),
         suffixIcon: ValueListenableBuilder<TextEditingValue>(
           valueListenable: controller,
           builder: (_, v, __) => v.text.isEmpty
               ? const SizedBox.shrink()
               : IconButton(
                   tooltip: 'ล้างคำค้น',
-                  icon: Icon(PhosphorIconsBold.xCircle, size: 19, color: p.onHeaderMuted),
+                  icon: Icon(PhosphorIconsBold.xCircle,
+                      size: 19, color: p.onHeaderMuted),
                   onPressed: onClear,
                 ),
         ),
@@ -328,7 +349,8 @@ class _ActiveFilter extends StatelessWidget {
               child: Text(label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TpType.body(12.5, p.goldText, w: FontWeight.w600, height: 1.1)),
+                  style: TpType.body(12.5, p.goldText,
+                      w: FontWeight.w600, height: 1.1)),
             ),
             const SizedBox(width: 6),
             Icon(PhosphorIconsBold.x, size: 13, color: p.goldText),
@@ -351,27 +373,40 @@ class _PackageSheet extends StatelessWidget {
     Widget row(FortunePackage? pkg, String title, String? subtitle) {
       final on = pkg == current;
       return TpRow(
-        icon: pkg == null ? PhosphorIconsRegular.stack : PhosphorIconsRegular.cards,
+        icon: pkg == null
+            ? PhosphorIconsRegular.stack
+            : PhosphorIconsRegular.cards,
         iconTone: on ? TpTone.gold : TpTone.navy,
         title: title,
         subtitle: subtitle,
         chevron: false,
-        trailing: Icon(on ? PhosphorIconsFill.checkCircle : PhosphorIconsRegular.circle,
-            size: 22, color: on ? p.gold : p.faint),
+        trailing: Icon(
+            on ? PhosphorIconsFill.checkCircle : PhosphorIconsRegular.circle,
+            size: 22,
+            color: on ? p.gold : p.faint),
         onTap: () => Navigator.pop(context, (pkg: pkg)),
       );
     }
 
-    return ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(18, 8, 18, 24), children: [
-      Text('กรองตามแพคเกจ', style: TpType.h(18, p.textStrong)),
-      const SizedBox(height: 2),
-      Text('ใช้ร่วมกับสถานะ ช่องทาง และคำค้นได้', style: TpType.body(13, p.muted)),
-      const SizedBox(height: 14),
-      TpGroup(children: [
-        row(null, 'ทุกแพคเกจ', null),
-        for (final pkg in FortunePackage.values)
-          row(pkg, pkg.label, pkg == FortunePackage.juntra ? 'บิลจากเว็บจันทรา (จันทราเก็บเงินเอง)' : null),
-      ]),
-    ]);
+    return ListView(
+        controller: scroll,
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
+        children: [
+          Text('กรองตามแพคเกจ', style: TpType.h(18, p.textStrong)),
+          const SizedBox(height: 2),
+          Text('ใช้ร่วมกับสถานะ ช่องทาง และคำค้นได้',
+              style: TpType.body(13, p.muted)),
+          const SizedBox(height: 14),
+          TpGroup(children: [
+            row(null, 'ทุกแพคเกจ', null),
+            for (final pkg in FortunePackage.values)
+              row(
+                  pkg,
+                  pkg.label,
+                  pkg == FortunePackage.juntra
+                      ? 'บิลจากเว็บจันทรา (จันทราเก็บเงินเอง)'
+                      : null),
+          ]),
+        ]);
   }
 }

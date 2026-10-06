@@ -23,7 +23,8 @@ import '../providers/auth_controller.dart';
 enum PinScreenMode { unlock, setup, change }
 
 class PinEntryScreen extends ConsumerStatefulWidget {
-  const PinEntryScreen({super.key, required this.mode, this.onSuccess, this.canCancel = false});
+  const PinEntryScreen(
+      {super.key, required this.mode, this.onSuccess, this.canCancel = false});
 
   final PinScreenMode mode;
   final VoidCallback? onSuccess;
@@ -33,7 +34,8 @@ class PinEntryScreen extends ConsumerStatefulWidget {
   ConsumerState<PinEntryScreen> createState() => _PinEntryScreenState();
 }
 
-class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTickerProviderStateMixin {
+class _PinEntryScreenState extends ConsumerState<PinEntryScreen>
+    with SingleTickerProviderStateMixin {
   static const _pinLength = 6;
 
   /// ผิดครบ 5 → พัก 30 วิ · ครบ 10 → พัก 5 นาที · ครบ 15 → ล้าง PIN + ออกจากระบบ
@@ -52,8 +54,8 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
   bool _forgotArmed = false;
   Timer? _forgotTimer;
 
-  late final AnimationController _shake =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 420));
+  late final AnimationController _shake = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 420));
 
   @override
   void initState() {
@@ -129,15 +131,21 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
 
   String get _title => switch (widget.mode) {
         PinScreenMode.unlock => 'ไทยพร้อม แอดมิน',
-        PinScreenMode.setup => _confirming ? 'ยืนยัน PIN อีกครั้ง' : 'ตั้งรหัส PIN',
-        PinScreenMode.change =>
-          _oldVerified == null ? 'ใส่ PIN เดิม' : (_confirming ? 'ยืนยัน PIN ใหม่' : 'ตั้ง PIN ใหม่'),
+        PinScreenMode.setup =>
+          _confirming ? 'ยืนยัน PIN อีกครั้ง' : 'ตั้งรหัส PIN',
+        PinScreenMode.change => _oldVerified == null
+            ? 'ใส่ PIN เดิม'
+            : (_confirming ? 'ยืนยัน PIN ใหม่' : 'ตั้ง PIN ใหม่'),
       };
 
   String get _subtitle => switch (widget.mode) {
         PinScreenMode.unlock => 'ใส่รหัส PIN 6 หลักเพื่อเข้าใช้งาน',
-        PinScreenMode.setup => _confirming ? 'กรอกรหัสเดิมอีกครั้งให้ตรงกัน' : 'PIN 6 หลัก ใช้ทุกครั้งที่เปิดแอป',
-        PinScreenMode.change => _oldVerified == null ? 'ยืนยันตัวตนก่อนเปลี่ยนรหัส' : 'PIN 6 หลักชุดใหม่',
+        PinScreenMode.setup => _confirming
+            ? 'กรอกรหัสเดิมอีกครั้งให้ตรงกัน'
+            : 'PIN 6 หลัก ใช้ทุกครั้งที่เปิดแอป',
+        PinScreenMode.change => _oldVerified == null
+            ? 'ยืนยันตัวตนก่อนเปลี่ยนรหัส'
+            : 'PIN 6 หลักชุดใหม่',
       };
 
   void _onDigit(String d) {
@@ -180,7 +188,9 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
       }
       DateTime? until;
       if (fails % 5 == 0) {
-        until = DateTime.now().add(fails >= 10 ? const Duration(minutes: 5) : const Duration(seconds: 30));
+        until = DateTime.now().add(fails >= 10
+            ? const Duration(minutes: 5)
+            : const Duration(seconds: 30));
       }
       await SecureStorage.writePinFails(fails, lockUntil: until);
       if (until != null) _startLock(until);
@@ -207,7 +217,9 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
     }
 
     if (!_confirming) {
-      if (RegExp(r'^(\d)\1{5}$').hasMatch(pin) || pin == '123456' || pin == '654321') {
+      if (RegExp(r'^(\d)\1{5}$').hasMatch(pin) ||
+          pin == '123456' ||
+          pin == '654321') {
         await _fail('PIN นี้เดาง่ายเกินไป เลือกชุดอื่น');
         return;
       }
@@ -284,10 +296,10 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
     }
   }
 
-  IconData get _bioIcon =>
-      _bioTypes.contains(BiometricType.face) && !_bioTypes.contains(BiometricType.fingerprint)
-          ? PhosphorIconsRegular.scanSmiley
-          : PhosphorIconsRegular.fingerprint;
+  IconData get _bioIcon => _bioTypes.contains(BiometricType.face) &&
+          !_bioTypes.contains(BiometricType.fingerprint)
+      ? PhosphorIconsRegular.scanSmiley
+      : PhosphorIconsRegular.fingerprint;
 
   @override
   Widget build(BuildContext context) {
@@ -296,8 +308,10 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
     final h = size.height;
     // ภาพพื้นหลัง 2:3 แบบ cover ยึดความสูง → วงแหวนทองอยู่ที่ ~26.7% ของความสูง
     final ringY = h * 0.267;
-    final keypadKey = math.min(72.0, math.max(54.0, (h - ringY - h * 0.15 - 210 - pad.bottom) / 4.6));
-    final lockLeft = _locked ? _lockUntil!.difference(DateTime.now()).inSeconds + 1 : 0;
+    final keypadKey = math.min(
+        72.0, math.max(54.0, (h - ringY - h * 0.15 - 210 - pad.bottom) / 4.6));
+    final lockLeft =
+        _locked ? _lockUntil!.difference(DateTime.now()).inSeconds + 1 : 0;
 
     return PopScope(
       canPop: widget.canCancel,
@@ -310,7 +324,8 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
           color: const Color(0xFF05070C),
           child: Stack(children: [
             Positioned.fill(
-              child: Image.asset('assets/images/brand/login_bg.webp', fit: BoxFit.cover, alignment: Alignment.topCenter),
+              child: Image.asset('assets/images/brand/login_bg.webp',
+                  fit: BoxFit.cover, alignment: Alignment.topCenter),
             ),
             const Positioned.fill(
               child: DecoratedBox(
@@ -318,7 +333,11 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0x0005070C), Color(0x8C05070C), Color(0xB305070C)],
+                    colors: [
+                      Color(0x0005070C),
+                      Color(0x8C05070C),
+                      Color(0xB305070C)
+                    ],
                     stops: [0.42, 0.7, 1],
                   ),
                 ),
@@ -338,7 +357,8 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
               left: 0,
               right: 0,
               child: Center(
-                child: Image.asset('assets/images/brand/tp-mark.webp', width: 76, cacheWidth: 228),
+                child: Image.asset('assets/images/brand/tp-mark.webp',
+                    width: 76, cacheWidth: 228),
               ),
             ),
             Positioned(
@@ -347,14 +367,23 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
               right: 0,
               bottom: pad.bottom + 12,
               child: Column(children: [
-                TpFoilText(_title, style: TpType.title(26, Colors.white), textAlign: TextAlign.center),
+                TpFoilText(_title,
+                    style: TpType.title(26, Colors.white),
+                    textAlign: TextAlign.center),
                 const SizedBox(height: 2),
-                Text(_subtitle, style: TpType.body(13.5, const Color(0x9EFFFFFF)), textAlign: TextAlign.center),
+                Text(_subtitle,
+                    style: TpType.body(13.5, const Color(0x9EFFFFFF)),
+                    textAlign: TextAlign.center),
                 const SizedBox(height: 18),
                 AnimatedBuilder(
                   animation: _shake,
-                  builder: (_, child) =>
-                      Transform.translate(offset: Offset(math.sin(_shake.value * math.pi * 6) * 10 * (1 - _shake.value), 0), child: child),
+                  builder: (_, child) => Transform.translate(
+                      offset: Offset(
+                          math.sin(_shake.value * math.pi * 6) *
+                              10 *
+                              (1 - _shake.value),
+                          0),
+                      child: child),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(_pinLength, (i) {
@@ -366,9 +395,19 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
                         height: 13,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: filled ? const Color(0xFFF0C96A) : Colors.transparent,
-                          border: filled ? null : Border.all(color: const Color(0x59FFFFFF), width: 1.5),
-                          boxShadow: filled ? const [BoxShadow(color: Color(0xB3F0C96A), blurRadius: 12)] : null,
+                          color: filled
+                              ? const Color(0xFFF0C96A)
+                              : Colors.transparent,
+                          border: filled
+                              ? null
+                              : Border.all(
+                                  color: const Color(0x59FFFFFF), width: 1.5),
+                          boxShadow: filled
+                              ? const [
+                                  BoxShadow(
+                                      color: Color(0xB3F0C96A), blurRadius: 12)
+                                ]
+                              : null,
                         ),
                       );
                     }),
@@ -378,9 +417,12 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
                   height: 30,
                   child: Center(
                     child: Text(
-                      _locked ? 'ลองใหม่ได้ใน $lockLeft วินาที' : (_errorMsg ?? ''),
+                      _locked
+                          ? 'ลองใหม่ได้ใน $lockLeft วินาที'
+                          : (_errorMsg ?? ''),
                       textAlign: TextAlign.center,
-                      style: TpType.body(12.5, const Color(0xFFFF8A7A), w: FontWeight.w500),
+                      style: TpType.body(12.5, const Color(0xFFFF8A7A),
+                          w: FontWeight.w500),
                     ),
                   ),
                 ),
@@ -390,7 +432,9 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
                   enabled: !_busy && !_locked,
                   onDigit: _onDigit,
                   onBackspace: _onBackspace,
-                  bioIcon: widget.mode == PinScreenMode.unlock && _bioAvailable ? _bioIcon : null,
+                  bioIcon: widget.mode == PinScreenMode.unlock && _bioAvailable
+                      ? _bioIcon
+                      : null,
                   onBio: _tryBiometric,
                 ),
                 if (widget.mode == PinScreenMode.unlock) ...[
@@ -398,8 +442,14 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> with SingleTick
                   TextButton(
                     onPressed: _onForgot,
                     child: Text(
-                      _forgotArmed ? 'แตะอีกครั้งเพื่อล้าง PIN และเข้าสู่ระบบใหม่' : 'ลืม PIN?',
-                      style: TpType.body(13, _forgotArmed ? const Color(0xFFFF8A7A) : const Color(0xFFF0C96A),
+                      _forgotArmed
+                          ? 'แตะอีกครั้งเพื่อล้าง PIN และเข้าสู่ระบบใหม่'
+                          : 'ลืม PIN?',
+                      style: TpType.body(
+                          13,
+                          _forgotArmed
+                              ? const Color(0xFFFF8A7A)
+                              : const Color(0xFFF0C96A),
                           w: FontWeight.w600),
                     ),
                   ),
@@ -430,7 +480,16 @@ class _Keypad extends StatelessWidget {
   final IconData? bioIcon;
   final VoidCallback? onBio;
 
-  static const _sub = {'2': 'ABC', '3': 'DEF', '4': 'GHI', '5': 'JKL', '6': 'MNO', '7': 'PQRS', '8': 'TUV', '9': 'WXYZ'};
+  static const _sub = {
+    '2': 'ABC',
+    '3': 'DEF',
+    '4': 'GHI',
+    '5': 'JKL',
+    '6': 'MNO',
+    '7': 'PQRS',
+    '8': 'TUV',
+    '9': 'WXYZ'
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -441,7 +500,8 @@ class _Keypad extends StatelessWidget {
           size: size,
           gold: true,
           onTap: enabled ? onBio : null,
-          child: Icon(bioIcon, color: const Color(0xFFF0C96A), size: size * 0.44),
+          child:
+              Icon(bioIcon, color: const Color(0xFFF0C96A), size: size * 0.44),
         );
       }
       if (k == 'del') {
@@ -449,16 +509,21 @@ class _Keypad extends StatelessWidget {
           size: size,
           bare: true,
           onTap: enabled ? onBackspace : null,
-          child: Icon(PhosphorIconsRegular.backspace, color: const Color(0xA6FFFFFF), size: size * 0.38),
+          child: Icon(PhosphorIconsRegular.backspace,
+              color: const Color(0xA6FFFFFF), size: size * 0.38),
         );
       }
       return _RoundKey(
         size: size,
         onTap: enabled ? () => onDigit(k) : null,
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(k, style: TpType.money(size * 0.38, Colors.white, w: FontWeight.w500).copyWith(height: 1)),
+          Text(k,
+              style: TpType.money(size * 0.38, Colors.white, w: FontWeight.w500)
+                  .copyWith(height: 1)),
           if (_sub[k] != null)
-            Text(_sub[k]!, style: TpType.body(size * 0.12, const Color(0x73FFFFFF), w: FontWeight.w600, height: 1.3)),
+            Text(_sub[k]!,
+                style: TpType.body(size * 0.12, const Color(0x73FFFFFF),
+                    w: FontWeight.w600, height: 1.3)),
         ]),
       );
     }
@@ -475,7 +540,13 @@ class _Keypad extends StatelessWidget {
                 padding: EdgeInsets.only(bottom: size * 0.18),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [key(r[0]), SizedBox(width: size * 0.42), key(r[1]), SizedBox(width: size * 0.42), key(r[2])],
+                  children: [
+                    key(r[0]),
+                    SizedBox(width: size * 0.42),
+                    key(r[1]),
+                    SizedBox(width: size * 0.42),
+                    key(r[2])
+                  ],
                 ),
               ))
           .toList(),
@@ -484,7 +555,12 @@ class _Keypad extends StatelessWidget {
 }
 
 class _RoundKey extends StatelessWidget {
-  const _RoundKey({required this.size, required this.child, this.onTap, this.gold = false, this.bare = false});
+  const _RoundKey(
+      {required this.size,
+      required this.child,
+      this.onTap,
+      this.gold = false,
+      this.bare = false});
   final double size;
   final Widget child;
   final VoidCallback? onTap;
@@ -494,11 +570,15 @@ class _RoundKey extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: bare ? Colors.transparent : (gold ? const Color(0x1FF0C96A) : const Color(0x12FFFFFF)),
+      color: bare
+          ? Colors.transparent
+          : (gold ? const Color(0x1FF0C96A) : const Color(0x12FFFFFF)),
       shape: CircleBorder(
         side: bare
             ? BorderSide.none
-            : BorderSide(color: gold ? const Color(0x66F0C96A) : const Color(0x21FFFFFF)),
+            : BorderSide(
+                color:
+                    gold ? const Color(0x66F0C96A) : const Color(0x21FFFFFF)),
       ),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -522,7 +602,10 @@ class _GlassRound extends StatelessWidget {
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onTap,
-          child: SizedBox(width: 42, height: 42, child: Icon(icon, color: Colors.white, size: 20)),
+          child: SizedBox(
+              width: 42,
+              height: 42,
+              child: Icon(icon, color: Colors.white, size: 20)),
         ),
       );
 }

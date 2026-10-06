@@ -24,7 +24,8 @@ enum WorkTab {
   final String key;
   final String label;
 
-  static WorkTab parse(String? v) => WorkTab.values.firstWhere((t) => t.key == v, orElse: () => WorkTab.bills);
+  static WorkTab parse(String? v) =>
+      WorkTab.values.firstWhere((t) => t.key == v, orElse: () => WorkTab.bills);
 }
 
 /// แท็บ "งานรอทำ" — รวมทุกเรื่องที่ต้องให้แอดมินตัดสินใจ
@@ -42,14 +43,17 @@ class WorkScreen extends ConsumerStatefulWidget {
 class _WorkScreenState extends ConsumerState<WorkScreen> {
   late WorkTab _tab = WorkTab.parse(widget.initialTab);
   BillBucket _bucket = BillBucket.awaiting;
-  late String _wdStatus = widget.initialSub == 'approved' ? 'approved' : 'pending';
+  late String _wdStatus =
+      widget.initialSub == 'approved' ? 'approved' : 'pending';
   int _reload = 0;
 
   @override
   void didUpdateWidget(covariant WorkScreen old) {
     super.didUpdateWidget(old);
     // มาจากลิงก์ /work?tab=... ขณะแท็บนี้เปิดค้างอยู่
-    if ((old.initialTab != widget.initialTab || old.initialSub != widget.initialSub) && widget.initialTab != null) {
+    if ((old.initialTab != widget.initialTab ||
+            old.initialSub != widget.initialSub) &&
+        widget.initialTab != null) {
       setState(() {
         _tab = WorkTab.parse(widget.initialTab);
         if (widget.initialSub == 'approved') _wdStatus = 'approved';
@@ -62,7 +66,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
     ref.invalidate(billStatsProvider);
     try {
       ref.invalidate(opsSummaryProvider);
-        await ref.read(opsSummaryProvider.future);
+      await ref.read(opsSummaryProvider.future);
     } catch (_) {}
   }
 
@@ -77,13 +81,19 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
     final s = ref.watch(opsSummaryProvider).valueOrNull;
     final counts = {
       WorkTab.bills: s?.billsAwaiting.count,
-      WorkTab.withdrawals: s == null ? null : s.withdrawalsPending.count + s.withdrawalsApproved.count,
+      WorkTab.withdrawals: s == null
+          ? null
+          : s.withdrawalsPending.count + s.withdrawalsApproved.count,
       WorkTab.sms: s?.smsUnmatched.count,
       WorkTab.stuck: s?.stuckReadings.count,
     };
     return TpPage(
       title: 'งานรอทำ',
-      subtitle: s == null ? 'เรื่องที่รอแอดมินตัดสินใจ' : (s.workBadge == 0 ? 'ไม่มีงานค้าง' : 'ค้างอยู่ ${s.workBadge} เรื่อง'),
+      subtitle: s == null
+          ? 'เรื่องที่รอแอดมินตัดสินใจ'
+          : (s.workBadge == 0
+              ? 'ไม่มีงานค้าง'
+              : 'ค้างอยู่ ${s.workBadge} เรื่อง'),
       showMark: true,
       onRefresh: _refresh,
       headerBottom: TpChips<WorkTab>(
@@ -91,13 +101,18 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
         padding: EdgeInsets.zero,
         value: _tab,
         onChanged: (t) => setState(() => _tab = t),
-        items: [for (final t in WorkTab.values) TpChipItem(t, t.label, count: counts[t])],
+        items: [
+          for (final t in WorkTab.values)
+            TpChipItem(t, t.label, count: counts[t])
+        ],
       ),
       slivers: switch (_tab) {
         WorkTab.bills => _billSlivers(),
         WorkTab.withdrawals => _withdrawalSlivers(),
         WorkTab.sms => _smsSlivers(),
-        WorkTab.stuck => [_StuckSliver(reloadKey: _reload, onChanged: _changed)],
+        WorkTab.stuck => [
+            _StuckSliver(reloadKey: _reload, onChanged: _changed)
+          ],
         WorkTab.triage => [TriageSliver(reloadKey: _reload)],
       },
     );
@@ -116,7 +131,10 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
             onChanged: (b) => setState(() => _bucket = b),
             items: [
               for (final b in BillBucket.values)
-                TpChipItem(b, b.label, count: (b == BillBucket.awaiting || b == BillBucket.unpaid) ? stats?.count(b) : null),
+                TpChipItem(b, b.label,
+                    count: (b == BillBucket.awaiting || b == BillBucket.unpaid)
+                        ? stats?.count(b)
+                        : null),
             ],
           ),
         ),
@@ -130,11 +148,15 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
               child: Row(children: [
                 Expanded(
                     child: TpStat(
-                        label: 'รอตรวจ', value: '${stats.count(BillBucket.awaiting)} บิล', align: CrossAxisAlignment.center)),
+                        label: 'รอตรวจ',
+                        value: '${stats.count(BillBucket.awaiting)} บิล',
+                        align: CrossAxisAlignment.center)),
                 _VLine(),
                 Expanded(
                     child: TpStat(
-                        label: 'รอลูกค้าโอน', value: '${stats.count(BillBucket.unpaid)}', align: CrossAxisAlignment.center)),
+                        label: 'รอลูกค้าโอน',
+                        value: '${stats.count(BillBucket.unpaid)}',
+                        align: CrossAxisAlignment.center)),
                 _VLine(),
                 Expanded(
                     child: TpStat(
@@ -148,11 +170,18 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
         ),
       TpPagedSliver<FortuneBill>(
         reloadKey: '${_bucket.key}-$_reload',
-        fetch: (page) => ref.read(workRepositoryProvider).bills(_bucket, page: page),
+        fetch: (page) =>
+            ref.read(workRepositoryProvider).bills(_bucket, page: page),
         empty: TpEmpty(
-          art: _bucket == BillBucket.awaiting ? TpArt.emptyDone : TpArt.emptyInbox,
-          title: _bucket == BillBucket.awaiting ? 'ไม่มีบิลรอตรวจ' : 'ไม่มีบิลในกลุ่มนี้',
-          message: _bucket == BillBucket.awaiting ? 'บิลที่ SMS ตรงยอดระบบตัดให้อัตโนมัติแล้ว' : null,
+          art: _bucket == BillBucket.awaiting
+              ? TpArt.emptyDone
+              : TpArt.emptyInbox,
+          title: _bucket == BillBucket.awaiting
+              ? 'ไม่มีบิลรอตรวจ'
+              : 'ไม่มีบิลในกลุ่มนี้',
+          message: _bucket == BillBucket.awaiting
+              ? 'บิลที่ SMS ตรงยอดระบบตัดให้อัตโนมัติแล้ว'
+              : null,
           compact: true,
         ),
         itemBuilder: (context, bill, _) => BillCard(
@@ -174,41 +203,45 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
   List<Widget> _withdrawalSlivers() {
     final s = ref.watch(opsSummaryProvider).valueOrNull;
     return [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: TpChips<String>(
-              padding: EdgeInsets.zero,
-              value: _wdStatus,
-              onChanged: (v) => setState(() => _wdStatus = v),
-              items: [
-                TpChipItem('pending', 'รออนุมัติ', count: s?.withdrawalsPending.count),
-                TpChipItem('approved', 'อนุมัติแล้ว · รอโอน', count: s?.withdrawalsApproved.count),
-                const TpChipItem('completed', 'โอนแล้ว'),
-              ],
-            ),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: TpChips<String>(
+            padding: EdgeInsets.zero,
+            value: _wdStatus,
+            onChanged: (v) => setState(() => _wdStatus = v),
+            items: [
+              TpChipItem('pending', 'รออนุมัติ',
+                  count: s?.withdrawalsPending.count),
+              TpChipItem('approved', 'อนุมัติแล้ว · รอโอน',
+                  count: s?.withdrawalsApproved.count),
+              const TpChipItem('completed', 'โอนแล้ว'),
+            ],
           ),
         ),
-        TpPagedSliver<Withdrawal>(
-          reloadKey: 'wd-$_wdStatus-$_reload',
-          fetch: (page) => ref.read(workRepositoryProvider).withdrawals(status: _wdStatus, page: page),
-          empty: TpEmpty(
-            art: TpArt.emptyDone,
-            title: switch (_wdStatus) {
-              'approved' => 'ไม่มีรายการรอโอน',
-              'completed' => 'ยังไม่มีรายการที่โอนแล้ว',
-              _ => 'ไม่มีคำขอถอนเงินค้าง',
-            },
-            compact: true,
-          ),
-          itemBuilder: (context, w, _) => _WithdrawalCard(
-            w: w,
-            onTap: () async {
-              if (await _showWithdrawalSheet(context, w)) _changed();
-            },
-          ),
+      ),
+      TpPagedSliver<Withdrawal>(
+        reloadKey: 'wd-$_wdStatus-$_reload',
+        fetch: (page) => ref
+            .read(workRepositoryProvider)
+            .withdrawals(status: _wdStatus, page: page),
+        empty: TpEmpty(
+          art: TpArt.emptyDone,
+          title: switch (_wdStatus) {
+            'approved' => 'ไม่มีรายการรอโอน',
+            'completed' => 'ยังไม่มีรายการที่โอนแล้ว',
+            _ => 'ไม่มีคำขอถอนเงินค้าง',
+          },
+          compact: true,
         ),
-      ];
+        itemBuilder: (context, w, _) => _WithdrawalCard(
+          w: w,
+          onTap: () async {
+            if (await _showWithdrawalSheet(context, w)) _changed();
+          },
+        ),
+      ),
+    ];
   }
 
   // ───────────── SMS ─────────────
@@ -216,22 +249,28 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-            child: Text('SMS เงินเข้าที่ระบบยังจับคู่กับบิลไม่ได้ — ลองจับคู่ใหม่ หรือปัดตกถ้าไม่ใช่ยอดจากลูกค้า',
+            child: Text(
+                'SMS เงินเข้าที่ระบบยังจับคู่กับบิลไม่ได้ — ลองจับคู่ใหม่ หรือปัดตกถ้าไม่ใช่ยอดจากลูกค้า',
                 style: TpType.body(12.5, context.tp.muted)),
           ),
         ),
         TpPagedSliver<BankSms>(
           reloadKey: 'sms-$_reload',
           fetch: (page) => ref.read(workRepositoryProvider).sms(page: page),
-          empty: const TpEmpty(art: TpArt.emptyDone, title: 'SMS จับคู่ครบทุกรายการ', compact: true),
-          itemBuilder: (context, sms, _) => _SmsCard(sms: sms, onChanged: _changed),
+          empty: const TpEmpty(
+              art: TpArt.emptyDone,
+              title: 'SMS จับคู่ครบทุกรายการ',
+              compact: true),
+          itemBuilder: (context, sms, _) =>
+              _SmsCard(sms: sms, onChanged: _changed),
         ),
       ];
 }
 
 class _VLine extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => Container(width: 1, height: 32, color: context.tp.divider);
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 32, color: context.tp.divider);
 }
 
 // ═════════════════════ ถอนเงิน ═════════════════════
@@ -245,18 +284,25 @@ class _WithdrawalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.tp;
     return TpCard(
-      accent: w.status == 'approved' ? p.gold : (w.status == 'pending' ? p.info : p.success),
+      accent: w.status == 'approved'
+          ? p.gold
+          : (w.status == 'pending' ? p.info : p.success),
       onTap: onTap,
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
       child: Row(children: [
         TpAvatar(name: w.userName),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(w.userName ?? 'สมาชิก', style: TpType.h(14.5, p.textStrong, w: FontWeight.w600),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(w.userName ?? 'สมาชิก',
+                style: TpType.h(14.5, p.textStrong, w: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
             Text(
-              [w.bankName ?? w.method, w.accountNumber].whereType<String>().join(' · '),
+              [w.bankName ?? w.method, w.accountNumber]
+                  .whereType<String>()
+                  .join(' · '),
               style: TpType.body(12.5, p.muted),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -276,7 +322,9 @@ class _WithdrawalCard extends StatelessWidget {
 }
 
 Future<bool> _showWithdrawalSheet(BuildContext context, Withdrawal w) async {
-  final r = await tpShowSheet<bool>(context, initial: 0.82, builder: (ctx, scroll) => _WithdrawalSheet(w: w, scroll: scroll));
+  final r = await tpShowSheet<bool>(context,
+      initial: 0.82,
+      builder: (ctx, scroll) => _WithdrawalSheet(w: w, scroll: scroll));
   return r ?? false;
 }
 
@@ -302,11 +350,16 @@ class _WithdrawalSheetState extends ConsumerState<_WithdrawalSheet> {
 
   Future<void> _pickSlip(ImageSource src) async {
     try {
-      final f = await ImagePicker().pickImage(source: src, imageQuality: 82, maxWidth: 1600);
+      final f = await ImagePicker()
+          .pickImage(source: src, imageQuality: 82, maxWidth: 1600);
       if (f != null && mounted) setState(() => _slip = f);
     } catch (_) {
       if (mounted) {
-        tpToast(context, src == ImageSource.camera ? 'เปิดกล้องไม่ได้ — อนุญาตสิทธิ์กล้องหรือเลือกจากคลังภาพ' : 'เลือกรูปไม่สำเร็จ',
+        tpToast(
+            context,
+            src == ImageSource.camera
+                ? 'เปิดกล้องไม่ได้ — อนุญาตสิทธิ์กล้องหรือเลือกจากคลังภาพ'
+                : 'เลือกรูปไม่สำเร็จ',
             kind: TpToastKind.error);
       }
     }
@@ -315,11 +368,13 @@ class _WithdrawalSheetState extends ConsumerState<_WithdrawalSheet> {
   /// ปิดงาน: บันทึกว่าโอนให้สมาชิกแล้ว (แนบสลิป) — คืน false ให้ปุ่มเลื่อนเด้งกลับถ้าล้ม
   Future<bool> _complete() async {
     try {
-      final msg = await ref
-          .read(workRepositoryProvider)
-          .completeWithdrawal(widget.w.id, slipPath: _slip?.path, note: _note.text.trim());
+      final msg = await ref.read(workRepositoryProvider).completeWithdrawal(
+          widget.w.id,
+          slipPath: _slip?.path,
+          note: _note.text.trim());
       if (!mounted) return true;
-      tpToast(context, msg ?? 'บันทึกการโอนเงินแล้ว', kind: TpToastKind.success);
+      tpToast(context, msg ?? 'บันทึกการโอนเงินแล้ว',
+          kind: TpToastKind.success);
       Navigator.pop(context, true);
       return true;
     } catch (e) {
@@ -330,9 +385,11 @@ class _WithdrawalSheetState extends ConsumerState<_WithdrawalSheet> {
 
   Future<bool> _approve() async {
     try {
-      final msg = await ref.read(workRepositoryProvider).approveWithdrawal(widget.w.id);
+      final msg =
+          await ref.read(workRepositoryProvider).approveWithdrawal(widget.w.id);
       if (!mounted) return true;
-      tpToast(context, msg ?? 'อนุมัติแล้ว — โอนเงินให้สมาชิกตามบัญชีด้านบน', kind: TpToastKind.success);
+      tpToast(context, msg ?? 'อนุมัติแล้ว — โอนเงินให้สมาชิกตามบัญชีด้านบน',
+          kind: TpToastKind.success);
       Navigator.pop(context, true);
       return true;
     } catch (e) {
@@ -353,7 +410,9 @@ class _WithdrawalSheetState extends ConsumerState<_WithdrawalSheet> {
     if (reason == null || !mounted) return;
     setState(() => _busy = true);
     try {
-      final msg = await ref.read(workRepositoryProvider).rejectWithdrawal(widget.w.id, reason);
+      final msg = await ref
+          .read(workRepositoryProvider)
+          .rejectWithdrawal(widget.w.id, reason);
       if (!mounted) return;
       tpToast(context, msg ?? 'ปฏิเสธแล้ว', kind: TpToastKind.success);
       Navigator.pop(context, true);
@@ -378,116 +437,172 @@ class _WithdrawalSheetState extends ConsumerState<_WithdrawalSheet> {
     final pending = w.status == 'pending';
     return Column(children: [
       Expanded(
-        child: ListView(controller: widget.scroll, padding: const EdgeInsets.fromLTRB(18, 6, 18, 18), children: [
-          Row(children: [
-            TpAvatar(name: w.userName, size: 48),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(w.userName ?? 'สมาชิก', style: TpType.h(16, p.textStrong)),
-                Text([w.userPhone, w.userEmail].whereType<String>().join(' · '), style: TpType.body(12.5, p.muted)),
-              ]),
-            ),
-            TpPill(
-              switch (w.status) {
-                'pending' => 'รออนุมัติ',
-                'approved' => 'อนุมัติแล้ว · รอโอน',
-                'completed' => 'โอนแล้ว',
-                'rejected' => 'ปฏิเสธแล้ว',
-                _ => w.status,
-              },
-              tone: switch (w.status) {
-                'pending' => TpTone.info,
-                'approved' => TpTone.gold,
-                'completed' => TpTone.success,
-                _ => TpTone.neutral,
-              },
-            ),
-          ]),
-          const SizedBox(height: 18),
-          Center(child: Text('ยอดที่ต้องโอน', style: TpType.body(12.5, p.muted))),
-          Center(child: Text(TpFmt.baht(w.net, decimals: true), style: TpType.money(40, p.goldText))),
-          Center(
-            child: Text('ขอถอน ${TpFmt.baht(w.amount)} · หักค่าธรรมเนียม/ภาษี ${TpFmt.baht(w.fee)}',
-                style: TpType.body(12.5, p.faint)),
-          ),
-          const SizedBox(height: 16),
-          TpCard(
-            goldBorder: true,
-            child: Column(children: [
+        child: ListView(
+            controller: widget.scroll,
+            padding: const EdgeInsets.fromLTRB(18, 6, 18, 18),
+            children: [
               Row(children: [
-                const Tp3D(TpArt.wallet, size: 40),
+                TpAvatar(name: w.userName, size: 48),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text('บัญชีรับเงิน', style: TpType.h(14.5, p.textStrong)),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(w.userName ?? 'สมาชิก',
+                            style: TpType.h(16, p.textStrong)),
+                        Text(
+                            [w.userPhone, w.userEmail]
+                                .whereType<String>()
+                                .join(' · '),
+                            style: TpType.body(12.5, p.muted)),
+                      ]),
                 ),
-                if (w.method != null) TpPill(w.method!, tone: TpTone.navy, dense: true),
+                TpPill(
+                  switch (w.status) {
+                    'pending' => 'รออนุมัติ',
+                    'approved' => 'อนุมัติแล้ว · รอโอน',
+                    'completed' => 'โอนแล้ว',
+                    'rejected' => 'ปฏิเสธแล้ว',
+                    _ => w.status,
+                  },
+                  tone: switch (w.status) {
+                    'pending' => TpTone.info,
+                    'approved' => TpTone.gold,
+                    'completed' => TpTone.success,
+                    _ => TpTone.neutral,
+                  },
+                ),
               ]),
-              const SizedBox(height: 8),
-              _CopyRow(label: 'ธนาคาร', value: w.bankName, onCopy: null),
-              _CopyRow(label: 'ชื่อบัญชี', value: w.accountName, onCopy: () => _copy('ชื่อบัญชี', w.accountName)),
-              _CopyRow(label: 'เลขบัญชี', value: w.accountNumber, mono: true, onCopy: () => _copy('เลขบัญชี', w.accountNumber)),
-              _CopyRow(label: 'ยอดโอน', value: TpFmt.baht(w.net, decimals: true), mono: true, onCopy: () => _copy('ยอดโอน', w.net.toStringAsFixed(2))),
-            ]),
-          ),
-          if ((w.userNote ?? '').isNotEmpty) ...[
-            const SizedBox(height: 12),
-            TpCard(child: TpKv('หมายเหตุสมาชิก', w.userNote!)),
-          ],
-          const SizedBox(height: 12),
-          TpKv('เลขที่คำขอ', w.requestId, mono: true),
-          TpKv('ส่งคำขอเมื่อ', w.createdAt == null ? '-' : TpFmt.dateTime(w.createdAt!)),
-          if (w.status == 'approved') ...[
-            const SizedBox(height: 14),
-            Text('หลังโอนเงินแล้ว แนบสลิปเพื่อปิดงาน', style: TpType.h(14.5, p.textStrong)),
-            const SizedBox(height: 8),
-            if (_slip != null)
+              const SizedBox(height: 18),
+              Center(
+                  child:
+                      Text('ยอดที่ต้องโอน', style: TpType.body(12.5, p.muted))),
+              Center(
+                  child: Text(TpFmt.baht(w.net, decimals: true),
+                      style: TpType.money(40, p.goldText))),
+              Center(
+                child: Text(
+                    'ขอถอน ${TpFmt.baht(w.amount)} · หักค่าธรรมเนียม/ภาษี ${TpFmt.baht(w.fee)}',
+                    style: TpType.body(12.5, p.faint)),
+              ),
+              const SizedBox(height: 16),
               TpCard(
-                padding: const EdgeInsets.all(10),
-                child: Row(children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.file(File(_slip!.path), width: 56, height: 74, fit: BoxFit.cover, cacheWidth: 168),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text('แนบสลิปแล้ว', style: TpType.h(14, p.textStrong, w: FontWeight.w600))),
-                  TpButton.ghost('เปลี่ยน', onPressed: () => _pickSlip(ImageSource.gallery)),
+                goldBorder: true,
+                child: Column(children: [
+                  Row(children: [
+                    const Tp3D(TpArt.wallet, size: 40),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text('บัญชีรับเงิน',
+                          style: TpType.h(14.5, p.textStrong)),
+                    ),
+                    if (w.method != null)
+                      TpPill(w.method!, tone: TpTone.navy, dense: true),
+                  ]),
+                  const SizedBox(height: 8),
+                  _CopyRow(label: 'ธนาคาร', value: w.bankName, onCopy: null),
+                  _CopyRow(
+                      label: 'ชื่อบัญชี',
+                      value: w.accountName,
+                      onCopy: () => _copy('ชื่อบัญชี', w.accountName)),
+                  _CopyRow(
+                      label: 'เลขบัญชี',
+                      value: w.accountNumber,
+                      mono: true,
+                      onCopy: () => _copy('เลขบัญชี', w.accountNumber)),
+                  _CopyRow(
+                      label: 'ยอดโอน',
+                      value: TpFmt.baht(w.net, decimals: true),
+                      mono: true,
+                      onCopy: () => _copy('ยอดโอน', w.net.toStringAsFixed(2))),
                 ]),
-              )
-            else
-              Row(children: [
-                Expanded(
-                  child: TpButton.outline('ถ่ายรูปสลิป',
-                      icon: PhosphorIconsRegular.camera, height: 44, fontSize: 14, onPressed: () => _pickSlip(ImageSource.camera)),
+              ),
+              if ((w.userNote ?? '').isNotEmpty) ...[
+                const SizedBox(height: 12),
+                TpCard(child: TpKv('หมายเหตุสมาชิก', w.userNote!)),
+              ],
+              const SizedBox(height: 12),
+              TpKv('เลขที่คำขอ', w.requestId, mono: true),
+              TpKv('ส่งคำขอเมื่อ',
+                  w.createdAt == null ? '-' : TpFmt.dateTime(w.createdAt!)),
+              if (w.status == 'approved') ...[
+                const SizedBox(height: 14),
+                Text('หลังโอนเงินแล้ว แนบสลิปเพื่อปิดงาน',
+                    style: TpType.h(14.5, p.textStrong)),
+                const SizedBox(height: 8),
+                if (_slip != null)
+                  TpCard(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.file(File(_slip!.path),
+                            width: 56,
+                            height: 74,
+                            fit: BoxFit.cover,
+                            cacheWidth: 168),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: Text('แนบสลิปแล้ว',
+                              style: TpType.h(14, p.textStrong,
+                                  w: FontWeight.w600))),
+                      TpButton.ghost('เปลี่ยน',
+                          onPressed: () => _pickSlip(ImageSource.gallery)),
+                    ]),
+                  )
+                else
+                  Row(children: [
+                    Expanded(
+                      child: TpButton.outline('ถ่ายรูปสลิป',
+                          icon: PhosphorIconsRegular.camera,
+                          height: 44,
+                          fontSize: 14,
+                          onPressed: () => _pickSlip(ImageSource.camera)),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TpButton.outline('เลือกจากคลังภาพ',
+                          icon: PhosphorIconsRegular.image,
+                          height: 44,
+                          fontSize: 14,
+                          onPressed: () => _pickSlip(ImageSource.gallery)),
+                    ),
+                  ]),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _note,
+                  maxLength: 500,
+                  decoration: const InputDecoration(
+                      hintText: 'หมายเหตุ (ไม่บังคับ) เช่น เลขอ้างอิงการโอน',
+                      counterText: ''),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TpButton.outline('เลือกจากคลังภาพ',
-                      icon: PhosphorIconsRegular.image, height: 44, fontSize: 14, onPressed: () => _pickSlip(ImageSource.gallery)),
-                ),
-              ]),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _note,
-              maxLength: 500,
-              decoration: const InputDecoration(hintText: 'หมายเหตุ (ไม่บังคับ) เช่น เลขอ้างอิงการโอน', counterText: ''),
-            ),
-          ],
-        ]),
+              ],
+            ]),
       ),
       if (w.status == 'approved')
         TpBottomBar(
           child: TpSlideToConfirm(
-            label: _slip == null ? 'เลื่อนเพื่อยืนยันว่าโอนแล้ว (ไม่มีสลิป)' : 'เลื่อนเพื่อยืนยันว่าโอนแล้ว',
+            label: _slip == null
+                ? 'เลื่อนเพื่อยืนยันว่าโอนแล้ว (ไม่มีสลิป)'
+                : 'เลื่อนเพื่อยืนยันว่าโอนแล้ว',
             onConfirmed: _complete,
           ),
         ),
       if (pending)
         TpBottomBar(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TpSlideToConfirm(label: 'เลื่อนเพื่ออนุมัติการถอนเงิน', enabled: !_busy, onConfirmed: _approve),
+            TpSlideToConfirm(
+                label: 'เลื่อนเพื่ออนุมัติการถอนเงิน',
+                enabled: !_busy,
+                onConfirmed: _approve),
             const SizedBox(height: 10),
-            TpButton.danger('ปฏิเสธคำขอ', icon: PhosphorIconsRegular.xCircle, height: 44, fontSize: 14, loading: _busy, onPressed: _reject),
+            TpButton.danger('ปฏิเสธคำขอ',
+                icon: PhosphorIconsRegular.xCircle,
+                height: 44,
+                fontSize: 14,
+                loading: _busy,
+                onPressed: _reject),
           ]),
         ),
     ]);
@@ -495,7 +610,11 @@ class _WithdrawalSheetState extends ConsumerState<_WithdrawalSheet> {
 }
 
 class _CopyRow extends StatelessWidget {
-  const _CopyRow({required this.label, required this.value, this.onCopy, this.mono = false});
+  const _CopyRow(
+      {required this.label,
+      required this.value,
+      this.onCopy,
+      this.mono = false});
   final String label;
   final String? value;
   final VoidCallback? onCopy;
@@ -510,13 +629,19 @@ class _CopyRow extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 7),
         child: Row(children: [
-          SizedBox(width: 82, child: Text(label, style: TpType.body(13, p.muted))),
+          SizedBox(
+              width: 82, child: Text(label, style: TpType.body(13, p.muted))),
           Expanded(
             child: Text(value ?? '-',
                 textAlign: TextAlign.right,
-                style: mono ? TpType.money(14.5, p.textStrong) : TpType.body(14, p.textStrong, w: FontWeight.w600)),
+                style: mono
+                    ? TpType.money(14.5, p.textStrong)
+                    : TpType.body(14, p.textStrong, w: FontWeight.w600)),
           ),
-          if (onCopy != null) ...[const SizedBox(width: 8), Icon(PhosphorIconsRegular.copy, size: 16, color: p.goldText)],
+          if (onCopy != null) ...[
+            const SizedBox(width: 8),
+            Icon(PhosphorIconsRegular.copy, size: 16, color: p.goldText)
+          ],
         ]),
       ),
     );
@@ -540,7 +665,8 @@ class _SmsCardState extends ConsumerState<_SmsCard> {
   Future<void> _rematch() async {
     setState(() => _busy = true);
     try {
-      final (ok, msg) = await ref.read(workRepositoryProvider).rematchSms(widget.sms.id);
+      final (ok, msg) =
+          await ref.read(workRepositoryProvider).rematchSms(widget.sms.id);
       if (!mounted) return;
       tpToast(context, msg, kind: ok ? TpToastKind.success : TpToastKind.info);
       if (ok) widget.onChanged();
@@ -555,7 +681,8 @@ class _SmsCardState extends ConsumerState<_SmsCard> {
     final reason = await tpPrompt(
       context,
       title: 'ปัดตก SMS นี้?',
-      message: 'ใช้เมื่อเป็นเงินเข้าที่ไม่ใช่ยอดจากลูกค้า (เช่น โอนระหว่างบัญชี) — ปัดตกแล้วจับคู่ใหม่ไม่ได้',
+      message:
+          'ใช้เมื่อเป็นเงินเข้าที่ไม่ใช่ยอดจากลูกค้า (เช่น โอนระหว่างบัญชี) — ปัดตกแล้วจับคู่ใหม่ไม่ได้',
       hint: 'เหตุผล',
       confirmLabel: 'ปัดตก',
       danger: true,
@@ -586,28 +713,46 @@ class _SmsCardState extends ConsumerState<_SmsCard> {
           const Tp3D(TpArt.sms, size: 40),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${s.bank.toUpperCase()} · ${s.type == 'expense' ? 'เงินออก' : 'เงินเข้า'}',
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                  '${s.bank.toUpperCase()} · ${s.type == 'expense' ? 'เงินออก' : 'เงินเข้า'}',
                   style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
-              Text([s.from, s.account].whereType<String>().where((e) => e.isNotEmpty).join(' · ').ifEmpty('ไม่ระบุผู้โอน'),
-                  style: TpType.body(12.5, p.muted), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(
+                  [s.from, s.account]
+                      .whereType<String>()
+                      .where((e) => e.isNotEmpty)
+                      .join(' · ')
+                      .ifEmpty('ไม่ระบุผู้โอน'),
+                  style: TpType.body(12.5, p.muted),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
             ]),
           ),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text(TpFmt.baht(s.amount, decimals: true), style: TpType.money(17, p.goldText)),
-            Text(s.at == null ? '' : TpFmt.dateTime(s.at!), style: TpType.body(11.5, p.faint)),
+            Text(TpFmt.baht(s.amount, decimals: true),
+                style: TpType.money(17, p.goldText)),
+            Text(s.at == null ? '' : TpFmt.dateTime(s.at!),
+                style: TpType.body(11.5, p.faint)),
           ]),
         ]),
         const SizedBox(height: 12),
         Row(children: [
           Expanded(
             child: TpButton.outline('ลองจับคู่อีกครั้ง',
-                icon: PhosphorIconsRegular.arrowsClockwise, height: 40, fontSize: 13.5, loading: _busy, onPressed: _rematch),
+                icon: PhosphorIconsRegular.arrowsClockwise,
+                height: 40,
+                fontSize: 13.5,
+                loading: _busy,
+                onPressed: _rematch),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: TpButton.danger('ไม่ใช่ยอดลูกค้า',
-                icon: PhosphorIconsRegular.prohibit, height: 40, fontSize: 13.5, onPressed: _busy ? null : _reject),
+                icon: PhosphorIconsRegular.prohibit,
+                height: 40,
+                fontSize: 13.5,
+                onPressed: _busy ? null : _reject),
           ),
         ]),
       ]),
@@ -634,7 +779,9 @@ class _StuckSliverState extends ConsumerState<_StuckSliver> {
   @override
   void didUpdateWidget(covariant _StuckSliver old) {
     super.didUpdateWidget(old);
-    if (old.reloadKey != widget.reloadKey) ref.invalidate(activeReadingsProvider);
+    if (old.reloadKey != widget.reloadKey) {
+      ref.invalidate(activeReadingsProvider);
+    }
   }
 
   @override
@@ -647,17 +794,21 @@ class _StuckSliverState extends ConsumerState<_StuckSliver> {
         compactError: true,
         data: (items) {
           if (items.isEmpty) {
-            return const TpEmpty(art: TpArt.emptyDone, title: 'ไม่มีคำทำนายที่กำลังทำ', compact: true);
+            return const TpEmpty(
+                art: TpArt.emptyDone,
+                title: 'ไม่มีคำทำนายที่กำลังทำ',
+                compact: true);
           }
           // ค้างขึ้นก่อน แล้วเรียงตามเวลาที่เงียบนานสุด
-          final sorted = [...items]
-            ..sort((a, b) {
+          final sorted = [...items]..sort((a, b) {
               final s = (b.stuck ? 1 : 0).compareTo(a.stuck ? 1 : 0);
               return s != 0 ? s : b.idleMinutes.compareTo(a.idleMinutes);
             });
           return Column(children: [
             for (final r in sorted)
-              Padding(padding: const EdgeInsets.only(bottom: 10), child: _ActiveCard(r: r)),
+              Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _ActiveCard(r: r)),
           ]);
         },
       ),
@@ -680,14 +831,23 @@ class _ActiveCard extends StatelessWidget {
         TpAvatar(name: r.customerName, platform: r.platform),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(r.customerName ?? 'ลูกค้า', style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
-            Text('${r.billNumber} · ${r.stage ?? r.packageLabel}', style: TpType.body(12.5, p.muted), maxLines: 1, overflow: TextOverflow.ellipsis),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(r.customerName ?? 'ลูกค้า',
+                style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
+            Text('${r.billNumber} · ${r.stage ?? r.packageLabel}',
+                style: TpType.body(12.5, p.muted),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
           ]),
         ),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          TpPill(r.stuck ? 'ค้าง ${TpFmt.duration(r.idleMinutes)}' : 'กำลังทำ', tone: r.stuck ? TpTone.danger : TpTone.success, dense: true),
-          if (r.takenOver) ...[const SizedBox(height: 4), const TpPill('แอดมินคุยอยู่', tone: TpTone.gold, dense: true)],
+          TpPill(r.stuck ? 'ค้าง ${TpFmt.duration(r.idleMinutes)}' : 'กำลังทำ',
+              tone: r.stuck ? TpTone.danger : TpTone.success, dense: true),
+          if (r.takenOver) ...[
+            const SizedBox(height: 4),
+            const TpPill('แอดมินคุยอยู่', tone: TpTone.gold, dense: true)
+          ],
         ]),
       ]),
     );

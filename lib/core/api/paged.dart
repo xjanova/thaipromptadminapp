@@ -3,7 +3,12 @@
 /// 2) `{data:[...], meta:{current_page, last_page, total}}` (Laravel Resource collection)
 /// 3) `[...]` (ไม่แบ่งหน้า)
 class Paged<T> {
-  Paged({required this.items, this.page = 1, this.lastPage = 1, this.total = 0, this.perPage = 0});
+  Paged(
+      {required this.items,
+      this.page = 1,
+      this.lastPage = 1,
+      this.total = 0,
+      this.perPage = 0});
 
   final List<T> items;
   final int page;
@@ -27,10 +32,14 @@ class Paged<T> {
         // ซ้อนสองชั้น {data:{data:[...], ...}}
         return parse<T>(inner, item);
       }
-      meta = (m['meta'] is Map) ? (m['meta'] as Map).cast<String, dynamic>() : m;
+      meta =
+          (m['meta'] is Map) ? (m['meta'] as Map).cast<String, dynamic>() : m;
     }
     int n(dynamic v, int d) => v is num ? v.toInt() : int.tryParse('$v') ?? d;
-    final items = list.whereType<Map>().map((e) => item(e.cast<String, dynamic>())).toList();
+    final items = list
+        .whereType<Map>()
+        .map((e) => item(e.cast<String, dynamic>()))
+        .toList();
     return Paged<T>(
       items: items,
       page: n(meta['current_page'], 1),

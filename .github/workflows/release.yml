@@ -113,6 +113,20 @@ jobs:
             echo "::warning::No keystore secrets set — building with debug signing"
           fi
 
+      # ── แจ้งเตือนเข้ามือถือ (FCM โปรเจกต์ plptdb) ──
+      # google-services.json ไม่อยู่ใน git เพราะรีโปนี้ public — เขียนจาก secret ตอน build
+      - name: Write google-services.json (push notifications)
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        shell: bash
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > android/app/google-services.json
+            echo "🔔 google-services.json configured"
+          else
+            echo "::warning::No GOOGLE_SERVICES_JSON_BASE64 secret — building without push notifications"
+          fi
+
       - name: Build APK (split per ABI)
         run: flutter build apk --release --split-per-abi
 

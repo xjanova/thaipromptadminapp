@@ -4,6 +4,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/push/push_service.dart';
 import '../../../core/security/app_lock_controller.dart';
 import '../../../core/security/biometric_service.dart';
 import '../../../core/security/pin_manager.dart';
@@ -28,6 +29,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   bool _checkingUpdate = false;
   bool _loggingOut = false;
   String _version = '';
+  PushStatus? _push;
 
   @override
   void initState() {
@@ -40,22 +42,31 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final supported = await bio.isSupported();
     final enabled = await bio.isEnabled();
     final pkg = await PackageInfo.fromPlatform();
+    final push = await ref.read(pushServiceProvider).status();
     if (!mounted) return;
     setState(() {
       _bioSupported = supported;
       _bioEnabled = enabled;
       _version = 'v${pkg.version} (${pkg.buildNumber})';
+      _push = push;
     });
   }
 
   Future<void> _setupOrChangePin(bool hasPin) async {
-    final ok = await Navigator.of(context, rootNavigator: true).push<bool>(MaterialPageRoute(
+    final ok = await Navigator.of(context, rootNavigator: true)
+        .push<bool>(MaterialPageRoute(
       fullscreenDialog: true,
-      builder: (_) => PinEntryScreen(mode: hasPin ? PinScreenMode.change : PinScreenMode.setup, canCancel: true),
+      builder: (_) => PinEntryScreen(
+          mode: hasPin ? PinScreenMode.change : PinScreenMode.setup,
+          canCancel: true),
     ));
     if (ok == true && mounted) {
       ref.read(appLockControllerProvider.notifier).onPinSet();
-      tpToast(context, hasPin ? 'เปลี่ยน PIN แล้ว' : 'ตั้ง PIN แล้ว · แอปจะล็อกเมื่อไม่ได้ใช้เกิน 5 นาที',
+      tpToast(
+          context,
+          hasPin
+              ? 'เปลี่ยน PIN แล้ว'
+              : 'ตั้ง PIN แล้ว · แอปจะล็อกเมื่อไม่ได้ใช้เกิน 5 นาที',
           kind: TpToastKind.success);
     }
   }
@@ -64,15 +75,18 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final yes = await tpConfirm(
       context,
       title: 'ปิดการล็อกด้วย PIN?',
-      message: 'ใครก็ตามที่ถือเครื่องนี้จะเปิดแอปแอดมินได้ทันที (ลายนิ้วมือจะถูกปิดด้วย)',
+      message:
+          'ใครก็ตามที่ถือเครื่องนี้จะเปิดแอปแอดมินได้ทันที (ลายนิ้วมือจะถูกปิดด้วย)',
       confirmLabel: 'ปิด PIN',
       danger: true,
     );
     if (!yes || !mounted) return;
     // ยืนยันตัวตนด้วย PIN เดิมก่อนปิด
-    final ok = await Navigator.of(context, rootNavigator: true).push<bool>(MaterialPageRoute(
+    final ok = await Navigator.of(context, rootNavigator: true)
+        .push<bool>(MaterialPageRoute(
       fullscreenDialog: true,
-      builder: (_) => const PinEntryScreen(mode: PinScreenMode.unlock, canCancel: true),
+      builder: (_) =>
+          const PinEntryScreen(mode: PinScreenMode.unlock, canCancel: true),
     ));
     if (ok != true || !mounted) return;
     await ref.read(pinManagerProvider).clearPin();
@@ -87,11 +101,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     setState(() => _bioBusy = true);
     final bio = ref.read(biometricServiceProvider);
     if (on) {
-      final ok = await bio.authenticate(reason: 'ยืนยันเพื่อเปิดปลดล็อกด้วยลายนิ้วมือ', biometricOnly: true);
+      final ok = await bio.authenticate(
+          reason: 'ยืนยันเพื่อเปิดปลดล็อกด้วยลายนิ้วมือ', biometricOnly: true);
       if (!ok) {
         if (mounted) {
           setState(() => _bioBusy = false);
-          tpToast(context, 'ยืนยันลายนิ้วมือไม่สำเร็จ', kind: TpToastKind.error);
+          tpToast(context, 'ยืนยันลายนิ้วมือไม่สำเร็จ',
+              kind: TpToastKind.error);
         }
         return;
       }
@@ -104,6 +120,23 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     });
   }
 
+  Future<void> _enablePush() async {
+    final st = await ref.read(pushServiceProvider).start();
+    if (!mounted) return;
+    setState(() => _push = st);
+    tpToast(
+      context,
+      switch (st) {
+        PushStatus.enabled => 'เปิดแจ้งเตือนแล้ว — งานด่วนจะเด้งแม้ปิดแอป',
+        PushStatus.denied =>
+          'เครื่องปิดการแจ้งเตือนของแอปนี้ไว้ — เปิดได้ที่ตั้งค่าเครื่อง › แอป › ไทยพร้อม แอดมิน',
+        PushStatus.unavailable =>
+          'เวอร์ชันนี้ยังไม่รองรับแจ้งเตือน — อัปเดตแอปเป็นเวอร์ชันล่าสุด',
+      },
+      kind: st == PushStatus.enabled ? TpToastKind.success : TpToastKind.info,
+    );
+  }
+
   Future<void> _checkUpdate() async {
     setState(() => _checkingUpdate = true);
     final result = await ref.read(updateCheckerProvider).check();
@@ -112,7 +145,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     if (result.hasUpdate) {
       await showUpdateAvailableDialog(context, result);
     } else {
-      tpToast(context, 'ใช้เวอร์ชันล่าสุดอยู่แล้ว (${result.current.label})', kind: TpToastKind.success);
+      tpToast(context, 'ใช้เวอร์ชันล่าสุดอยู่แล้ว (${result.current.label})',
+          kind: TpToastKind.success);
     }
   }
 
@@ -159,18 +193,34 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               TpAvatar(name: admin?.name, size: 58, gold: true),
               const SizedBox(width: 14),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(admin?.name ?? '-', style: TpType.h(17, p.textStrong), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  Text(admin?.email ?? '', style: TpType.body(13, p.muted), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 6),
-                  Wrap(spacing: 6, runSpacing: 4, children: [
-                    TpPill(admin?.roleLabel ?? 'ผู้ดูแล', tone: TpTone.gold, icon: PhosphorIconsFill.crown, dense: true),
-                    TpPill(admin?.twoFactorEnabled == true ? '2FA เปิดอยู่' : '2FA ปิดอยู่',
-                        tone: admin?.twoFactorEnabled == true ? TpTone.success : TpTone.warning,
-                        icon: PhosphorIconsBold.shieldCheck,
-                        dense: true),
-                  ]),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(admin?.name ?? '-',
+                          style: TpType.h(17, p.textStrong),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                      Text(admin?.email ?? '',
+                          style: TpType.body(13, p.muted),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 6),
+                      Wrap(spacing: 6, runSpacing: 4, children: [
+                        TpPill(admin?.roleLabel ?? 'ผู้ดูแล',
+                            tone: TpTone.gold,
+                            icon: PhosphorIconsFill.crown,
+                            dense: true),
+                        TpPill(
+                            admin?.twoFactorEnabled == true
+                                ? '2FA เปิดอยู่'
+                                : '2FA ปิดอยู่',
+                            tone: admin?.twoFactorEnabled == true
+                                ? TpTone.success
+                                : TpTone.warning,
+                            icon: PhosphorIconsBold.shieldCheck,
+                            dense: true),
+                      ]),
+                    ]),
               ),
             ]),
           ),
@@ -184,7 +234,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 selected: look == TpLook.midnight,
                 title: 'มิดไนท์โกลด์',
                 subtitle: 'มืด ทองเรือง',
-                onTap: () => ref.read(tpLookProvider.notifier).set(TpLook.midnight),
+                onTap: () =>
+                    ref.read(tpLookProvider.notifier).set(TpLook.midnight),
               ),
             ),
             const SizedBox(width: 10),
@@ -194,7 +245,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 selected: look == TpLook.royal,
                 title: 'รอยัลงาช้าง',
                 subtitle: 'กรมท่า พื้นงาช้าง',
-                onTap: () => ref.read(tpLookProvider.notifier).set(TpLook.royal),
+                onTap: () =>
+                    ref.read(tpLookProvider.notifier).set(TpLook.royal),
               ),
             ),
           ]),
@@ -206,8 +258,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               icon: PhosphorIconsRegular.password,
               iconTone: TpTone.gold,
               title: hasPin ? 'เปลี่ยนรหัส PIN' : 'ตั้งรหัส PIN',
-              subtitle: hasPin ? 'ล็อกอัตโนมัติเมื่อไม่ได้ใช้เกิน 5 นาที' : 'แนะนำ — กันคนอื่นเปิดแอปแอดมินจากเครื่องนี้',
-              trailing: hasPin ? null : const TpPill('ยังไม่ตั้ง', tone: TpTone.warning, dense: true),
+              subtitle: hasPin
+                  ? 'ล็อกอัตโนมัติเมื่อไม่ได้ใช้เกิน 5 นาที'
+                  : 'แนะนำ — กันคนอื่นเปิดแอปแอดมินจากเครื่องนี้',
+              trailing: hasPin
+                  ? null
+                  : const TpPill('ยังไม่ตั้ง',
+                      tone: TpTone.warning, dense: true),
               onTap: () => _setupOrChangePin(hasPin),
             ),
             if (hasPin && _bioSupported)
@@ -233,12 +290,34 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           const TpSection('แอป'),
           TpGroup(children: [
             TpRow(
+              icon: PhosphorIconsRegular.bellRinging,
+              iconTone: TpTone.gold,
+              title: 'แจ้งเตือนเข้ามือถือ',
+              subtitle: switch (_push) {
+                PushStatus.enabled =>
+                  'เปิดอยู่ · ลูกค้าขอคุย บิลรอตรวจ ถอนเงิน เด้งแม้ปิดแอป',
+                PushStatus.denied => 'ถูกปิดอยู่ — แตะเพื่อขอสิทธิ์อีกครั้ง',
+                PushStatus.unavailable => 'เวอร์ชันนี้ยังไม่รองรับ',
+                null => 'กำลังตรวจสอบ…',
+              },
+              trailing: _push == PushStatus.enabled
+                  ? const TpPill('เปิดอยู่', tone: TpTone.success, dense: true)
+                  : (_push == PushStatus.denied
+                      ? const TpPill('ปิดอยู่',
+                          tone: TpTone.warning, dense: true)
+                      : null),
+              onTap: _push == PushStatus.enabled ? null : _enablePush,
+            ),
+            TpRow(
               icon: PhosphorIconsRegular.arrowsClockwise,
               iconTone: TpTone.info,
               title: 'ตรวจหาอัปเดต',
               subtitle: 'ดาวน์โหลดจาก GitHub Releases · เวอร์ชันนี้ $_version',
               trailing: _checkingUpdate
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : null,
               onTap: _checkingUpdate ? null : _checkUpdate,
             ),
@@ -251,9 +330,14 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             ),
           ]),
           const SizedBox(height: 18),
-          TpButton.danger('ออกจากระบบ', icon: PhosphorIconsBold.signOut, loading: _loggingOut, onPressed: () => _logout()),
+          TpButton.danger('ออกจากระบบ',
+              icon: PhosphorIconsBold.signOut,
+              loading: _loggingOut,
+              onPressed: () => _logout()),
           const SizedBox(height: 14),
-          Center(child: Text('ไทยพร้อม แอดมิน $_version', style: TpType.body(12, p.faint))),
+          Center(
+              child: Text('ไทยพร้อม แอดมิน $_version',
+                  style: TpType.body(12, p.faint))),
         ]),
       ],
     );
@@ -288,40 +372,59 @@ class _LookCard extends StatelessWidget {
         Container(
           height: 92,
           clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(color: preview.bg, borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(
+              color: preview.bg, borderRadius: BorderRadius.circular(14)),
           child: Column(children: [
             Container(
               height: 30,
               decoration: BoxDecoration(
-                gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: preview.header),
+                gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: preview.header),
               ),
               alignment: Alignment.centerLeft,
               padding: const EdgeInsets.only(left: 8),
-              child: Image.asset('assets/images/brand/tp-mark.webp', width: 14, cacheWidth: 42),
+              child: Image.asset('assets/images/brand/tp-mark.webp',
+                  width: 14, cacheWidth: 42),
             ),
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
                   color: preview.bg,
-                  borderRadius: preview.bodyOverlap > 0 ? const BorderRadius.vertical(top: Radius.circular(10)) : null,
+                  borderRadius: preview.bodyOverlap > 0
+                      ? const BorderRadius.vertical(top: Radius.circular(10))
+                      : null,
                 ),
                 padding: const EdgeInsets.all(6),
                 child: Column(children: [
                   Container(
                     height: 22,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: TpPalette.heroCard),
+                      gradient:
+                          const LinearGradient(colors: TpPalette.heroCard),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     alignment: Alignment.centerLeft,
                     padding: const EdgeInsets.only(left: 6),
-                    child: Container(width: 30, height: 5, color: const Color(0xFFF0C96A)),
+                    child: Container(
+                        width: 30, height: 5, color: const Color(0xFFF0C96A)),
                   ),
                   const SizedBox(height: 5),
                   Row(children: [
-                    Expanded(child: Container(height: 20, decoration: BoxDecoration(color: preview.cardSolid, borderRadius: BorderRadius.circular(5)))),
+                    Expanded(
+                        child: Container(
+                            height: 20,
+                            decoration: BoxDecoration(
+                                color: preview.cardSolid,
+                                borderRadius: BorderRadius.circular(5)))),
                     const SizedBox(width: 5),
-                    Expanded(child: Container(height: 20, decoration: BoxDecoration(color: preview.cardSolid, borderRadius: BorderRadius.circular(5)))),
+                    Expanded(
+                        child: Container(
+                            height: 20,
+                            decoration: BoxDecoration(
+                                color: preview.cardSolid,
+                                borderRadius: BorderRadius.circular(5)))),
                   ]),
                 ]),
               ),
@@ -331,13 +434,18 @@ class _LookCard extends StatelessWidget {
         const SizedBox(height: 8),
         Row(children: [
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(title, style: TpType.h(13.5, p.textStrong)),
               Text(subtitle, style: TpType.body(11.5, p.muted)),
             ]),
           ),
-          Icon(selected ? PhosphorIconsFill.checkCircle : PhosphorIconsRegular.circle,
-              color: selected ? p.gold : p.faint, size: 20),
+          Icon(
+              selected
+                  ? PhosphorIconsFill.checkCircle
+                  : PhosphorIconsRegular.circle,
+              color: selected ? p.gold : p.faint,
+              size: 20),
         ]),
       ]),
     );

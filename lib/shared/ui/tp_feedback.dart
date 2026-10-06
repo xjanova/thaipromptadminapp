@@ -17,7 +17,9 @@ String tpErrorText(Object? e) {
   if (e is ApiException) {
     if (e.statusCode == 401) return 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่';
     if (e.statusCode == 403) return 'บัญชีนี้ไม่มีสิทธิ์ทำรายการนี้';
-    if (e.statusCode == 404) return 'ไม่พบข้อมูลนี้ในระบบ (อาจถูกลบหรือเปลี่ยนสถานะไปแล้ว)';
+    if (e.statusCode == 404) {
+      return 'ไม่พบข้อมูลนี้ในระบบ (อาจถูกลบหรือเปลี่ยนสถานะไปแล้ว)';
+    }
     if (e.statusCode == 422) {
       final first = e.errors?.values
           .expand((v) => v is List ? v : [v])
@@ -26,7 +28,9 @@ String tpErrorText(Object? e) {
       return first ?? (e.message.isNotEmpty ? e.message : 'ข้อมูลไม่ถูกต้อง');
     }
     if (e.statusCode == 429) return 'ทำรายการถี่เกินไป รอสักครู่แล้วลองใหม่';
-    return e.message.isNotEmpty ? e.message : 'เซิร์ฟเวอร์ตอบกลับผิดปกติ (${e.statusCode})';
+    return e.message.isNotEmpty
+        ? e.message
+        : 'เซิร์ฟเวอร์ตอบกลับผิดปกติ (${e.statusCode})';
   }
   if (e is DioException) {
     switch (e.type) {
@@ -41,7 +45,9 @@ String tpErrorText(Object? e) {
         final msg = data is Map ? data['message']?.toString() : null;
         final code = e.response?.statusCode ?? 0;
         if (msg != null && msg.isNotEmpty) return msg;
-        return code >= 500 ? 'เซิร์ฟเวอร์ขัดข้องชั่วคราว ($code)' : 'คำขอไม่สำเร็จ ($code)';
+        return code >= 500
+            ? 'เซิร์ฟเวอร์ขัดข้องชั่วคราว ($code)'
+            : 'คำขอไม่สำเร็จ ($code)';
       case DioExceptionType.cancel:
         return 'ยกเลิกคำขอแล้ว';
       default:
@@ -55,7 +61,8 @@ String tpErrorText(Object? e) {
 
 bool tpIsOffline(Object? e) =>
     e is DioException &&
-    (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.connectionTimeout);
+    (e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.connectionTimeout);
 
 /// แถบกระพริบตอนโหลดครั้งแรก
 class TpSkeleton extends StatefulWidget {
@@ -68,9 +75,11 @@ class TpSkeleton extends StatefulWidget {
   State<TpSkeleton> createState() => _TpSkeletonState();
 }
 
-class _TpSkeletonState extends State<TpSkeleton> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1300))..repeat();
+class _TpSkeletonState extends State<TpSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 1300))
+    ..repeat();
 
   @override
   void dispose() {
@@ -103,7 +112,11 @@ class _TpSkeletonState extends State<TpSkeleton> with SingleTickerProviderStateM
 
 /// รายการโครงกระพริบ (แทนสปินเนอร์เต็มจอ)
 class TpSkeletonList extends StatelessWidget {
-  const TpSkeletonList({super.key, this.count = 5, this.itemHeight = 74, this.padding = EdgeInsets.zero});
+  const TpSkeletonList(
+      {super.key,
+      this.count = 5,
+      this.itemHeight = 74,
+      this.padding = EdgeInsets.zero});
   final int count;
   final double itemHeight;
   final EdgeInsetsGeometry padding;
@@ -125,11 +138,14 @@ class TpSkeletonList extends StatelessWidget {
                   const TpSkeleton(width: 42, height: 42, radius: 14),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      TpSkeleton(height: 13, width: 120 + (i % 3) * 30.0),
-                      const SizedBox(height: 8),
-                      TpSkeleton(height: 10, width: 80 + (i % 2) * 40.0),
-                    ]),
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TpSkeleton(height: 13, width: 120 + (i % 3) * 30.0),
+                          const SizedBox(height: 8),
+                          TpSkeleton(height: 10, width: 80 + (i % 2) * 40.0),
+                        ]),
                   ),
                   const TpSkeleton(width: 46, height: 18),
                 ]),
@@ -164,18 +180,22 @@ class TpEmpty extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.tp;
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 28, vertical: compact ? 18 : 40),
+      padding:
+          EdgeInsets.symmetric(horizontal: 28, vertical: compact ? 18 : 40),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Tp3D(art, size: compact ? 84 : 128),
         const SizedBox(height: 14),
-        Text(title, textAlign: TextAlign.center, style: TpType.h(16.5, p.textStrong)),
+        Text(title,
+            textAlign: TextAlign.center, style: TpType.h(16.5, p.textStrong)),
         if (message != null) ...[
           const SizedBox(height: 4),
-          Text(message!, textAlign: TextAlign.center, style: TpType.body(13.5, p.muted)),
+          Text(message!,
+              textAlign: TextAlign.center, style: TpType.body(13.5, p.muted)),
         ],
         if (actionLabel != null && onAction != null) ...[
           const SizedBox(height: 16),
-          TpButton(actionLabel!, onPressed: onAction, expand: false, height: 44),
+          TpButton(actionLabel!,
+              onPressed: onAction, expand: false, height: 44),
         ],
       ]),
     );
@@ -184,7 +204,8 @@ class TpEmpty extends StatelessWidget {
 
 /// มุมมอง error พร้อมปุ่มลองใหม่
 class TpErrorView extends StatelessWidget {
-  const TpErrorView({super.key, required this.error, this.onRetry, this.compact = false});
+  const TpErrorView(
+      {super.key, required this.error, this.onRetry, this.compact = false});
   final Object? error;
   final VoidCallback? onRetry;
   final bool compact;
@@ -208,7 +229,13 @@ class TpErrorView extends StatelessWidget {
 /// - รีเฟรช = คงข้อมูลเดิมไว้ (ไม่กระพริบเต็มจอ — กับดัก "Loading state flash")
 /// - error ครั้งแรก = TpErrorView · error ตอนรีเฟรช = คงข้อมูลเดิม
 class TpAsync<T> extends StatelessWidget {
-  const TpAsync({super.key, required this.value, required this.data, this.loading, this.onRetry, this.compactError = false});
+  const TpAsync(
+      {super.key,
+      required this.value,
+      required this.data,
+      this.loading,
+      this.onRetry,
+      this.compactError = false});
   final AsyncValue<T> value;
   final Widget Function(T data) data;
   final Widget? loading;
@@ -218,7 +245,10 @@ class TpAsync<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (value.hasValue) return data(value.requireValue);
-    if (value.hasError) return TpErrorView(error: value.error, onRetry: onRetry, compact: compactError);
+    if (value.hasError) {
+      return TpErrorView(
+          error: value.error, onRetry: onRetry, compact: compactError);
+    }
     return loading ?? const TpSkeletonList();
   }
 }
@@ -226,7 +256,8 @@ class TpAsync<T> extends StatelessWidget {
 enum TpToastKind { success, error, info }
 
 /// แจ้งผลสั้น ๆ ด้านล่างจอ
-void tpToast(BuildContext context, String message, {TpToastKind kind = TpToastKind.info}) {
+void tpToast(BuildContext context, String message,
+    {TpToastKind kind = TpToastKind.info}) {
   final icon = switch (kind) {
     TpToastKind.success => PhosphorIconsFill.checkCircle,
     TpToastKind.error => PhosphorIconsFill.warningCircle,
@@ -273,12 +304,16 @@ Future<bool> tpConfirm(
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
         Row(children: [
-          Expanded(child: TpButton.outline(cancelLabel, height: 46, onPressed: () => Navigator.pop(ctx, false))),
+          Expanded(
+              child: TpButton.outline(cancelLabel,
+                  height: 46, onPressed: () => Navigator.pop(ctx, false))),
           const SizedBox(width: 10),
           Expanded(
             child: danger
-                ? TpButton.danger(confirmLabel, height: 46, onPressed: () => Navigator.pop(ctx, true))
-                : TpButton(confirmLabel, height: 46, onPressed: () => Navigator.pop(ctx, true)),
+                ? TpButton.danger(confirmLabel,
+                    height: 46, onPressed: () => Navigator.pop(ctx, true))
+                : TpButton(confirmLabel,
+                    height: 46, onPressed: () => Navigator.pop(ctx, true)),
           ),
         ]),
       ],
@@ -307,26 +342,42 @@ Future<String?> tpPrompt(
         final ok = !required || ctrl.text.trim().isNotEmpty;
         return AlertDialog(
           title: Text(title),
-          content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (message != null) ...[Text(message), const SizedBox(height: 12)],
-            TextField(
-              controller: ctrl,
-              autofocus: true,
-              maxLines: maxLines,
-              minLines: 1,
-              decoration: InputDecoration(hintText: hint),
-              onChanged: (_) => setLocal(() {}),
-            ),
-          ]),
+          content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (message != null) ...[
+                  Text(message),
+                  const SizedBox(height: 12)
+                ],
+                TextField(
+                  controller: ctrl,
+                  autofocus: true,
+                  maxLines: maxLines,
+                  minLines: 1,
+                  decoration: InputDecoration(hintText: hint),
+                  onChanged: (_) => setLocal(() {}),
+                ),
+              ]),
           actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
             Row(children: [
-              Expanded(child: TpButton.outline('ยกเลิก', height: 46, onPressed: () => Navigator.pop(ctx))),
+              Expanded(
+                  child: TpButton.outline('ยกเลิก',
+                      height: 46, onPressed: () => Navigator.pop(ctx))),
               const SizedBox(width: 10),
               Expanded(
                 child: danger
-                    ? TpButton.danger(confirmLabel, height: 46, onPressed: ok ? () => Navigator.pop(ctx, ctrl.text.trim()) : null)
-                    : TpButton(confirmLabel, height: 46, onPressed: ok ? () => Navigator.pop(ctx, ctrl.text.trim()) : null),
+                    ? TpButton.danger(confirmLabel,
+                        height: 46,
+                        onPressed: ok
+                            ? () => Navigator.pop(ctx, ctrl.text.trim())
+                            : null)
+                    : TpButton(confirmLabel,
+                        height: 46,
+                        onPressed: ok
+                            ? () => Navigator.pop(ctx, ctrl.text.trim())
+                            : null),
               ),
             ]),
           ],
@@ -342,7 +393,8 @@ Future<String?> tpPrompt(
 /// เปิดแผ่นเลื่อนจากล่าง (ลากขึ้นลงได้) สไตล์เดียวกันทั้งแอป
 Future<R?> tpShowSheet<R>(
   BuildContext context, {
-  required Widget Function(BuildContext context, ScrollController scroll) builder,
+  required Widget Function(BuildContext context, ScrollController scroll)
+      builder,
   double initial = 0.86,
   double min = 0.5,
   double max = 0.95,
@@ -366,14 +418,21 @@ Future<R?> tpShowSheet<R>(
           color: p.sheet,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           border: Border(top: BorderSide(color: p.borderGold)),
-          boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 40, offset: Offset(0, -10))],
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0x66000000),
+                blurRadius: 40,
+                offset: Offset(0, -10))
+          ],
         ),
         child: Column(children: [
           const SizedBox(height: 10),
           Container(
             width: 42,
             height: 5,
-            decoration: BoxDecoration(color: p.faint.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(3)),
+            decoration: BoxDecoration(
+                color: p.faint.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(3)),
           ),
           const SizedBox(height: 6),
           Expanded(child: builder(ctx, scroll)),
@@ -387,7 +446,11 @@ Future<R?> tpShowSheet<R>(
 ///
 /// [onConfirmed] เป็น async: ระหว่างทำงานจะล็อกไว้ (กันกดซ้ำ) แล้วเด้งกลับถ้าล้มเหลว
 class TpSlideToConfirm extends StatefulWidget {
-  const TpSlideToConfirm({super.key, required this.label, required this.onConfirmed, this.enabled = true});
+  const TpSlideToConfirm(
+      {super.key,
+      required this.label,
+      required this.onConfirmed,
+      this.enabled = true});
   final String label;
   final Future<bool> Function() onConfirmed;
   final bool enabled;
@@ -396,11 +459,13 @@ class TpSlideToConfirm extends StatefulWidget {
   State<TpSlideToConfirm> createState() => _TpSlideToConfirmState();
 }
 
-class _TpSlideToConfirmState extends State<TpSlideToConfirm> with SingleTickerProviderStateMixin {
+class _TpSlideToConfirmState extends State<TpSlideToConfirm>
+    with SingleTickerProviderStateMixin {
   double _dx = 0;
   bool _busy = false;
   bool _done = false;
-  late final AnimationController _back = AnimationController(vsync: this, duration: const Duration(milliseconds: 260));
+  late final AnimationController _back = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 260));
   Animation<double>? _backAnim;
 
   static const _knob = 50.0;
@@ -413,7 +478,8 @@ class _TpSlideToConfirmState extends State<TpSlideToConfirm> with SingleTickerPr
   }
 
   void _springBack() {
-    _backAnim = Tween<double>(begin: _dx, end: 0).animate(CurvedAnimation(parent: _back, curve: Curves.easeOutBack))
+    _backAnim = Tween<double>(begin: _dx, end: 0)
+        .animate(CurvedAnimation(parent: _back, curve: Curves.easeOutBack))
       ..addListener(() {
         if (mounted) setState(() => _dx = _backAnim!.value);
       });
@@ -481,10 +547,13 @@ class _TpSlideToConfirmState extends State<TpSlideToConfirm> with SingleTickerPr
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Flexible(
                       child: Text(widget.label,
-                          maxLines: 1, overflow: TextOverflow.ellipsis, style: TpType.h(15, p.goldText)),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TpType.h(15, p.goldText)),
                     ),
                     const SizedBox(width: 6),
-                    Icon(PhosphorIconsBold.caretDoubleRight, size: 15, color: p.goldText.withValues(alpha: 0.55)),
+                    Icon(PhosphorIconsBold.caretDoubleRight,
+                        size: 15, color: p.goldText.withValues(alpha: 0.55)),
                   ]),
                 ),
               ),
@@ -494,7 +563,8 @@ class _TpSlideToConfirmState extends State<TpSlideToConfirm> with SingleTickerPr
               child: GestureDetector(
                 onHorizontalDragUpdate: locked
                     ? null
-                    : (d) => setState(() => _dx = (_dx + d.delta.dx).clamp(0, maxDx)),
+                    : (d) => setState(
+                        () => _dx = (_dx + d.delta.dx).clamp(0, maxDx)),
                 onHorizontalDragEnd: locked
                     ? null
                     : (_) {
@@ -510,17 +580,29 @@ class _TpSlideToConfirmState extends State<TpSlideToConfirm> with SingleTickerPr
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(15),
                     gradient: const LinearGradient(
-                        begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: TpPalette.goldButton),
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: TpPalette.goldButton),
                     boxShadow: [
-                      BoxShadow(color: const Color(0xFFCFA349).withValues(alpha: 0.45), blurRadius: 16, offset: const Offset(0, 6), spreadRadius: -4),
+                      BoxShadow(
+                          color:
+                              const Color(0xFFCFA349).withValues(alpha: 0.45),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                          spreadRadius: -4),
                     ],
                   ),
                   child: _busy
                       ? const Padding(
                           padding: EdgeInsets.all(15),
-                          child: CircularProgressIndicator(strokeWidth: 2.4, color: TpPalette.onGold))
-                      : Icon(_done ? PhosphorIconsBold.check : PhosphorIconsBold.arrowRight,
-                          color: TpPalette.onGold, size: 22),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2.4, color: TpPalette.onGold))
+                      : Icon(
+                          _done
+                              ? PhosphorIconsBold.check
+                              : PhosphorIconsBold.arrowRight,
+                          color: TpPalette.onGold,
+                          size: 22),
                 ),
               ),
             ),

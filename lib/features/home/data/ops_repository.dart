@@ -5,7 +5,12 @@ import '../../../shared/ui/tp_format.dart';
 
 /// งานหนึ่งประเภทในคิว "ต้องจัดการตอนนี้"
 class QueueItem {
-  const QueueItem({this.count = 0, this.amount = 0, this.oldestMinutes, this.preview, this.unavailable = false});
+  const QueueItem(
+      {this.count = 0,
+      this.amount = 0,
+      this.oldestMinutes,
+      this.preview,
+      this.unavailable = false});
 
   /// backend อ่านส่วนนี้ไม่สำเร็จ (ส่ง null มา) — ต้องแสดงว่า "ไม่ทราบ" ห้ามตีเป็น 0 งาน
   final bool unavailable;
@@ -23,10 +28,14 @@ class QueueItem {
     final pv = m['preview'];
     if (pv is List && pv.isNotEmpty && pv.first is Map) {
       final f = (pv.first as Map).cast<String, dynamic>();
-      final name = (f['customer_name'] ?? f['user_name'] ?? f['sender'])?.toString();
-      final stage = f['stage'] is Map ? (f['stage'] as Map)['label']?.toString() : null;
+      final name =
+          (f['customer_name'] ?? f['user_name'] ?? f['sender'])?.toString();
+      final stage =
+          f['stage'] is Map ? (f['stage'] as Map)['label']?.toString() : null;
       final extra = (f['keyword'] ?? stage ?? f['package_label'])?.toString();
-      preview = [name, if (extra != null && extra.isNotEmpty) '“$extra”'].whereType<String>().join(' · ');
+      preview = [name, if (extra != null && extra.isNotEmpty) '“$extra”']
+          .whereType<String>()
+          .join(' · ');
       if (pv.length > 1) preview = '$preview และอีก ${pv.length - 1}';
     } else if (pv is String) {
       preview = pv;
@@ -34,7 +43,8 @@ class QueueItem {
     return QueueItem(
       count: TpFmt.toInt(m['count']),
       amount: TpFmt.toDouble(m['amount_thb'] ?? m['amount'] ?? m['sum_thb']),
-      oldestMinutes: m['oldest_minutes'] == null ? null : TpFmt.toInt(m['oldest_minutes']),
+      oldestMinutes:
+          m['oldest_minutes'] == null ? null : TpFmt.toInt(m['oldest_minutes']),
       preview: (preview == null || preview.isEmpty) ? null : preview,
     );
   }
@@ -98,7 +108,13 @@ class OpsSummary {
 
   bool get anyUnavailable =>
       degraded.isNotEmpty ||
-      [customerRequests, billsAwaiting, withdrawalsPending, smsUnmatched, stuckReadings].any((q) => q.unavailable);
+      [
+        customerRequests,
+        billsAwaiting,
+        withdrawalsPending,
+        smsUnmatched,
+        stuckReadings
+      ].any((q) => q.unavailable);
 
   int get totalTasks =>
       customerRequests.count +
@@ -117,7 +133,11 @@ class OpsSummary {
 
   /// งานที่แท็บ "งานรอทำ" ต้องแสดง (ไม่รวมแชท — แชทมีแท็บของตัวเอง)
   int get workBadge =>
-      billsAwaiting.count + withdrawalsPending.count + withdrawalsApproved.count + smsUnmatched.count + stuckReadings.count;
+      billsAwaiting.count +
+      withdrawalsPending.count +
+      withdrawalsApproved.count +
+      smsUnmatched.count +
+      stuckReadings.count;
 
   OpsSummary withLatency(int ms) => OpsSummary(
         customerRequests: customerRequests,
@@ -145,7 +165,8 @@ class OpsSummary {
       );
 
   factory OpsSummary.fromJson(Map<String, dynamic> j) {
-    Map<String, dynamic> m(dynamic v) => v is Map ? v.cast<String, dynamic>() : const {};
+    Map<String, dynamic> m(dynamic v) =>
+        v is Map ? v.cast<String, dynamic>() : const {};
     final q = m(j['queue']);
     final h = m(j['health']);
     final rev = m(j['revenue_today']);
@@ -171,25 +192,35 @@ class OpsSummary {
       customerRequests: QueueItem.fromJson(q['customer_requests']),
       billsAwaiting: QueueItem.fromJson(q['bills_awaiting']),
       withdrawalsPending: QueueItem.fromJson(q['withdrawals_pending']),
-      withdrawalsApproved:
-          q.containsKey('withdrawals_approved') ? QueueItem.fromJson(q['withdrawals_approved']) : const QueueItem(),
+      withdrawalsApproved: q.containsKey('withdrawals_approved')
+          ? QueueItem.fromJson(q['withdrawals_approved'])
+          : const QueueItem(),
       smsUnmatched: QueueItem.fromJson(q['sms_unmatched']),
       stuckReadings: QueueItem.fromJson(q['stuck_readings']),
       aiHealthy: TpFmt.toInt(ai['healthy']),
       aiTotal: TpFmt.toInt(ai['total']),
-      linePushUsed: lp == null ? null : TpFmt.toInt(lp['used_this_month'] ?? lp['used']),
-      linePushLimit: lp == null ? 300 : (TpFmt.toInt(lp['limit']) > 0 ? TpFmt.toInt(lp['limit']) : 300),
-      queueBacklog: h['queue_backlog'] is Map ? TpFmt.toInt((h['queue_backlog'] as Map)['pending']) : TpFmt.toInt(h['queue_backlog']),
-      queueFailed24h: h['queue_backlog'] is Map ? TpFmt.toInt((h['queue_backlog'] as Map)['failed_24h']) : 0,
+      linePushUsed:
+          lp == null ? null : TpFmt.toInt(lp['used_this_month'] ?? lp['used']),
+      linePushLimit: lp == null
+          ? 300
+          : (TpFmt.toInt(lp['limit']) > 0 ? TpFmt.toInt(lp['limit']) : 300),
+      queueBacklog: h['queue_backlog'] is Map
+          ? TpFmt.toInt((h['queue_backlog'] as Map)['pending'])
+          : TpFmt.toInt(h['queue_backlog']),
+      queueFailed24h: h['queue_backlog'] is Map
+          ? TpFmt.toInt((h['queue_backlog'] as Map)['failed_24h'])
+          : 0,
       linePushExhausted: lp?['exhausted'] == true,
       revenueToday: TpFmt.toDouble(rev['total']),
       revenueFortune: TpFmt.toDouble(split['fortune']),
       revenueMarketplace: TpFmt.toDouble(split['marketplace']),
       revenueOther: TpFmt.toDouble(split['other']),
       hourly: hourly,
-      revenueYesterdaySameTime:
-          j['revenue_yesterday_same_time'] == null ? null : TpFmt.toDouble(j['revenue_yesterday_same_time']),
-      degraded: (j['degraded'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      revenueYesterdaySameTime: j['revenue_yesterday_same_time'] == null
+          ? null
+          : TpFmt.toDouble(j['revenue_yesterday_same_time']),
+      degraded: (j['degraded'] as List?)?.map((e) => e.toString()).toList() ??
+          const [],
     );
   }
 }
@@ -209,7 +240,9 @@ class OpsRepository {
   }
 }
 
-final opsRepositoryProvider = Provider<OpsRepository>((ref) => OpsRepository(ref.watch(apiClientProvider)));
+final opsRepositoryProvider = Provider<OpsRepository>(
+    (ref) => OpsRepository(ref.watch(apiClientProvider)));
 
 /// สรุปงาน — AppShell สั่งรีเฟรชทุก 30 วินาทีขณะแอปเปิดอยู่ (แท็บ badge ใช้ตัวเดียวกัน)
-final opsSummaryProvider = FutureProvider<OpsSummary>((ref) => ref.watch(opsRepositoryProvider).summary());
+final opsSummaryProvider = FutureProvider<OpsSummary>(
+    (ref) => ref.watch(opsRepositoryProvider).summary());

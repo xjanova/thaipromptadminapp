@@ -6,7 +6,8 @@ import '../../../core/api/api_envelope.dart';
 import '../../../core/api/paged.dart';
 import '../../../shared/ui/tp_format.dart';
 
-Map<String, dynamic> _m(dynamic v) => v is Map ? v.cast<String, dynamic>() : const {};
+Map<String, dynamic> _m(dynamic v) =>
+    v is Map ? v.cast<String, dynamic>() : const {};
 
 String? _s(dynamic v) {
   if (v == null) return null;
@@ -17,7 +18,8 @@ String? _s(dynamic v) {
 bool _b(dynamic v) => v == true || v == 1 || v == '1' || v == 'true';
 
 final _thaiChar = RegExp(r'[฀-๿]');
-final _emoji = RegExp(r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]', unicode: true);
+final _emoji = RegExp(r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]',
+    unicode: true);
 
 /// ตัดอีโมจิ + คำอังกฤษ "wallet" ออกจากข้อความที่จะแสดง
 String _tidy(String s) => s
@@ -100,7 +102,9 @@ class AdminWallet {
   /// เพิ่มเงินได้เฉพาะกระเป๋าที่ใช้งานปกติ (WalletService::deposit ตรวจ isActive)
   bool get canCredit => isActive;
 
-  String get ownerName => (userName != null && userName!.isNotEmpty) ? userName! : (userEmail ?? 'สมาชิก');
+  String get ownerName => (userName != null && userName!.isNotEmpty)
+      ? userName!
+      : (userEmail ?? 'สมาชิก');
 
   /// ที่อยู่กระเป๋าแบบย่อ (ไว้แสดงในรายการ)
   String get shortAddress {
@@ -110,7 +114,9 @@ class AdminWallet {
 
   factory AdminWallet.fromJson(Map<String, dynamic> j) {
     // show/adjust ห่อมาเป็น {wallet:{...}}
-    if (!j.containsKey('id') && j['wallet'] is Map) return AdminWallet.fromJson(_m(j['wallet']));
+    if (!j.containsKey('id') && j['wallet'] is Map) {
+      return AdminWallet.fromJson(_m(j['wallet']));
+    }
     final u = _m(j['user']);
     return AdminWallet(
       id: TpFmt.toInt(j['id']),
@@ -174,7 +180,8 @@ class WalletSystemStats {
         WalletStatusFilter.suspended => suspendedWallets,
       };
 
-  factory WalletSystemStats.fromJson(Map<String, dynamic> j) => WalletSystemStats(
+  factory WalletSystemStats.fromJson(Map<String, dynamic> j) =>
+      WalletSystemStats(
         totalWallets: TpFmt.toInt(j['total_wallets']),
         activeWallets: TpFmt.toInt(j['active_wallets']),
         suspendedWallets: TpFmt.toInt(j['suspended_wallets']),
@@ -211,7 +218,8 @@ class WalletDetail {
   factory WalletDetail.fromJson(Map<String, dynamic> j) {
     final st = _m(j['stats']);
     return WalletDetail(
-      wallet: AdminWallet.fromJson(_m(j['wallet']).isNotEmpty ? _m(j['wallet']) : j),
+      wallet: AdminWallet.fromJson(
+          _m(j['wallet']).isNotEmpty ? _m(j['wallet']) : j),
       transactionsCount: TpFmt.toInt(st['transactions_count']),
       last30Income: TpFmt.toDouble(st['last_30_days_income']),
       last30Expense: TpFmt.toDouble(st['last_30_days_expense']),
@@ -247,7 +255,14 @@ class WalletTxn {
   final String? referenceType;
   final DateTime? createdAt;
 
-  static const _creditTypes = {'deposit', 'transfer_in', 'commission', 'bonus', 'refund', 'cashback'};
+  static const _creditTypes = {
+    'deposit',
+    'transfer_in',
+    'commission',
+    'bonus',
+    'refund',
+    'cashback'
+  };
 
   bool get isAdminAdjustment => referenceType == 'admin_adjustment';
 
@@ -302,8 +317,12 @@ class WalletTxn {
       type: (_s(j['type']) ?? '').toLowerCase(),
       status: (_s(j['status']) ?? '').toLowerCase(),
       amount: TpFmt.toDouble(j['amount']).abs(),
-      balanceBefore: j['balance_before'] == null ? null : TpFmt.toDouble(j['balance_before']),
-      balanceAfter: j['balance_after'] == null ? null : TpFmt.toDouble(j['balance_after']),
+      balanceBefore: j['balance_before'] == null
+          ? null
+          : TpFmt.toDouble(j['balance_before']),
+      balanceAfter: j['balance_after'] == null
+          ? null
+          : TpFmt.toDouble(j['balance_after']),
       description: _s(j['description']),
       referenceType: _s(ref['type'] ?? j['reference_type']),
       createdAt: TpFmt.parse(j['created_at']),
@@ -371,9 +390,11 @@ class FinanceRepository {
       });
 
   /// `GET finance/wallets/transactions?wallet_id=&page=&per_page=`
-  Future<Paged<WalletTxn>> transactions({required int walletId, int page = 1, int perPage = 15}) =>
+  Future<Paged<WalletTxn>> transactions(
+          {required int walletId, int page = 1, int perPage = 15}) =>
       _guard(() async {
-        final data = await _api.get<dynamic>('/finance/wallets/transactions', query: {
+        final data =
+            await _api.get<dynamic>('/finance/wallets/transactions', query: {
           'wallet_id': walletId,
           'page': page,
           'per_page': perPage,
@@ -384,24 +405,30 @@ class FinanceRepository {
   /// `POST finance/wallets/{id}/adjust` body `{amount: "-150.00", reason}` — เงินเข้า/ออกจริง
   ///
   /// [amount] ส่งเป็นสตริงทศนิยม 2 ตำแหน่ง (กันปัดเศษ double) · ห้ามเป็น 0
-  Future<WalletActionResult> adjust(int id, {required String amount, required String reason}) =>
+  Future<WalletActionResult> adjust(int id,
+          {required String amount, required String reason}) =>
       _act('/finance/wallets/$id/adjust', {'amount': amount, 'reason': reason},
           fallback: 'ปรับยอดไม่สำเร็จ', money: true);
 
   /// `POST finance/wallets/{id}/lock`
-  Future<WalletActionResult> lock(int id) => _act('/finance/wallets/$id/lock', const {}, fallback: 'ล็อกกระเป๋าไม่สำเร็จ');
+  Future<WalletActionResult> lock(int id) =>
+      _act('/finance/wallets/$id/lock', const {},
+          fallback: 'ล็อกกระเป๋าไม่สำเร็จ');
 
   /// `POST finance/wallets/{id}/unlock` (ล้างจำนวนครั้งใส่ PIN ผิดด้วย)
   Future<WalletActionResult> unlock(int id) =>
-      _act('/finance/wallets/$id/unlock', const {}, fallback: 'ปลดล็อกกระเป๋าไม่สำเร็จ');
+      _act('/finance/wallets/$id/unlock', const {},
+          fallback: 'ปลดล็อกกระเป๋าไม่สำเร็จ');
 
   /// `POST finance/wallets/{id}/suspend` body `{reason}` (บังคับ ≤ 500 ตัวอักษร)
   Future<WalletActionResult> suspend(int id, String reason) =>
-      _act('/finance/wallets/$id/suspend', {'reason': reason}, fallback: 'ระงับกระเป๋าไม่สำเร็จ');
+      _act('/finance/wallets/$id/suspend', {'reason': reason},
+          fallback: 'ระงับกระเป๋าไม่สำเร็จ');
 
   /// `POST finance/wallets/{id}/unsuspend` body `{reason}`
   Future<WalletActionResult> unsuspend(int id, String reason) =>
-      _act('/finance/wallets/$id/unsuspend', {'reason': reason}, fallback: 'ยกเลิกการระงับไม่สำเร็จ');
+      _act('/finance/wallets/$id/unsuspend', {'reason': reason},
+          fallback: 'ยกเลิกการระงับไม่สำเร็จ');
 
   Future<WalletActionResult> _act(String path, Map<String, dynamic> body,
       {required String fallback, bool money = false}) async {
@@ -413,20 +440,26 @@ class FinanceRepository {
       if (r != null) {
         // 5xx (validateStatus ปล่อยเฉพาะ < 500)
         final data = r.data;
-        throw ActionError(_clean(data is Map ? data['message']?.toString() : null, fallback, r.statusCode));
+        throw ActionError(_clean(
+            data is Map ? data['message']?.toString() : null,
+            fallback,
+            r.statusCode));
       }
       switch (e.type) {
         case DioExceptionType.connectionTimeout:
-          throw ActionError('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — ยังไม่ได้ทำรายการ ลองใหม่อีกครั้ง');
+          throw ActionError(
+              'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — ยังไม่ได้ทำรายการ ลองใหม่อีกครั้ง');
         case DioExceptionType.cancel:
           throw ActionError('ยกเลิกคำขอแล้ว — ยังไม่ได้ทำรายการ');
         default:
           // ส่งคำขอออกไปแล้วแต่ไม่ได้คำตอบ = อาจสำเร็จที่เซิร์ฟเวอร์
           if (money) {
-            throw UncertainActionError('เครือข่ายขาดระหว่างทำรายการ — ยังไม่รู้ว่าปรับยอดสำเร็จหรือไม่ '
+            throw UncertainActionError(
+                'เครือข่ายขาดระหว่างทำรายการ — ยังไม่รู้ว่าปรับยอดสำเร็จหรือไม่ '
                 'ตรวจรายการล่าสุดก่อน อย่าเพิ่งทำซ้ำ');
           }
-          throw ActionError('เครือข่ายขาดระหว่างทำรายการ — โหลดข้อมูลใหม่เพื่อตรวจผล');
+          throw ActionError(
+              'เครือข่ายขาดระหว่างทำรายการ — โหลดข้อมูลใหม่เพื่อตรวจผล');
       }
     }
     final b = res.data ?? const <String, dynamic>{};
@@ -450,8 +483,12 @@ class FinanceRepository {
     if (code == 429) return 'ทำรายการถี่เกินไป รอสักครู่แล้วลองใหม่';
     if (code == 422) {
       final errors = _m(b['errors']);
-      if (errors.containsKey('amount')) return 'จำนวนเงินไม่ถูกต้อง (ต้องเป็นตัวเลขและไม่เป็น 0)';
-      if (errors.containsKey('reason')) return 'กรุณาระบุเหตุผล (ไม่เกิน 500 ตัวอักษร)';
+      if (errors.containsKey('amount')) {
+        return 'จำนวนเงินไม่ถูกต้อง (ต้องเป็นตัวเลขและไม่เป็น 0)';
+      }
+      if (errors.containsKey('reason')) {
+        return 'กรุณาระบุเหตุผล (ไม่เกิน 500 ตัวอักษร)';
+      }
     }
     return _clean(b['message']?.toString(), fallback, code);
   }
@@ -460,13 +497,21 @@ class FinanceRepository {
   String _clean(String? raw, String fallback, int? code) {
     final m = (raw ?? '').trim();
     final lower = m.toLowerCase();
-    if (lower.contains('below zero')) return 'หักเกินยอดคงเหลือไม่ได้ — ยอดในกระเป๋าไม่พอ';
-    if (lower.contains('not active')) return 'กระเป๋านี้ถูกล็อกหรือระงับอยู่ ต้องปลดก่อนจึงจะเพิ่มยอดได้';
+    if (lower.contains('below zero')) {
+      return 'หักเกินยอดคงเหลือไม่ได้ — ยอดในกระเป๋าไม่พอ';
+    }
+    if (lower.contains('not active')) {
+      return 'กระเป๋านี้ถูกล็อกหรือระงับอยู่ ต้องปลดก่อนจึงจะเพิ่มยอดได้';
+    }
     if (m.isEmpty || !_thaiChar.hasMatch(m)) {
-      return (code ?? 0) >= 500 ? '$fallback (เซิร์ฟเวอร์ขัดข้อง $code)' : fallback;
+      return (code ?? 0) >= 500
+          ? '$fallback (เซิร์ฟเวอร์ขัดข้อง $code)'
+          : fallback;
     }
     final i = m.indexOf(':');
-    if (i > 0 && !_thaiChar.hasMatch(m.substring(i + 1))) return _tidy(m.substring(0, i));
+    if (i > 0 && !_thaiChar.hasMatch(m.substring(i + 1))) {
+      return _tidy(m.substring(0, i));
+    }
     return _tidy(m);
   }
 
@@ -483,26 +528,37 @@ class FinanceRepository {
   }
 }
 
-final financeRepositoryProvider = Provider<FinanceRepository>((ref) => FinanceRepository(ref.watch(apiClientProvider)));
+final financeRepositoryProvider = Provider<FinanceRepository>(
+    (ref) => FinanceRepository(ref.watch(apiClientProvider)));
 
-final walletSystemStatsProvider =
-    FutureProvider.autoDispose<WalletSystemStats>((ref) => ref.watch(financeRepositoryProvider).systemStats());
+final walletSystemStatsProvider = FutureProvider.autoDispose<WalletSystemStats>(
+    (ref) => ref.watch(financeRepositoryProvider).systemStats());
 
-final walletDetailProvider =
-    FutureProvider.autoDispose.family<WalletDetail, int>((ref, id) => ref.watch(financeRepositoryProvider).wallet(id));
+final walletDetailProvider = FutureProvider.autoDispose
+    .family<WalletDetail, int>(
+        (ref, id) => ref.watch(financeRepositoryProvider).wallet(id));
 
 // ───────────────────────── ของเดิม (คงไว้ชั่วคราว) ─────────────────────────
 
 /// ⚠️ คงไว้ให้ `features/ai/data/ai_repository.dart` ใช้จนกว่าจะย้ายไป [Paged] — ของใหม่ห้ามใช้
 class PagedResult<T> {
-  PagedResult({required this.items, required this.currentPage, required this.lastPage, required this.total});
+  PagedResult(
+      {required this.items,
+      required this.currentPage,
+      required this.lastPage,
+      required this.total});
   final List<T> items;
   final int currentPage;
   final int lastPage;
   final int total;
 
-  static PagedResult<T> fromJson<T>(Map<String, dynamic> json, T Function(Map<String, dynamic>) itemParser) {
+  static PagedResult<T> fromJson<T>(
+      Map<String, dynamic> json, T Function(Map<String, dynamic>) itemParser) {
     final p = Paged.parse<T>(json, itemParser);
-    return PagedResult<T>(items: p.items, currentPage: p.page, lastPage: p.lastPage, total: p.total);
+    return PagedResult<T>(
+        items: p.items,
+        currentPage: p.page,
+        lastPage: p.lastPage,
+        total: p.total);
   }
 }
