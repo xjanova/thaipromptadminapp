@@ -11,6 +11,7 @@ import '../../../shared/ui/tp.dart';
 import '../../home/data/ops_repository.dart';
 import '../data/work_repository.dart';
 import 'bill_widgets.dart';
+import 'retry_action.dart';
 import 'triage_widgets.dart';
 
 enum WorkTab {
@@ -816,39 +817,59 @@ class _StuckSliverState extends ConsumerState<_StuckSliver> {
   }
 }
 
-class _ActiveCard extends StatelessWidget {
+class _ActiveCard extends ConsumerWidget {
   const _ActiveCard({required this.r});
   final ActiveReading r;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final p = context.tp;
     return TpCard(
       accent: r.stuck ? p.danger : p.success,
       onTap: () => context.push('/chat/${r.id}'),
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
-      child: Row(children: [
-        TpAvatar(name: r.customerName, platform: r.platform),
-        const SizedBox(width: 10),
-        Expanded(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(r.customerName ?? 'ลูกค้า',
-                style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
-            Text('${r.billNumber} · ${r.stage ?? r.packageLabel}',
-                style: TpType.body(12.5, p.muted),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          TpAvatar(name: r.customerName, platform: r.platform),
+          const SizedBox(width: 10),
+          Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(r.customerName ?? 'ลูกค้า',
+                  style: TpType.h(14.5, p.textStrong, w: FontWeight.w600)),
+              Text('${r.billNumber} · ${r.stage ?? r.packageLabel}',
+                  style: TpType.body(12.5, p.muted),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
+            ]),
+          ),
+          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            TpPill(
+                r.stuck ? 'ค้าง ${TpFmt.duration(r.idleMinutes)}' : 'กำลังทำ',
+                tone: r.stuck ? TpTone.danger : TpTone.success,
+                dense: true),
+            if (r.takenOver) ...[
+              const SizedBox(height: 4),
+              const TpPill('แอดมินคุยอยู่', tone: TpTone.gold, dense: true)
+            ],
           ]),
-        ),
-        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          TpPill(r.stuck ? 'ค้าง ${TpFmt.duration(r.idleMinutes)}' : 'กำลังทำ',
-              tone: r.stuck ? TpTone.danger : TpTone.success, dense: true),
-          if (r.takenOver) ...[
-            const SizedBox(height: 4),
-            const TpPill('แอดมินคุยอยู่', tone: TpTone.gold, dense: true)
-          ],
         ]),
+        if (r.stuck) ...[
+          const SizedBox(height: 10),
+          Row(children: [
+            if (r.stuckLabel != null)
+              Expanded(
+                  child: Text(r.stuckLabel!,
+                      style: TpType.body(12.5, p.danger, w: FontWeight.w500)))
+            else
+              const Spacer(),
+            // แอดมินคุมห้องอยู่ = เซิร์ฟเวอร์ไม่ให้สั่งซ้ำ (คืนห้องให้บอทก่อน)
+            if (!r.takenOver)
+              RetryReadingButton(
+                  readingId: r.id,
+                  onDone: () => ref.invalidate(activeReadingsProvider)),
+          ]),
+        ],
       ]),
     );
   }

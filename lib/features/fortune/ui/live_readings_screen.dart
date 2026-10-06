@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../shared/ui/tp.dart';
+import '../../work/ui/retry_action.dart';
 import '../../home/data/ops_repository.dart';
 import '../data/fortune_repository.dart';
 
@@ -142,7 +143,7 @@ class _LiveReadingsScreenState extends ConsumerState<LiveReadingsScreen> {
                   compact: true,
                 ),
           itemBuilder: (context, r, _) =>
-              _LiveCard(r: r, onTap: () => _open(r)),
+              _LiveCard(r: r, onTap: () => _open(r), onRetried: _refresh),
         ),
       ],
     );
@@ -150,9 +151,10 @@ class _LiveReadingsScreenState extends ConsumerState<LiveReadingsScreen> {
 }
 
 class _LiveCard extends StatelessWidget {
-  const _LiveCard({required this.r, required this.onTap});
+  const _LiveCard({required this.r, required this.onTap, this.onRetried});
   final LiveReading r;
   final VoidCallback onTap;
+  final VoidCallback? onRetried;
 
   @override
   Widget build(BuildContext context) {
@@ -207,6 +209,11 @@ class _LiveCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TpType.body(12.5, p.muted)),
+            ],
+            // ค้าง + บอทคุมห้อง → สั่งทำนายซ้ำได้ (แอดมินคุมอยู่ = ต้องคืนห้องก่อน เซิร์ฟเวอร์จะปฏิเสธ)
+            if (r.stuck && !r.takenOver) ...[
+              const SizedBox(height: 10),
+              RetryReadingButton(readingId: r.id, onDone: onRetried),
             ],
           ]),
         ),

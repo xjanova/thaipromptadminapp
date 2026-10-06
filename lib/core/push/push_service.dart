@@ -23,7 +23,7 @@ class PushService {
   PushService(this._api);
   final ApiClient _api;
 
-  static const channelId = 'admin_alerts';
+  static const channelId = 'admin_ops_alerts';
   final _local = FlutterLocalNotificationsPlugin();
   final _routes = StreamController<String>.broadcast();
   StreamSubscription<String>? _tokenSub;

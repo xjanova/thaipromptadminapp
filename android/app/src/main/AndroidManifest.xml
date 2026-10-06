@@ -27,7 +27,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <!-- แจ้งเตือน FCM ตอนแอปอยู่เบื้องหลัง: ช่อง/ไอคอน/สีทอง -->
-        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="admin_alerts" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="admin_ops_alerts" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_tp" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/tp_gold" />
         <activity

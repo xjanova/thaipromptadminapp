@@ -330,6 +330,7 @@ class ActiveReading {
   String? get stuckLabel => switch (stuckReason) {
         'ai_generating_timeout' => 'AI ทำนายไม่เสร็จ',
         'deep_job_failed' => 'งานทำนายล้มเหลว',
+        'escalated_24h' => 'จ่ายเกิน 24 ชม. ยังไม่ได้คำทำนาย',
         null => null,
         _ => 'ระบบไม่ขยับ',
       };
@@ -494,6 +495,19 @@ class WorkRepository {
         data: form,
         options: Options(contentType: 'multipart/form-data'));
     return _expectOk(res.data, res.statusCode);
+  }
+
+  /// สั่งทำนายซ้ำบิลค้าง — เซิร์ฟเวอร์เลือกวิธีกู้เอง คืนข้อความไทยที่เซิร์ฟเวอร์ตอบ
+  Future<String> retryReading(int readingId) async {
+    final res = await _api.dio
+        .post<Map<String, dynamic>>('/fortune/readings/$readingId/retry');
+    final b = res.data ?? const {};
+    if ((res.statusCode ?? 500) >= 400 || b['success'] != true) {
+      throw ActionError(
+          (b['message'] ?? 'สั่งทำนายซ้ำไม่สำเร็จ (${res.statusCode})')
+              .toString());
+    }
+    return (b['message'] ?? 'สั่งทำนายซ้ำแล้ว').toString();
   }
 
   /// เคสลูกค้าที่ต้องดูแล (อารมณ์ลบ / ทวงเงิน / เริ่มแต่ยังไม่จ่าย) — ชุดเดียวกับ Warroom triage
