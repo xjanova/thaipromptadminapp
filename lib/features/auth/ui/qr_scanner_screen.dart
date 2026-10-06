@@ -67,7 +67,10 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
           maxLines: 1,
         );
         if (!mounted) return;
-        if (otp == null) return _reset();
+        if (otp == null) {
+          await _reset();
+          return;
+        }
         await notifier.claimPair(code, twoFactorCode: otp);
         if (!mounted) return;
       }
