@@ -118,7 +118,7 @@ class _BillSheetState extends ConsumerState<_BillSheet> {
 
   Future<bool> _markPaid() async {
     try {
-      final msg = await ref.read(workRepositoryProvider).markPaid(b.id, note: 'ยืนยันจากแอปแอดมิน');
+      final msg = await ref.read(workRepositoryProvider).markPaid(b.id, amount: b.amount, note: 'ยืนยันจากแอปแอดมิน');
       if (!mounted) return true;
       _done(msg ?? 'ยืนยันยอดแล้ว — ส่งคำทำนายให้ลูกค้า');
       return true;

@@ -324,6 +324,14 @@ class _QueueCard extends StatelessWidget {
           trailing: TpCount(s.withdrawalsPending.count, tone: TpTone.info),
           onTap: () => context.go('/work?tab=withdrawals'),
         ),
+      if (s.withdrawalsApproved.count > 0)
+        TpRow(
+          art: TpArt.wallet,
+          title: 'อนุมัติแล้ว รอโอนเงิน',
+          subtitle: oldest(s.withdrawalsApproved, 'รวม ${TpFmt.baht(s.withdrawalsApproved.amount)} · โอนแล้วแนบสลิปปิดงาน'),
+          trailing: TpCount(s.withdrawalsApproved.count),
+          onTap: () => context.go('/work?tab=withdrawals&sub=approved'),
+        ),
       if (s.smsUnmatched.count > 0)
         TpRow(
           art: TpArt.sms,

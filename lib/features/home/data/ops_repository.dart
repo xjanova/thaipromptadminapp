@@ -46,6 +46,7 @@ class OpsSummary {
     required this.customerRequests,
     required this.billsAwaiting,
     required this.withdrawalsPending,
+    this.withdrawalsApproved = const QueueItem(),
     required this.smsUnmatched,
     required this.stuckReadings,
     required this.aiHealthy,
@@ -69,6 +70,9 @@ class OpsSummary {
   final QueueItem customerRequests;
   final QueueItem billsAwaiting;
   final QueueItem withdrawalsPending;
+
+  /// อนุมัติแล้ว รอแอดมินโอน + แนบสลิป (backend v3 — ไม่มีคีย์ = 0)
+  final QueueItem withdrawalsApproved;
   final QueueItem smsUnmatched;
   final QueueItem stuckReadings;
   final int aiHealthy;
@@ -97,7 +101,12 @@ class OpsSummary {
       [customerRequests, billsAwaiting, withdrawalsPending, smsUnmatched, stuckReadings].any((q) => q.unavailable);
 
   int get totalTasks =>
-      customerRequests.count + billsAwaiting.count + withdrawalsPending.count + smsUnmatched.count + stuckReadings.count;
+      customerRequests.count +
+      billsAwaiting.count +
+      withdrawalsPending.count +
+      withdrawalsApproved.count +
+      smsUnmatched.count +
+      stuckReadings.count;
 
   /// เปอร์เซ็นต์เทียบเมื่อวานช่วงเวลาเดียวกัน (null = เทียบไม่ได้)
   double? get growthPct {
@@ -107,12 +116,14 @@ class OpsSummary {
   }
 
   /// งานที่แท็บ "งานรอทำ" ต้องแสดง (ไม่รวมแชท — แชทมีแท็บของตัวเอง)
-  int get workBadge => billsAwaiting.count + withdrawalsPending.count + smsUnmatched.count + stuckReadings.count;
+  int get workBadge =>
+      billsAwaiting.count + withdrawalsPending.count + withdrawalsApproved.count + smsUnmatched.count + stuckReadings.count;
 
   OpsSummary withLatency(int ms) => OpsSummary(
         customerRequests: customerRequests,
         billsAwaiting: billsAwaiting,
         withdrawalsPending: withdrawalsPending,
+        withdrawalsApproved: withdrawalsApproved,
         smsUnmatched: smsUnmatched,
         stuckReadings: stuckReadings,
         aiHealthy: aiHealthy,
@@ -160,6 +171,8 @@ class OpsSummary {
       customerRequests: QueueItem.fromJson(q['customer_requests']),
       billsAwaiting: QueueItem.fromJson(q['bills_awaiting']),
       withdrawalsPending: QueueItem.fromJson(q['withdrawals_pending']),
+      withdrawalsApproved:
+          q.containsKey('withdrawals_approved') ? QueueItem.fromJson(q['withdrawals_approved']) : const QueueItem(),
       smsUnmatched: QueueItem.fromJson(q['sms_unmatched']),
       stuckReadings: QueueItem.fromJson(q['stuck_readings']),
       aiHealthy: TpFmt.toInt(ai['healthy']),

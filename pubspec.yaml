@@ -47,6 +47,7 @@ dependencies:
 
   # ── Auto-update (OTA APK install) ──
   ota_update: ^7.0.0                   # in-app APK download + install (Android)
+  image_picker: ^1.2.4
 
 dev_dependencies:
   flutter_test:

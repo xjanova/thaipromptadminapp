@@ -60,7 +60,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/work',
-              builder: (_, state) => WorkScreen(initialTab: state.uri.queryParameters['tab']),
+              builder: (_, state) => WorkScreen(
+                initialTab: state.uri.queryParameters['tab'],
+                initialSub: state.uri.queryParameters['sub'],
+              ),
             ),
           ]),
           StatefulShellBranch(routes: [GoRoute(path: '/chat', builder: (_, __) => const ChatInboxScreen())]),

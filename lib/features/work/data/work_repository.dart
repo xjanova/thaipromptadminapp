@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
@@ -324,6 +325,58 @@ class ActiveReading {
   }
 }
 
+// ───────────────────────── เคสลูกค้าต้องดูแล ─────────────────────────
+
+class TriageCase {
+  const TriageCase({
+    required this.id,
+    required this.kind,
+    required this.critical,
+    this.platform,
+    this.readingId,
+    this.reasons = const [],
+    this.preview,
+    this.at,
+    this.count = 1,
+    this.mood,
+  });
+
+  final String id;
+  final String kind;
+  final bool critical;
+  final String? platform;
+  final int? readingId;
+  final List<String> reasons;
+  final String? preview;
+  final DateTime? at;
+  final int count;
+  final int? mood;
+
+  String get kindLabel => switch (kind) {
+        'emotional' => 'อารมณ์ลบ',
+        'lead' => 'เริ่มแต่ยังไม่จ่าย',
+        'refund' || 'money' || 'payment' => 'เรื่องเงิน',
+        'complaint' => 'ร้องเรียน',
+        _ => 'ต้องดูแล',
+      };
+
+  factory TriageCase.fromJson(Map<String, dynamic> j) => TriageCase(
+        id: (j['case_id'] ?? '').toString(),
+        kind: (j['kind'] ?? '').toString(),
+        critical: j['severity'] == 'crit',
+        platform: j['platform']?.toString(),
+        readingId: j['reading_id'] == null ? null : TpFmt.toInt(j['reading_id']),
+        reasons: ((j['reasons'] as List?) ?? const [])
+            .map((e) => e.toString())
+            .where((e) => e.isNotEmpty && !e.startsWith('service:'))
+            .toList(),
+        preview: j['preview']?.toString(),
+        at: TpFmt.parse(j['last_at']),
+        count: TpFmt.toInt(j['count']) == 0 ? 1 : TpFmt.toInt(j['count']),
+        mood: j['mood_level'] == null ? null : TpFmt.toInt(j['mood_level']),
+      );
+}
+
 // ───────────────────────── Repository ─────────────────────────
 
 class WorkRepository {
@@ -345,9 +398,12 @@ class WorkRepository {
   }
 
   /// ยืนยันว่าจ่ายแล้ว → backend ส่งคำทำนายให้ลูกค้าทันที (FortuneReadingsController@markPaid)
-  Future<String?> markPaid(int readingId, {String? note}) async {
-    final res = await _api.dio.post<Map<String, dynamic>>('/fortune/readings/$readingId/mark-paid',
-        data: {if (note != null && note.isNotEmpty) 'note': note});
+  Future<String?> markPaid(int readingId, {required double amount, String? note}) async {
+    // ส่งยอดจริงของบิลเสมอ — backend เดิมใส่ 49 บาทเองถ้าไม่ส่ง (บิล 39/99 จะบันทึกผิด)
+    final res = await _api.dio.post<Map<String, dynamic>>('/fortune/readings/$readingId/mark-paid', data: {
+      if (amount > 0) 'amount': amount.toStringAsFixed(2),
+      if (note != null && note.isNotEmpty) 'note': note,
+    });
     return _expectOk(res.data, res.statusCode);
   }
 
@@ -377,6 +433,25 @@ class WorkRepository {
   Future<String?> rejectWithdrawal(int id, String reason) async {
     final res = await _api.dio.post<Map<String, dynamic>>('/finance/withdrawals/$id/reject', data: {'reason': reason});
     return _expectOk(res.data, res.statusCode);
+  }
+
+  /// ปิดงานถอนเงินหลังโอนแล้ว — แนบสลิป (รูป ≤ 5MB) + หมายเหตุ
+  Future<String?> completeWithdrawal(int id, {String? slipPath, String? note}) async {
+    final form = FormData.fromMap({
+      if (note != null && note.isNotEmpty) 'transfer_note': note,
+      if (slipPath != null) 'transfer_slip': await MultipartFile.fromFile(slipPath, filename: 'slip_$id.jpg'),
+    });
+    final res = await _api.dio.post<Map<String, dynamic>>('/finance/withdrawals/$id/complete',
+        data: form, options: Options(contentType: 'multipart/form-data'));
+    return _expectOk(res.data, res.statusCode);
+  }
+
+  /// เคสลูกค้าที่ต้องดูแล (อารมณ์ลบ / ทวงเงิน / เริ่มแต่ยังไม่จ่าย) — ชุดเดียวกับ Warroom triage
+  Future<List<TriageCase>> triage({int sinceMinutes = 180}) async {
+    final data = await _api.get<Map<String, dynamic>>('/fortune/triage/behavior',
+        query: {'since_minutes': sinceMinutes}, parser: (d) => _m(d));
+    final list = (data['cases'] as List?) ?? const [];
+    return list.whereType<Map>().map((e) => TriageCase.fromJson(e.cast<String, dynamic>())).toList();
   }
 
   Future<Paged<BankSms>> sms({String status = 'pending', int page = 1}) async {
@@ -426,3 +501,5 @@ final pendingSmsProvider = FutureProvider.autoDispose<Paged<BankSms>>((ref) => r
 
 final activeReadingsProvider =
     FutureProvider.autoDispose<List<ActiveReading>>((ref) => ref.watch(workRepositoryProvider).activeReadings());
+
+final triageProvider = FutureProvider.autoDispose<List<TriageCase>>((ref) => ref.watch(workRepositoryProvider).triage());
