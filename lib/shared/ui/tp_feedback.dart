@@ -44,7 +44,12 @@ String tpErrorText(Object? e) {
         final data = e.response?.data;
         final msg = data is Map ? data['message']?.toString() : null;
         final code = e.response?.statusCode ?? 0;
-        if (msg != null && msg.isNotEmpty) return msg;
+        // 5xx มักเป็นข้อความอังกฤษของเฟรมเวิร์ก ("Server Error") — ใช้เฉพาะเมื่อ backend เขียนเป็นไทย
+        if (msg != null &&
+            msg.isNotEmpty &&
+            (code < 500 || RegExp(r'[\u0E00-\u0E7F]').hasMatch(msg))) {
+          return msg;
+        }
         return code >= 500
             ? 'เซิร์ฟเวอร์ขัดข้องชั่วคราว ($code)'
             : 'คำขอไม่สำเร็จ ($code)';

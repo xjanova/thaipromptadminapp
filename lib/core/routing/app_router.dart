@@ -18,6 +18,7 @@ import '../../features/auth/ui/verify_2fa_screen.dart';
 import '../../features/chat/ui/chat_inbox_screen.dart';
 import '../../features/chat/ui/chat_thread_screen.dart';
 import '../../features/finance/ui/wallets_screen.dart';
+import '../../features/work/ui/quick_bills_screen.dart';
 import '../../features/fortune/ui/ai_pool_screen.dart';
 import '../../features/fortune/ui/bills_search_screen.dart';
 import '../../features/fortune/ui/fortune_hub_screen.dart';
@@ -107,6 +108,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/fortune/bills',
           builder: (_, __) => const BillsSearchScreen()),
+      GoRoute(
+          path: '/fortune/bills/unpaid',
+          builder: (_, __) => const QuickBillsScreen()),
       GoRoute(
           path: '/finance/wallets', builder: (_, __) => const WalletsScreen()),
       GoRoute(path: '/users', builder: (_, __) => const UsersScreen()),

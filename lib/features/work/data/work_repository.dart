@@ -72,6 +72,7 @@ class FortuneBill {
     this.canCancel,
     this.stageLabel,
     this.amountReceived,
+    this.isJuntra = false,
   });
 
   final int id;
@@ -99,6 +100,9 @@ class FortuneBill {
   final String? stageLabel;
   final double? amountReceived;
 
+  /// บิลจากเว็บจันทรา — สถานะจ่ายมาจากจันทราเท่านั้น (backend ตอบ 422 ถ้ามาร์คจ่าย)
+  final bool isJuntra;
+
   bool get isPaid => status == 'paid' || (status.isEmpty && paidAt != null);
   bool get isClosed =>
       status == 'cancelled' || status == 'refunded' || status == 'closed';
@@ -108,6 +112,22 @@ class FortuneBill {
   bool get mayMarkPaid => canMarkPaid ?? (!isPaid && !isClosed);
   bool get mayRefund => canRefund ?? isPaid;
   bool get mayCancel => canCancel ?? (!isPaid && !isClosed);
+
+  /// เหตุผลภาษาไทยที่อนุมัติบิลนี้ไม่ได้ (null = อนุมัติได้)
+  String? get markPaidBlockReason {
+    if (mayMarkPaid) return null;
+    if (isPaid) return 'บิลนี้ชำระแล้ว';
+    if (isFloating) {
+      return 'บิลลอย — เงินเข้าแต่ยังไม่รู้เจ้าของ จับคู่ผ่านหน้าเว็บแอดมิน';
+    }
+    if (isJuntra) {
+      return 'บิลจากเว็บจันทรา — สถานะจ่ายมาจากจันทราเท่านั้น';
+    }
+    if (statusReason == 'superseded_by_paid') {
+      return 'ลูกค้าจ่ายบิลอื่นแทนแล้ว — อนุมัติซ้ำ = เก็บเงินซ้ำ';
+    }
+    return 'ระบบไม่อนุญาตให้อนุมัติบิลนี้ — ลูกค้าอาจจ่ายบิลอื่นแทนแล้ว';
+  }
 
   factory FortuneBill.fromJson(Map<String, dynamic> j) {
     final user = _m(j['customer'] ?? j['user']);
@@ -148,6 +168,7 @@ class FortuneBill {
       amountReceived: j['amount_received_thb'] == null
           ? null
           : TpFmt.toDouble(j['amount_received_thb']),
+      isJuntra: j['is_juntra'] == true,
     );
   }
 }
@@ -418,10 +439,11 @@ class WorkRepository {
   final ApiClient _api;
 
   Future<Paged<FortuneBill>> bills(BillBucket bucket,
-      {int page = 1, String? search}) async {
+      {int page = 1, int? perPage, String? search}) async {
     final data = await _api.get<dynamic>('/fortune/bills', query: {
       'status': bucket.key,
       'page': page,
+      if (perPage != null) 'per_page': perPage,
       if (search != null && search.isNotEmpty) 'search': search,
     });
     return Paged.parse(data, FortuneBill.fromJson);

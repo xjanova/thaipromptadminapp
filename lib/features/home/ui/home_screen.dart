@@ -8,6 +8,8 @@ import '../../approvals/data/approvals_repository.dart';
 import '../../auth/providers/auth_controller.dart';
 import '../../chat/data/chat_repository.dart';
 import '../../dashboard/data/dashboard_repository.dart';
+import '../../work/data/unpaid_bills.dart';
+import '../../work/data/work_repository.dart';
 import '../data/ops_repository.dart';
 
 /// หน้า "ภาพรวม" — รายได้วันนี้แบบสด + คิวงานที่ต้องจัดการ + สุขภาพระบบ
@@ -28,6 +30,7 @@ class HomeScreen extends ConsumerWidget {
       ref.invalidate(dashboardDataProvider);
       ref.invalidate(liveConversationsProvider);
       ref.invalidate(approvalsSummaryProvider);
+      ref.invalidate(billStatsProvider);
       try {
         ref.invalidate(opsSummaryProvider);
         await ref.read(opsSummaryProvider.future);
@@ -76,6 +79,14 @@ class HomeScreen extends ConsumerWidget {
               icon: PhosphorIconsRegular.userCircle, label: admin.roleLabel),
       ]),
       slivers: [
+        // ภาพรวมโหลดไม่ได้ ปุ่มอนุมัติบิลยังต้องอยู่ (ใช้ข้อมูลคนละชุด)
+        if (ops.hasError && !ops.hasValue)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 14),
+              child: _QuickBillButton(),
+            ),
+          ),
         SliverToBoxAdapter(
           child: TpAsync<OpsSummary>(
             value: ops,
@@ -85,6 +96,8 @@ class HomeScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _RevenueHero(s: s),
+                  const SizedBox(height: 12),
+                  const _QuickBillButton(),
                   TpSection(
                     'ต้องจัดการตอนนี้',
                     trailing: s.totalTasks + approvals > 0
@@ -305,6 +318,86 @@ class _Split extends StatelessWidget {
                 child: Container(height: 3, color: color),
               ),
             ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// ปุ่มเด่น "อนุมัติบิลด่วน" — จำนวนบิลที่ยังไม่จ่ายทุกสถานะ (รอตรวจ + รอโอน + เก่าเกิน 7 วัน)
+class _QuickBillButton extends ConsumerWidget {
+  const _QuickBillButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final p = context.tp;
+    final stats = ref.watch(billStatsProvider);
+    final s = stats.valueOrNull;
+    final total = s == null ? null : unpaidTotal(s);
+    final String subtitle;
+    if (s == null) {
+      subtitle = stats.hasError
+          ? 'โหลดจำนวนบิลไม่ได้ — แตะเพื่อเปิดดูเอง'
+          : 'ทุกบิลที่สร้างแล้วยังไม่จ่าย';
+    } else if (total == 0) {
+      subtitle = 'ไม่มีบิลค้างจ่าย';
+    } else {
+      subtitle = [
+        'รอตรวจ ${TpFmt.count(s.count(BillBucket.awaiting))}',
+        'รอโอน ${TpFmt.count(s.count(BillBucket.unpaid))}',
+        'เก่า ${TpFmt.count(s.count(BillBucket.closed))}',
+      ].join(' · ');
+    }
+    return Semantics(
+      button: true,
+      label: total == null
+          ? 'อนุมัติบิลด่วน'
+          : 'อนุมัติบิลด่วน ค้างจ่าย $total บิล',
+      child: TpCard(
+        goldBorder: true,
+        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+        onTap: () => context.push('/fortune/bills/unpaid'),
+        child: Row(children: [
+          const Tp3D(TpArt.bill, size: 48),
+          const SizedBox(width: 12),
+          Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('อนุมัติบิลด่วน', style: TpType.h(16.5, p.textStrong)),
+              const SizedBox(height: 2),
+              Text(subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TpType.body(
+                      12.5, stats.hasError && s == null ? p.warning : p.muted)),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          if (total == null && stats.hasError)
+            const TpPill('ไม่ทราบ',
+                tone: TpTone.warning, icon: PhosphorIconsBold.warning)
+          else if (total == null)
+            const TpSkeleton(width: 44, height: 28)
+          else
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text(TpFmt.count(total),
+                  style: TpType.money(26, total > 0 ? p.goldText : p.success)),
+              Text('บิลค้าง', style: TpType.body(11, p.faint, height: 1.1)),
+            ]),
+          const SizedBox(width: 8),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(11),
+              gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: TpPalette.goldButton),
+            ),
+            child: const Icon(PhosphorIconsBold.arrowRight,
+                size: 17, color: TpPalette.onGold),
           ),
         ]),
       ),
