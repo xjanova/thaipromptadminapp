@@ -97,6 +97,15 @@ class _UpdateSheetState extends ConsumerState<_UpdateSheet> {
         setState(() => _state =
             OtaUpdateState.error('ดาวน์โหลดไม่สำเร็จ ลองใหม่อีกครั้ง'));
       }
+    }, onDone: () {
+      // ปลั๊กอินปิด stream หลังเปิดตัวติดตั้งของ Android — ปลดปุ่มไม่ให้ค้างหมุนตลอดไป
+      if (!mounted) return;
+      final cur = _state;
+      if (cur == null || cur.isDownloading || cur.isInstalling) {
+        setState(() => _state = cur != null && cur.isInstalling
+            ? OtaUpdateState.handedOff()
+            : OtaUpdateState.error('ดาวน์โหลดไม่สำเร็จ ลองใหม่อีกครั้ง'));
+      }
     });
   }
 
@@ -110,7 +119,8 @@ class _UpdateSheetState extends ConsumerState<_UpdateSheet> {
     final p = context.tp;
     final r = widget.result.release!;
     final s = _state;
-    final busy = s != null && !s.isError;
+    final busy = s != null && !s.isError && !s.isHandedOff;
+    final failedOrDone = s != null && (s.isError || s.isHandedOff);
     final notes = r.body.trim().isEmpty
         ? 'ปรับปรุงประสิทธิภาพและแก้ไขข้อผิดพลาด'
         : _cleanNotes(r.body);
@@ -145,7 +155,7 @@ class _UpdateSheetState extends ConsumerState<_UpdateSheet> {
             ]),
           ),
           const SizedBox(height: 16),
-          if (s != null && !s.isError) ...[
+          if (busy) ...[
             Row(children: [
               Text(s.isInstalling ? 'กำลังเปิดตัวติดตั้ง…' : 'กำลังดาวน์โหลด',
                   style: TpType.body(13, p.muted)),
@@ -167,14 +177,26 @@ class _UpdateSheetState extends ConsumerState<_UpdateSheet> {
                 style: TpType.body(13, p.danger, w: FontWeight.w500)),
             const SizedBox(height: 12),
           ],
+          if (s != null && s.isHandedOff) ...[
+            Text(
+                'เปิดหน้าติดตั้งของ Android แล้ว — กด "ติดตั้ง" แล้วแอปจะปิดตัวเอง '
+                'ให้เปิดแอปใหม่อีกครั้ง\nถ้าขึ้นว่า "ไม่ได้ติดตั้งแอป" แปลว่าลายเซ็นไม่ตรงกับตัวที่ลงอยู่ '
+                'ให้ถอนแอปเดิมแล้วติดตั้งจากหน้าดาวน์โหลด',
+                style: TpType.body(13, p.muted, height: 1.5)),
+            const SizedBox(height: 12),
+          ],
           TpButton(
             busy
                 ? 'กำลังอัปเดต…'
-                : (s?.isError == true ? 'ลองอีกครั้ง' : 'อัปเดตเดี๋ยวนี้'),
+                : (failedOrDone ? 'ลองอีกครั้ง' : 'อัปเดตเดี๋ยวนี้'),
             icon: PhosphorIconsBold.downloadSimple,
             loading: busy,
             onPressed: busy ? null : _start,
           ),
+          if (failedOrDone) ...[
+            const SizedBox(height: 8),
+            TpButton.ghost('เปิดหน้าดาวน์โหลด', onPressed: _openPage),
+          ],
           const SizedBox(height: 8),
           Row(children: [
             Expanded(
