@@ -41,7 +41,8 @@ class AutoUpdater {
       await for (final event in OtaUpdate().execute(
         apkUrl,
         destinationFilename: destinationFilename,
-        // androidProviderAuthority: <package>.ota_update_file_provider (default)
+        // androidProviderAuthority: <package>.ota_update_provider (default)
+        // ต้องตรงกับ <provider> ใน AndroidManifest.xml
       )) {
         // ใช้ string-name comparison (per brain note 1372d359d1fc) — robust
         // ต่อ enum case ใหม่ๆ ใน plugin versions ถัดไป
@@ -57,6 +58,12 @@ class AutoUpdater {
           case 'INSTALLATION_DONE':
             yield OtaUpdateState.installing();
             break;
+          case 'INSTALLATION_ERROR':
+            yield OtaUpdateState.error(installErrorMessage(event.value));
+            break;
+          case 'CANCELED':
+            yield OtaUpdateState.error('ยกเลิกการดาวน์โหลดแล้ว');
+            break;
           case 'ALREADY_RUNNING_ERROR':
             yield OtaUpdateState.error('การติดตั้งก่อนหน้ายังทำงานอยู่');
             break;
@@ -65,23 +72,39 @@ class AutoUpdater {
             break;
           case 'INTERNAL_ERROR':
             yield OtaUpdateState.error(
-                'ดาวน์โหลดล้มเหลว · ${event.value ?? ""}');
+                'เตรียมไฟล์ติดตั้งไม่สำเร็จ ลองใหม่ หรือดาวน์โหลดจากหน้าเว็บ');
             break;
           case 'DOWNLOAD_ERROR':
             yield OtaUpdateState.error(
-                'ดาวน์โหลด APK ไม่สำเร็จ · ${event.value ?? ""}');
+                'ดาวน์โหลด APK ไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่');
             break;
           case 'CHECKSUM_ERROR':
-            yield OtaUpdateState.error('APK checksum ไม่ผ่าน');
+            yield OtaUpdateState.error('ไฟล์ APK เสียระหว่างดาวน์โหลด ลองใหม่');
             break;
           default:
             // unknown status — log silently
             break;
         }
       }
-    } catch (e) {
-      yield OtaUpdateState.error('เกิดข้อผิดพลาด: $e');
+    } catch (_) {
+      yield OtaUpdateState.error('อัปเดตไม่สำเร็จ ลองใหม่อีกครั้ง');
     }
+  }
+
+  /// แปลข้อความ PackageInstaller ดิบเป็นไทย — ลายเซ็นไม่ตรงคือเคสที่เจอบ่อยสุด
+  static String installErrorMessage(String? raw) {
+    final r = (raw ?? '').toUpperCase();
+    if (r.contains('INCOMPATIBLE') || r.contains('SIGNATURE')) {
+      return 'ติดตั้งทับไม่ได้ เพราะลายเซ็นแอปไม่ตรงกับตัวที่ลงอยู่ '
+          '· ถอนแอปเดิมแล้วติดตั้งจากหน้าดาวน์โหลด';
+    }
+    if (r.contains('STORAGE') || r.contains('SPACE')) {
+      return 'พื้นที่เครื่องไม่พอสำหรับติดตั้ง';
+    }
+    if (r.contains('ABORT') || r.contains('CANCEL')) {
+      return 'ยกเลิกการติดตั้งแล้ว';
+    }
+    return 'ติดตั้งไม่สำเร็จ ลองใหม่ หรือดาวน์โหลดจากหน้าเว็บ';
   }
 
   /// ขอ permission REQUEST_INSTALL_PACKAGES (Android 8+)
@@ -102,7 +125,7 @@ class OtaUpdateState {
     this.error,
   });
 
-  /// 'downloading' · 'installing' · 'error' · 'done'
+  /// 'downloading' · 'installing' · 'handed_off' · 'error'
   final String phase;
 
   /// 0..100 — เฉพาะตอน downloading
@@ -116,9 +139,14 @@ class OtaUpdateState {
   factory OtaUpdateState.error(String msg) =>
       OtaUpdateState._(phase: 'error', error: msg);
 
+  /// ส่งต่อให้ตัวติดตั้งของ Android แล้ว — แอปไม่รู้ผลต่อ (ถ้าสำเร็จ Android จะปิดแอปเอง)
+  factory OtaUpdateState.handedOff() =>
+      OtaUpdateState._(phase: 'handed_off', progress: 100);
+
   bool get isError => phase == 'error';
   bool get isDownloading => phase == 'downloading';
   bool get isInstalling => phase == 'installing';
+  bool get isHandedOff => phase == 'handed_off';
 }
 
 final autoUpdaterProvider = Provider<AutoUpdater>((ref) => AutoUpdater());
