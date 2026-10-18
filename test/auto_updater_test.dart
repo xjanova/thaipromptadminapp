@@ -1,8 +1,43 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thaipromptadmin/core/update/auto_updater.dart';
+import 'package:thaipromptadmin/core/update/reinstall_helper.dart';
 import 'package:thaipromptadmin/core/update/update_models.dart';
 
 void main() {
+  group('ReinstallHelper.decide — ลายเซ็นตัวที่ลงอยู่', () {
+    const release =
+        '6c4750bb162ffbbcb57ad95b228ef516adf698c862556e39e961513973cff93b';
+    const debug =
+        'a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc';
+
+    test('release key → release (ตัวพิมพ์ใหญ่/มี : ก็ต้องตรง)', () {
+      expect(ReinstallHelper.decide([release]), InstalledSigner.release);
+      final colon = release.toUpperCase().replaceAllMapped(
+          RegExp(r'..'), (m) => '${m[0]}:');
+      expect(ReinstallHelper.decide([colon]), InstalledSigner.release);
+    });
+
+    test('debug key จาก flutter run → foreign (ต้องถอนก่อน)', () {
+      expect(ReinstallHelper.decide([debug]), InstalledSigner.foreign);
+    });
+
+    test('lineage ที่มี release อยู่ด้วย → release', () {
+      expect(
+          ReinstallHelper.decide([debug, release]), InstalledSigner.release);
+    });
+
+    test('อ่านไม่ได้ (null/ว่าง) → unknown ไม่ขวางทางปกติ', () {
+      expect(ReinstallHelper.decide(null), InstalledSigner.unknown);
+      expect(ReinstallHelper.decide(const []), InstalledSigner.unknown);
+      expect(ReinstallHelper.decide([release], expected: ''),
+          InstalledSigner.unknown);
+    });
+
+    test('ค่าคงที่ release cert เป็น sha256 hex 64 ตัว', () {
+      expect(kReleaseCertSha256, matches(RegExp(r'^[0-9a-f]{64}$')));
+    });
+  });
+
   group('AutoUpdater.installErrorMessage', () {
     test('signature mismatch → tells user to uninstall first', () {
       final m = AutoUpdater.installErrorMessage(
