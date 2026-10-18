@@ -12,8 +12,10 @@ void main() {
     });
 
     test('null / unknown → generic Thai message, no raw text', () {
-      expect(AutoUpdater.installErrorMessage(null), contains('ติดตั้งไม่สำเร็จ'));
-      expect(AutoUpdater.installErrorMessage('weird'), isNot(contains('weird')));
+      expect(
+          AutoUpdater.installErrorMessage(null), contains('ติดตั้งไม่สำเร็จ'));
+      expect(
+          AutoUpdater.installErrorMessage('weird'), isNot(contains('weird')));
     });
   });
 
@@ -28,5 +30,34 @@ void main() {
     final cur = AppVersion.tryParse('0.4.0+5')!;
     expect(AppVersion.tryParse('v0.4.0+6')! > cur, isTrue);
     expect(AppVersion.tryParse('v0.4.0+5')! > cur, isFalse);
+  });
+
+  group('AppVersion.fromInstalled — split-per-abi versionCode', () {
+    test('strips the ABI prefix (arm64 2006 → 6)', () {
+      expect(AppVersion.fromInstalled('0.4.1', '2006'),
+          equals(AppVersion(0, 4, 1, 6)));
+      expect(AppVersion.fromInstalled('0.4.1', '1006'),
+          equals(AppVersion(0, 4, 1, 6)));
+      expect(AppVersion.fromInstalled('0.4.1', '4006'),
+          equals(AppVersion(0, 4, 1, 6)));
+    });
+
+    test('universal APK (no prefix) is unchanged', () {
+      expect(AppVersion.fromInstalled('0.4.1', '6'),
+          equals(AppVersion(0, 4, 1, 6)));
+    });
+
+    test('a build-only bump is offered to an arm64 install', () {
+      final installed = AppVersion.fromInstalled('0.4.1', '2006')!;
+      final release = AppVersion.tryParse('v0.4.1+7')!;
+      expect(release > installed, isTrue);
+      // และตัวเดียวกันต้องไม่ถูกเสนอซ้ำ
+      expect(AppVersion.tryParse('v0.4.1+6')! > installed, isFalse);
+    });
+
+    test('garbage build number falls back to 0', () {
+      expect(AppVersion.fromInstalled('0.4.1', ''),
+          equals(AppVersion(0, 4, 1, 0)));
+    });
   });
 }
