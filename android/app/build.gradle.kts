@@ -63,6 +63,9 @@ android {
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
+                // บิลด์นี้จะเซ็นด้วยคีย์ debug ของเครื่อง — ลงเครื่องได้ แต่ release จาก CI
+                // จะติดตั้งทับไม่ได้ (ลายเซ็นไม่ตรง) ต้องถอนก่อน · แอปตรวจและพาถอนให้เอง
+                logger.warn("WARNING: android/key.properties not found — release build is DEBUG-signed; a CI release cannot update over it (must uninstall first)")
                 signingConfigs.getByName("debug")
             }
             // Optimize size

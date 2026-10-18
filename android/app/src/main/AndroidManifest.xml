@@ -18,6 +18,9 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- ลายเซ็นไม่ตรง (ตัวที่ลงอยู่เป็นบิลด์ debug) → เก็บ APK ไว้ที่ Download แล้วเปิดหน้าถอนแอปให้ -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
     <!-- Optional: เปิด URL ไป browser (url_launcher) — ไม่ต้องประกาศ permission แต่ต้องประกาศ queries -->
 

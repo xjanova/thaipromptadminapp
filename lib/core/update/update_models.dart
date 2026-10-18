@@ -113,6 +113,20 @@ class AppVersion implements Comparable<AppVersion> {
     }
   }
 
+  /// เวอร์ชันของแอปที่ติดตั้งอยู่ จาก PackageInfo (versionName + versionCode)
+  ///
+  /// `flutter build apk --split-per-abi` เติมรหัส ABI ไว้หน้า versionCode:
+  /// armeabi-v7a = 1000+, arm64-v8a = 2000+, x86_64 = 4000+ (FlutterPlugin.kt:
+  /// `abiVersionCode * 1000 + versionCode`) — เครื่องที่ลง arm64 ของ 0.4.1+6
+  /// จึงรายงาน build เป็น 2006 ถ้าเทียบตรง ๆ กับ tag จะมองว่าตัวเองใหม่กว่า
+  /// release ทุกตัวที่ bump แค่ build (0.4.1+7) และไม่เสนออัปเดตเลย
+  /// ตัดรหัส ABI ออกก่อนเทียบ (ใช้ได้ตราบที่ build จริง < 1000)
+  static AppVersion? fromInstalled(String versionName, String buildNumber) {
+    final raw = int.tryParse(buildNumber.trim()) ?? 0;
+    final build = raw >= 1000 ? raw % 1000 : raw;
+    return tryParse('$versionName+$build');
+  }
+
   @override
   int compareTo(AppVersion other) {
     if (major != other.major) return major.compareTo(other.major);

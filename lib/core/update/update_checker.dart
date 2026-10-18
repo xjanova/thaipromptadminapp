@@ -41,7 +41,8 @@ class UpdateChecker {
   /// ดึง latest release + เปรียบเทียบกับเวอร์ชันปัจจุบัน
   Future<UpdateCheckResult> check() async {
     final pkg = await PackageInfo.fromPlatform();
-    final current = AppVersion.tryParse('${pkg.version}+${pkg.buildNumber}') ??
+    // ใช้ fromInstalled — APK แยก ABI รายงาน versionCode แบบ 2006 ไม่ใช่ 6
+    final current = AppVersion.fromInstalled(pkg.version, pkg.buildNumber) ??
         AppVersion(0, 0, 0, 0);
 
     try {
